@@ -24,6 +24,8 @@ import com.djt.jukeanator_engine.domain.songlibrary.model.SongFileEntity;
  * @author tmyers
  */
 public final class SongScanner {
+  
+  private static final String IGNORE_MARKER_FILENAME = "ignore.me";
 
   private RootFolderEntity rootFolder;
   private boolean requiresMetadata;
@@ -261,30 +263,64 @@ public final class SongScanner {
     List<String> songFilenames = new ArrayList<>();
 
     File parentFile = new File(parentFolder.getNaturalIdentity());
+
+    //
+    // IGNORE ENTIRE SUBTREE IF ignore.me EXISTS
+    //
+    File ignoreMarker = new File(parentFile, IGNORE_MARKER_FILENAME);
+    if (ignoreMarker.exists() && ignoreMarker.isFile()) {
+
+      System.out
+          .println("Ignoring folder subtree due to ignore.me: " + parentFile.getAbsolutePath());
+
+      return;
+    }
+
     File[] children = parentFile.listFiles();
+
     if (children != null) {
 
       for (File child : children) {
 
         boolean isHidden = child.isHidden();
+
         if (!isHidden && child.isDirectory()) {
+
           try {
 
+            //
+            // SKIP CHILD DIRECTORY IF IT CONTAINS ignore.me
+            //
+            File childIgnoreMarker = new File(child, IGNORE_MARKER_FILENAME);
+
+            if (childIgnoreMarker.exists() && childIgnoreMarker.isFile()) {
+
+              System.out
+                  .println("Ignoring folder subtree due to ignore.me: " + child.getAbsolutePath());
+
+              continue;
+            }
+
             FolderEntity childFolder = new FolderEntity(parentFolder, child.getName());
+
             parentFolder.addChildFolder(childFolder);
+
             process(childFolder);
 
           } catch (EntityAlreadyExistsException eaee) {
+
             throw new SongLibraryException(eaee.getMessage(), eaee);
           }
+
         } else if (parentFolder instanceof RootFolderEntity == false && !isHidden && child.isFile()
             && this.acceptedSongFileExtensions.contains(getFileExtension(child))) {
 
           songFilenames.add(child.getName());
-
         }
       }
+
     } else {
+
       System.err.println("parentFile.listFiles() was null for: " + parentFile.getAbsolutePath());
     }
 
