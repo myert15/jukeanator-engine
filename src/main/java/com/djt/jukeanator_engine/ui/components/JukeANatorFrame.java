@@ -467,50 +467,17 @@ public class JukeANatorFrame extends JFrame {
     pageWrapper.setBorder(new EmptyBorder(30, 40, 20, 40));
     pageWrapper.add(genresGridPanel, BorderLayout.CENTER);
 
-    genresPaginationPanel.removeAll();
-    genresPaginationPanel.setOpaque(false);
-
-    int pageCount = (int) Math.ceil(genresListModel.size() / (double) GENRES_PER_PAGE);
-    for (int i = 0; i < pageCount; i++) {
-
-      JButton dotButton = new JButton("●");
-      dotButton.setForeground(Color.WHITE);
-      dotButton.setBackground(BG_DARK);
-      dotButton.setBorderPainted(false);
-      dotButton.setFocusPainted(false);
-      dotButton.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 18));
-
-      final int pageIndex = i;
-      dotButton.addActionListener(e -> {
-
-        currentGenresPage = pageIndex;
-        refreshGenresPage();
-      });
-
-      genresPaginationPanel.add(dotButton);
-    }
-
-    JButton nextButton = new JButton(">");
-    nextButton.setPreferredSize(new Dimension(120, 60));
-    nextButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36));
-    nextButton.setForeground(Color.WHITE);
-    nextButton.setBackground(Color.BLACK);
-    nextButton.addActionListener(e -> {
-
-      int totalPages = (int) Math.ceil(genresListModel.size() / (double) GENRES_PER_PAGE);
-      currentGenresPage++;
-      if (currentGenresPage >= totalPages) {
-
-        currentGenresPage = 0;
-      }
-      refreshGenresPage();
-    });
+    //
+    // NAVIGATION BUTTON PANEL
+    //
+    JPanel navigationPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+    navigationPanel.setOpaque(false);
 
     JPanel bottomPanel = new JPanel(new BorderLayout());
     bottomPanel.setOpaque(false);
     bottomPanel.add(genresPaginationPanel, BorderLayout.CENTER);
-    bottomPanel.add(nextButton, BorderLayout.EAST);
-
+    bottomPanel.add(navigationPanel, BorderLayout.EAST);   
+    
     JPanel genresPagePanel = new JPanel(new BorderLayout());
     genresPagePanel.setBackground(BG_DARK);
     genresPagePanel.add(pageWrapper, BorderLayout.CENTER);
@@ -524,7 +491,7 @@ public class JukeANatorFrame extends JFrame {
     genresRootPanel.removeAll();
     genresRootPanel.add(genresContentPanel, BorderLayout.CENTER);
 
-    refreshGenresPage();
+    refreshGenresUI();
 
     return genresRootPanel;
   }
@@ -1059,14 +1026,133 @@ public class JukeANatorFrame extends JFrame {
       genresListModel.clear();
 
       if (genres != null) {
-
         genres.forEach(genresListModel::addElement);
       }
 
-      refreshGenresPage();
+      // 🔥 clamp current page
+      int maxPage = Math.max(0,
+          (int) Math.ceil(genresListModel.size() / (double) GENRES_PER_PAGE) - 1);
+
+      if (currentGenresPage > maxPage) {
+        currentGenresPage = maxPage;
+      }
+
+      refreshGenresUI(); // 👈 NEW unified refresh
     });
   }
+  
+  private void refreshGenresUI() {
+    rebuildGenresPagination();
+    refreshGenresPage();
+  }
 
+  private void rebuildGenresPagination() {
+
+    genresPaginationPanel.removeAll();
+    genresPaginationPanel.setLayout(new BorderLayout());
+    genresPaginationPanel.setOpaque(false);
+
+    int pageCount = Math.max(1, (int) Math.ceil(genresListModel.size() / (double) GENRES_PER_PAGE));
+
+    //
+    // PREVIOUS BUTTON
+    //
+    JButton previousButton = new JButton("<");
+    previousButton.setPreferredSize(new Dimension(120, 60));
+
+    stylePageNavButton(previousButton);
+
+    previousButton.setEnabled(currentGenresPage > 0);
+
+    previousButton.addActionListener(e -> {
+
+      if (currentGenresPage > 0) {
+
+        currentGenresPage--;
+        refreshGenresUI();
+      }
+    });
+
+    //
+    // NEXT BUTTON
+    //
+    JButton nextButton = new JButton(">");
+    nextButton.setPreferredSize(new Dimension(120, 60));
+
+    stylePageNavButton(nextButton);
+
+    nextButton.setEnabled(currentGenresPage < pageCount - 1);
+
+    nextButton.addActionListener(e -> {
+
+      if (currentGenresPage < pageCount - 1) {
+
+        currentGenresPage++;
+        refreshGenresUI();
+      }
+    });
+
+    //
+    // DOT BUTTONS
+    //
+    JPanel dotsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+    dotsPanel.setOpaque(false);
+
+    for (int i = 0; i < pageCount; i++) {
+
+      JButton dot = new JButton("●");
+
+      dot.setForeground(i == currentGenresPage ? ACCENT_BLUE : Color.WHITE);
+      dot.setBackground(BG_DARK);
+      dot.setBorderPainted(false);
+      dot.setFocusPainted(false);
+      dot.setContentAreaFilled(false);
+
+      dot.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+
+      final int page = i;
+
+      dot.addActionListener(e -> {
+
+        currentGenresPage = page;
+        refreshGenresUI();
+      });
+
+      dotsPanel.add(dot);
+    }
+
+    //
+    // LEFT WRAPPER
+    //
+    JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    leftPanel.setOpaque(false);
+    leftPanel.add(previousButton);
+
+    //
+    // RIGHT WRAPPER
+    //
+    JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    rightPanel.setOpaque(false);
+    rightPanel.add(nextButton);
+
+    //
+    // ASSEMBLE
+    //
+    genresPaginationPanel.add(leftPanel, BorderLayout.WEST);
+    genresPaginationPanel.add(dotsPanel, BorderLayout.CENTER);
+    genresPaginationPanel.add(rightPanel, BorderLayout.EAST);
+
+    genresPaginationPanel.revalidate();
+    genresPaginationPanel.repaint();
+  }
+
+  private void stylePageNavButton(JButton b) {
+    b.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36));
+    b.setForeground(Color.WHITE);
+    b.setBackground(Color.BLACK);
+    b.setFocusPainted(false);
+  }
+  
   // ============================================================
   // SONG QUEUE LIST
   // ============================================================
