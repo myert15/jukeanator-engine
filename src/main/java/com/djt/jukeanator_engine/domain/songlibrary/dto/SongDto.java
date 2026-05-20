@@ -4,12 +4,12 @@ public class SongDto {
   
   private Integer songId;
   private String songName;
-  private Integer songPlays;
+  private Integer numPlays;
 
-  public SongDto(Integer songId, String songName, Integer songPlays) {
+  public SongDto(Integer songId, String songName, Integer numPlays) {
     this.songId = songId;
     this.songName = songName;
-    this.songPlays = songPlays;
+    this.numPlays = numPlays;
   }
   
   public Integer getSongId() {
@@ -20,7 +20,7 @@ public class SongDto {
     return songName;
   }
 
-  public Integer getSongPlays() {
-    return songPlays;
+  public Integer getNumPlays() {
+    return numPlays;
   }
 }
