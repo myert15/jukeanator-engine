@@ -1,14 +1,12 @@
 package com.djt.jukeanator_engine.domain.songplayer.controller;
 
 import static java.util.Objects.requireNonNull;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.djt.jukeanator_engine.domain.songplayer.dto.NowPlayingSongDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlaybackStatusDto;
 import com.djt.jukeanator_engine.domain.songplayer.service.SongPlayerService;
 
@@ -28,7 +26,7 @@ public class SongPlayerController implements SongPlayerService {
 
   @Override
   @GetMapping("/nowPlayingSong")
-  public NowPlayingSongDto getNowPlayingSong() {
+  public SongDto getNowPlayingSong() {
 
     return songPlayerService.getNowPlayingSong();
   }

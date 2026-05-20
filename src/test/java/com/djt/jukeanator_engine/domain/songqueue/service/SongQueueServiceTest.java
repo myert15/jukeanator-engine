@@ -93,13 +93,13 @@ public class SongQueueServiceTest {
     assertNotNull(queuedSongs, "queuedSongs should not be null");
     assertTrue(queuedSongs.size() > 0, "queuedSongs size should be non-zero");
     SongQueueEntryDto queuedSong = queuedSongs.get(0);
-    assertEquals(queuedSong.getSongName(), song.getSongName(), "Song name is incorrect");
+    assertEquals(queuedSong.getSong().getSongName(), song.getSongName(), "Song name is incorrect");
     
     
     // Remove the first entry in the queue (normally, only the song player service should be doing this)
     SongQueueEntryDto firstQueuedSong = songQueueService.dequeueNextSong();
     assertNotNull(firstQueuedSong, "firstQueuedSong should not be null");    
-    assertEquals(firstQueuedSong.getSongName(), song.getSongName(), "Song name is incorrect");
+    assertEquals(firstQueuedSong.getSong().getSongName(), song.getSongName(), "Song name is incorrect");
     
     
     // Verify that the song queue is now empty

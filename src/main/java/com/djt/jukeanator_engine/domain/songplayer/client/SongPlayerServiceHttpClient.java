@@ -2,8 +2,7 @@ package com.djt.jukeanator_engine.domain.songplayer.client;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClient;
-
-import com.djt.jukeanator_engine.domain.songplayer.dto.NowPlayingSongDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlaybackStatusDto;
 import com.djt.jukeanator_engine.domain.songplayer.service.SongPlayerService;
 
@@ -22,7 +21,7 @@ public class SongPlayerServiceHttpClient implements SongPlayerService {
   }
 
   @Override
-  public NowPlayingSongDto getNowPlayingSong() {
+  public SongDto getNowPlayingSong() {
 
     return restClient.get().uri("/api/song-player/nowPlayingSong").retrieve()
         .body(new ParameterizedTypeReference<>() {});

@@ -12,10 +12,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import com.djt.jukeanator_engine.domain.common.exception.EntityDoesNotExistException;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.repository.SongLibraryRepository;
-import com.djt.jukeanator_engine.domain.songplayer.dto.NowPlayingSongDto;
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlaybackStatusDto;
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlayerStatus;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackFinishedEvent;
@@ -24,7 +24,6 @@ import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackPausedEvent
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackShutdownEvent;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackStartedEvent;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackStoppedEvent;
-import com.djt.jukeanator_engine.domain.songplayer.mapper.SongPlayerMapper;
 import com.djt.jukeanator_engine.domain.songplayer.service.utils.Player;
 import com.djt.jukeanator_engine.domain.songplayer.service.utils.VideoVlcMediaPlayer;
 import com.djt.jukeanator_engine.domain.songplayer.service.utils.VlcMediaPlayer;
@@ -101,15 +100,14 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
   }
 
   @Override
-  public NowPlayingSongDto getNowPlayingSong() {
+  public SongDto getNowPlayingSong() {
 
     SongQueueEntryDto current = this.nowPlayingSong;
     if (current != null) {
       
-      return new NowPlayingSongDto(current.getCoverArtPath(), current.getArtistName(), current.getAlbumName(), current.getSongName());
+      return current.getSong();
     }
-
-    return SongPlayerMapper.EMPTY_NOW_PLAYING_SONG_DTO;
+    return null;
   }
 
   @Override
@@ -272,6 +270,8 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
       log.info("Playing song: {}", songPath);
 
       player.playSongMedia(songPath);
+      
+      // Need to update num plays for song have it be persisted and piggy back notification to UI from the event below
 
       eventPublisher.publishEvent(new SongPlaybackStartedEvent(nextSong));
 

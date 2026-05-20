@@ -2,7 +2,7 @@ package com.djt.jukeanator_engine.domain.songqueue.mapper;
 
 import java.util.ArrayList;
 import java.util.List;
-import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumFolderEntity;
+import com.djt.jukeanator_engine.domain.songlibrary.mapper.SongLibraryMapper;
 import com.djt.jukeanator_engine.domain.songlibrary.model.SongFileEntity;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
 import com.djt.jukeanator_engine.domain.songqueue.model.SongQueueEntryEntity;
@@ -29,14 +29,9 @@ public final class SongQueueMapper {
   public static SongQueueEntryDto toDto(SongQueueEntryEntity entity) {
     
     SongFileEntity song = entity.getSong();
-    AlbumFolderEntity album = song.getAlbum();
 
     SongQueueEntryDto dto = new SongQueueEntryDto(
-        album.getCoverArtPath(),
-        album.getName(),
-        song.getArtistName(),
-        song.getName(),
-        song.getNumPlays(),
+        SongLibraryMapper.toSongDto(song),
         entity.getPriority(),
         song.getNaturalIdentity());
 

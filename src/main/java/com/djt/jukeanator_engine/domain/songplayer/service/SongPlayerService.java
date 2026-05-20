@@ -1,6 +1,6 @@
 package com.djt.jukeanator_engine.domain.songplayer.service;
 
-import com.djt.jukeanator_engine.domain.songplayer.dto.NowPlayingSongDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlaybackStatusDto;
 
 /**
@@ -12,7 +12,7 @@ public interface SongPlayerService {
    * 
    * @return
    */
-  NowPlayingSongDto getNowPlayingSong();
+  SongDto getNowPlayingSong();
   
   /**
    * 

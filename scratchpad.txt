@@ -1,34 +1,7 @@
-@Override
-public SearchResultDto getMusicByPopularity() {
+  @EventListener
+  public void handleSongPlaybackStartedEvent(SongPlaybackStartedEvent event) {
 
-  if (!isInitialized) {
-    throw new SongLibraryException(
-        "SongLibraryService has not been initialized yet!");
-  }
-
-  Comparator<NumPlaysComparable> byNumPlaysDescending =
-      Comparator.comparing(
-          NumPlaysComparable::getNumPlays,
-          Comparator.nullsFirst(Integer::compareTo))
-      .reversed();
-
-  List<SongDto> songDtos = songs.stream()
-      .sorted(byNumPlaysDescending)
-      .limit(searchResultSize)
-      .map(songMapper::toDto)
-      .toList();
-
-  List<ArtistDto> artistDtos = artists.stream()
-      .sorted(byNumPlaysDescending)
-      .limit(searchResultSize)
-      .map(artistMapper::toDto)
-      .toList();
-
-  List<AlbumDto> albumDtos = albums.stream()
-      .sorted(byNumPlaysDescending)
-      .limit(searchResultSize)
-      .map(albumMapper::toDto)
-      .toList();
-
-  return new SearchResultDto(songDtos, artistDtos, albumDtos);
-}
+  } 
+  
+  
+  this.songLibraryRepository.storeAggregateRoot(this.root);

@@ -18,7 +18,6 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
-import com.djt.jukeanator_engine.domain.songplayer.dto.NowPlayingSongDto;
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlaybackStatusDto;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
@@ -95,7 +94,7 @@ public class SongPlayerServiceTest {
     
     
     // Get the currently playing song
-    NowPlayingSongDto nowPlayingSongDto = songPlayerService.getNowPlayingSong();
+    SongDto nowPlayingSongDto = songPlayerService.getNowPlayingSong();
     assertNotNull(nowPlayingSongDto, "nowPlayingSongDto should not be null");
     
     SongPlaybackStatusDto songPlaybackStatusDto = songPlayerService.getPlaybackStatus();

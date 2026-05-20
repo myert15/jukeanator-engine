@@ -107,10 +107,15 @@ public final class SongLibraryMapper {
     return songDtos;
   }
 
-  private static SongDto toSongDto(
-      ArtistFolderEntity artist,
-      AlbumFolderEntity album,
-      SongFileEntity songEntity) {
+  public static SongDto toSongDto(SongFileEntity songEntity) {
+    
+    AlbumFolderEntity album = songEntity.getAlbum();
+    ArtistFolderEntity artist = album.getParentArtist();
+    
+    return SongLibraryMapper.toSongDto(artist, album, songEntity);
+  }
+  
+  public static SongDto toSongDto(ArtistFolderEntity artist, AlbumFolderEntity album, SongFileEntity songEntity) {
 
     return new SongDto(
         artist.getPersistentIdentity(),

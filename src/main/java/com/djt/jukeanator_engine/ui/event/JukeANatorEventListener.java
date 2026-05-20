@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 import com.djt.jukeanator_engine.domain.songlibrary.client.SongLibraryServiceHttpClient;
 import com.djt.jukeanator_engine.domain.songlibrary.event.ScanFileSystemForSongsEvent;
 import com.djt.jukeanator_engine.domain.songplayer.client.SongPlayerServiceHttpClient;
-import com.djt.jukeanator_engine.domain.songplayer.dto.NowPlayingSongDto;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackStartedEvent;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongQueueChangedEvent;
 import com.djt.jukeanator_engine.domain.songqueue.client.SongQueueServiceHttpClient;
@@ -66,16 +65,7 @@ public class JukeANatorEventListener {
 
     if (frame == null) return;
 
-    SongQueueEntryDto song = event.song();
-    
-    String coverArtUrl = song.getCoverArtPath();
-    String artistName = song.getArtistName();
-    String albumName = song.getAlbumName();
-    String songName = song.getSongName();
-    
-    NowPlayingSongDto dto = new NowPlayingSongDto(coverArtUrl, artistName, albumName, songName);
-
-    frame.setNowPlaying(dto);
+    frame.setNowPlaying(event.song().getSong());
   }
   
   @EventListener

@@ -37,7 +37,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import com.djt.jukeanator_engine.domain.songplayer.dto.NowPlayingSongDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
 import com.djt.jukeanator_engine.ui.config.JukeANatorUserInterfaceProperties;
 
@@ -693,7 +693,9 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   // QUEUE SONG DETAILS
   // ============================================================
-  private void showQueueSongDetails(SongQueueEntryDto song) {
+  private void showQueueSongDetails(SongQueueEntryDto songQueueEntryDto) {
+    
+    SongDto song = songQueueEntryDto.getSong();
 
     queueDetailsPanel.removeAll();
 
@@ -840,8 +842,8 @@ public class JukeANatorFrame extends JFrame {
       // -------------------------
       // TEXT
       // -------------------------
-      title.setText(value.getSongName());
-      subtitle.setText(value.getArtistName() + " • " + value.getAlbumName());
+      title.setText(value.getSong().getSongName());
+      subtitle.setText(value.getSong().getArtistName() + " • " + value.getSong().getAlbumName());
 
       // -------------------------
       // PRIORITY INDICATOR
@@ -866,8 +868,8 @@ public class JukeANatorFrame extends JFrame {
       // COVER ART
       // -------------------------
       try {
-        if (value.getCoverArtPath() != null) {
-          Path path = Paths.get(value.getCoverArtPath());
+        if (value.getSong().getCoverArtPath() != null) {
+          Path path = Paths.get(value.getSong().getCoverArtPath());
           ImageIcon icon = new ImageIcon(path.toUri().toURL());
 
           Image scaled = icon.getImage().getScaledInstance(56, 56, Image.SCALE_SMOOTH);
@@ -883,8 +885,8 @@ public class JukeANatorFrame extends JFrame {
       // PLAYING NOW + SELECTION HIGHLIGHT
       // -------------------------
       boolean isPlaying =
-          currentlyPlaying != null && currentlyPlaying.getSongName().equals(value.getSongName())
-              && currentlyPlaying.getArtistName().equals(value.getArtistName());
+          currentlyPlaying != null && currentlyPlaying.getSong().getSongName().equals(value.getSong().getSongName())
+              && currentlyPlaying.getSong().getArtistName().equals(value.getSong().getArtistName());
 
       if (isPlaying) {
         setBackground(new Color(0, 210, 255)); // ACCENT_BLUE
@@ -1205,7 +1207,7 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   // NOW PLAYING
   // ============================================================
-  public void setNowPlaying(NowPlayingSongDto songDto) {
+  public void setNowPlaying(SongDto songDto) {
 
     SwingUtilities.invokeLater(() -> {
 

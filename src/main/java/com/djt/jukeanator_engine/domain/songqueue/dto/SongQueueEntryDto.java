@@ -1,51 +1,25 @@
 package com.djt.jukeanator_engine.domain.songqueue.dto;
 
+import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
+
 public class SongQueueEntryDto {
-  
-  private String coverArtPath;
-  private String albumName;
-  private String artistName;
-  private String songName;
-  private Integer songPlays;
+
+  private SongDto song;
   private Integer priority;
   private String songPath;
 
   public SongQueueEntryDto(
-      String coverArtPath,
-      String albumName,
-      String artistName,
-      String songName,
-      Integer songPlays,
+      SongDto song,
       Integer priority,
       String songPath) {
     
-    this.coverArtPath = coverArtPath;
-    this.albumName = albumName;
-    this.artistName = artistName;
-    this.songName = songName;
-    this.songPlays = songPlays;
+    this.song = song;
     this.priority = priority;
     this.songPath = songPath;
   }
 
-  public String getCoverArtPath() {
-    return coverArtPath;
-  }
-
-  public String getAlbumName() {
-    return albumName;
-  }
-
-  public String getArtistName() {
-    return artistName;
-  }
-
-  public String getSongName() {
-    return songName;
-  }
-
-  public Integer getSongPlays() {
-    return songPlays;
+  public SongDto getSong() {
+    return song;
   }
 
   public Integer getPriority() {
