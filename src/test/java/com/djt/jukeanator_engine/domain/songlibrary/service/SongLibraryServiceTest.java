@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
 
 /**
@@ -78,7 +79,7 @@ public class SongLibraryServiceTest {
     
     // STEP 2: ACT
     List<String> genres = songLibraryService.getGenres();
-    List<String> artists = songLibraryService.getArtists();
+    List<ArtistDto> artists = songLibraryService.getArtists();
     List<AlbumDto> albums = songLibraryService.getAlbums();
     
     

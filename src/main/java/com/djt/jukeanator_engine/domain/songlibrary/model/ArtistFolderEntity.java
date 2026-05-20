@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class ArtistFolderEntity extends FolderEntity {
+public class ArtistFolderEntity extends FolderEntity implements NumPlaysComparable {
   private static final long serialVersionUID = 1L;
   
   private transient List<AlbumFolderEntity> albums;
@@ -34,7 +34,7 @@ public class ArtistFolderEntity extends FolderEntity {
     return albums;
   }
   
-  public Integer getSongPlays() {
+  public Integer getNumPlays() {
     
     if (albums == null) {
       getAlbums();

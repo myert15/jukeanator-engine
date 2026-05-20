@@ -6,7 +6,7 @@ import com.djt.jukeanator_engine.domain.common.exception.EntityAlreadyExistsExce
 import com.djt.jukeanator_engine.domain.common.exception.EntityDoesNotExistException;
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongLibraryException;
 
-public class AlbumFolderEntity extends FolderEntity {
+public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparable {
   private static final long serialVersionUID = 1L;
 
   public static final String METADATA_FILENAME = "metadata.txt";

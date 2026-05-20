@@ -3,6 +3,7 @@ package com.djt.jukeanator_engine.domain.songlibrary.service;
 import static java.util.Objects.requireNonNull;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import com.djt.jukeanator_engine.domain.common.service.query.model.QueryRequest;
 import com.djt.jukeanator_engine.domain.common.service.query.model.QueryResponse;
 import com.djt.jukeanator_engine.domain.common.service.query.model.QueryResponseItem;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.event.ScanFileSystemForSongsEvent;
@@ -22,7 +24,10 @@ import com.djt.jukeanator_engine.domain.songlibrary.exception.SongLibraryExcepti
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongScanFailedException;
 import com.djt.jukeanator_engine.domain.songlibrary.mapper.SongLibraryMapper;
 import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumFolderEntity;
+import com.djt.jukeanator_engine.domain.songlibrary.model.ArtistFolderEntity;
+import com.djt.jukeanator_engine.domain.songlibrary.model.NumPlaysComparable;
 import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
+import com.djt.jukeanator_engine.domain.songlibrary.model.SongFileEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.repository.SongLibraryRepository;
 import com.djt.jukeanator_engine.domain.songlibrary.repository.SongLibraryRepositoryFileSystemImpl;
 import com.djt.jukeanator_engine.domain.songlibrary.service.utils.SongScanner;
@@ -44,8 +49,9 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
   private boolean isInitialized;
   
   private List<String> genres = new ArrayList<>();
-  private List<String> artists = new ArrayList<>();
-  private List<AlbumFolderEntity> albums = new ArrayList<>();  
+  private List<ArtistFolderEntity> artists = new ArrayList<>();
+  private List<AlbumFolderEntity> albums = new ArrayList<>();
+  private List<SongFileEntity> songs = new ArrayList<>();
 
   public SongLibraryServiceImpl(
       String scanPath,
@@ -73,24 +79,153 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
   // Service methods
   @Override
   public SearchResultDto getMusicByPopularity() {
-    
+
     if (!isInitialized) {
-      throw new SongLibraryException("SongLibraryService has not been initialized yet!");
+      throw new SongLibraryException(
+          "SongLibraryService has not been initialized yet!");
     }
-    
-    // TODO: TDM: Implement
-    return null;
+
+    Comparator<NumPlaysComparable> byNumPlaysDescending =
+        Comparator.comparing(
+            NumPlaysComparable::getNumPlays,
+            Comparator.nullsFirst(Integer::compareTo))
+        .reversed();
+
+    List<SongFileEntity> popularSongs = songs.stream()
+        .sorted(byNumPlaysDescending)
+        .limit(searchResultSize)
+        .toList();
+
+    List<ArtistFolderEntity> popularArtists = artists.stream()
+        .sorted(byNumPlaysDescending)
+        .limit(searchResultSize)
+        .toList();
+
+    List<AlbumFolderEntity> popularAlbums = albums.stream()
+        .sorted(byNumPlaysDescending)
+        .limit(searchResultSize)
+        .toList();
+
+    return new SearchResultDto(
+        SongLibraryMapper.toSongDtoList(popularSongs),
+        SongLibraryMapper.toArtistDtoList(popularArtists),
+        SongLibraryMapper.toAlbumDtoList(popularAlbums));
   }
 
   @Override
   public SearchResultDto getMusicBySearch(String searchFor) {
-    
+
     if (!isInitialized) {
-      throw new SongLibraryException("SongLibraryService has not been initialized yet!");
+      throw new SongLibraryException(
+          "SongLibraryService has not been initialized yet!");
     }
-    
-    // TODO: TDM: Implement
-    return null;
+
+    requireNonNull(searchFor, "searchFor cannot be null");
+
+    final String normalizedSearch = searchFor.trim().toLowerCase();
+
+    if (normalizedSearch.isEmpty()) {
+      return new SearchResultDto(
+          List.of(),
+          List.of(),
+          List.of());
+    }
+
+    Comparator<NumPlaysComparable> bySearchWeightThenPopularityDescending =
+        Comparator
+            .comparingInt((NumPlaysComparable npc) -> {
+
+              if (npc instanceof SongFileEntity song) {
+                return calculateSearchResultWeight(
+                    song.getName(),
+                    normalizedSearch);
+              }
+
+              if (npc instanceof ArtistFolderEntity artist) {
+                return calculateSearchResultWeight(
+                    artist.getName(),
+                    normalizedSearch);
+              }
+
+              if (npc instanceof AlbumFolderEntity album) {
+                return calculateSearchResultWeight(
+                    album.getName(),
+                    normalizedSearch);
+              }
+
+              return Integer.valueOf(0);
+            })
+            .thenComparing(
+                NumPlaysComparable::getNumPlays,
+                Comparator.nullsFirst(Integer::compareTo))
+            .reversed();
+
+    List<SongFileEntity> matchingSongs = songs.stream()
+        .filter(song ->
+            calculateSearchResultWeight(
+                song.getName(),
+                normalizedSearch) > 0)
+        .sorted(bySearchWeightThenPopularityDescending)
+        .limit(searchResultSize)
+        .toList();
+
+    List<ArtistFolderEntity> matchingArtists = artists.stream()
+        .filter(artist ->
+            calculateSearchResultWeight(
+                artist.getName(),
+                normalizedSearch) > 0)
+        .sorted(bySearchWeightThenPopularityDescending)
+        .limit(searchResultSize)
+        .toList();
+
+    List<AlbumFolderEntity> matchingAlbums = albums.stream()
+        .filter(album ->
+            calculateSearchResultWeight(
+                album.getName(),
+                normalizedSearch) > 0)
+        .sorted(bySearchWeightThenPopularityDescending)
+        .limit(searchResultSize)
+        .toList();
+
+    return new SearchResultDto(
+        SongLibraryMapper.toSongDtoList(matchingSongs),
+        SongLibraryMapper.toArtistDtoList(matchingArtists),
+        SongLibraryMapper.toAlbumDtoList(matchingAlbums));
+  }
+
+  private int calculateSearchResultWeight(
+      String value,
+      String normalizedSearch) {
+
+    if (value == null) {
+      return Integer.valueOf(0);
+    }
+
+    String normalizedValue = value.toLowerCase().trim();
+
+    // Full word match (highest priority)
+    for (String word : normalizedValue.split("\\s+")) {
+      if (word.equals(normalizedSearch)) {
+        return Integer.valueOf(4);
+      }
+    }
+
+    // Starts with
+    if (normalizedValue.startsWith(normalizedSearch)) {
+      return Integer.valueOf(3);
+    }
+
+    // Ends with
+    if (normalizedValue.endsWith(normalizedSearch)) {
+      return Integer.valueOf(2);
+    }
+
+    // Contains
+    if (normalizedValue.contains(normalizedSearch)) {
+      return Integer.valueOf(1);
+    }
+
+    return Integer.valueOf(0);
   }
   
   @Override  
@@ -103,12 +238,12 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
   }
 
   @Override
-  public List<String> getArtists() {
+  public List<ArtistDto> getArtists() {
     
     if (!isInitialized) {
       throw new SongLibraryException("SongLibraryService has not been initialized yet!");
     }
-    return artists;
+    return SongLibraryMapper.toArtistDtoList(artists);
   }   
   
   @Override
@@ -117,7 +252,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
     if (!isInitialized) {
       throw new SongLibraryException("SongLibraryService has not been initialized yet!");
     }
-    return SongLibraryMapper.toDto(albums);
+    return SongLibraryMapper.toAlbumDtoList(albums);
   }   
   
   @Override
@@ -214,7 +349,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
     
     for (AlbumFolderEntity album : this.albums) {
     	
-      String artist = album.getParentArtist().getName();
+      ArtistFolderEntity artist = album.getParentArtist();
       if (!this.artists.contains(artist)) {
     	  this.artists.add(artist);
       }    	

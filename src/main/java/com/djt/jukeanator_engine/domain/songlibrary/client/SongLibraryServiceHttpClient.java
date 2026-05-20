@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClient;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongScanFailedException;
@@ -52,7 +53,7 @@ public class SongLibraryServiceHttpClient implements SongLibraryService {
   }
 
   @Override
-  public List<String> getArtists() {
+  public List<ArtistDto> getArtists() {
     
     return restClient.get(
         ).uri("/api/song-library/artists").retrieve()

@@ -3,7 +3,7 @@ package com.djt.jukeanator_engine.domain.songlibrary.model;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SongFileEntity extends AbstractFileEntity {
+public class SongFileEntity extends AbstractFileEntity implements NumPlaysComparable {
 	private static final long serialVersionUID = 1L;
 
 	private Integer numPlays = Integer.valueOf(0);

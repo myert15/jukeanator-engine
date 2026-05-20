@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongScanFailedException;
@@ -50,7 +51,7 @@ public class SongLibraryController implements SongLibraryService {
 
   @Override
   @GetMapping("/artists")
-  public List<String> getArtists() {
+  public List<ArtistDto> getArtists() {
     return songLibraryService.getArtists();
   }
 
