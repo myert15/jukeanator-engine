@@ -145,119 +145,87 @@ public class JukeANatorFrame extends JFrame {
   private JTabbedPane buildContentPanelTabs() {
 
     JTabbedPane tabs = new JTabbedPane(JTabbedPane.BOTTOM);
-
-    //
-    // FORCE SINGLE ROW
-    //
     tabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
 
-    //
-    // CUSTOM UI
-    //
     tabs.setUI(new javax.swing.plaf.basic.BasicTabbedPaneUI() {
 
+      private static final int TAB_WIDTH = 200;
+      private static final int SEPARATOR_HEIGHT = 2;
+
+      //
+      // FIXED TAB WIDTH
+      //
       @Override
       protected int calculateTabWidth(int tabPlacement, int tabIndex, FontMetrics metrics) {
-
-        int count = Math.max(tabPane.getTabCount(), 1);
-
-        //
-        // USE AVAILABLE WIDTH
-        //
-        int availableWidth = tabPane.getWidth();
-
-        //
-        // ACCOUNT FOR INSETS
-        //
-        availableWidth -= 4;
-
-        //
-        // EVEN DISTRIBUTION
-        //
-        return availableWidth / count;
+        return TAB_WIDTH;
       }
 
       @Override
       protected int calculateTabHeight(int tabPlacement, int tabIndex, int fontHeight) {
-
         return 96;
+      }
+
+      //
+      // CENTER TABS BY PUSHING THEM IN FROM THE LEFT
+      //
+      @Override
+      protected java.awt.Insets getTabAreaInsets(int tabPlacement) {
+        java.awt.Insets base = super.getTabAreaInsets(tabPlacement);
+        int totalTabWidth = TAB_WIDTH * tabPane.getTabCount();
+        int leftInset = Math.max(0, (tabPane.getWidth() - totalTabWidth) / 2);
+        return new java.awt.Insets(base.top, leftInset, base.bottom, base.right);
       }
 
       @Override
       protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex, int x, int y,
           int w, int h, boolean isSelected) {
-
         if (isSelected) {
-
-          //
-          // ACTIVE TAB
-          //
           g.setColor(new Color(70, 70, 70));
           g.fillRect(x, y, w, h);
-
-          //
-          // TOP HIGHLIGHT
-          //
           g.setColor(Color.WHITE);
           g.fillRect(x, y, w, 3);
-
         } else {
-
-          //
-          // INACTIVE TAB
-          //
           g.setColor(Color.BLACK);
           g.fillRect(x, y, w, h);
         }
-
-        //
-        // TAB SEPARATOR
-        //
-        g.setColor(new Color(180, 180, 180));
-        g.drawLine(x, y, x, y + h);
       }
 
       @Override
       protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex, int x, int y, int w,
           int h, boolean isSelected) {
-
-        //
-        // OUTER BORDER
-        //
-        g.setColor(new Color(180, 180, 180));
-        g.drawRect(x, y, w, h);
+        // DO NOTHING
       }
 
       @Override
       protected void paintFocusIndicator(Graphics g, int tabPlacement, Rectangle[] rects,
           int tabIndex, Rectangle iconRect, Rectangle textRect, boolean isSelected) {
-
-        //
-        // REMOVE SWING FOCUS BORDER
-        //
+        // DO NOTHING
       }
 
       @Override
       protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
+        // DO NOTHING
+      }
 
-        //
-        // REMOVE CONTENT BORDER
-        //
+      //
+      // PAINT THE FULL-WIDTH SEPARATOR OVER THE ENTIRE PANE WIDTH
+      // This runs after all other painting so it always appears on top
+      //
+      @Override
+      public void paint(Graphics g, javax.swing.JComponent c) {
+        super.paint(g, c);
+        int tabAreaHeight = calculateTabAreaHeight(JTabbedPane.BOTTOM, runCount, maxTabHeight);
+        int separatorY = tabPane.getHeight() - tabAreaHeight - SEPARATOR_HEIGHT;
+        g.setColor(new Color(180, 180, 180));
+        g.fillRect(0, separatorY, tabPane.getWidth(), SEPARATOR_HEIGHT);
       }
     });
 
     tabs.setBackground(Color.BLACK);
     tabs.setForeground(Color.WHITE);
     tabs.setBorder(null);
-
-    //
-    // REMOVE GAP BETWEEN TABS
-    //
     tabs.setOpaque(true);
 
-    //
-    // CONTENT PANELS
-    //
     tabs.addTab("HOME", buildPlaceholderPanel());
     tabs.addTab("SEARCH", buildSearchPanel());
     tabs.addTab("HOT HERE", buildPlaceholderPanel());
@@ -265,9 +233,6 @@ public class JukeANatorFrame extends JFrame {
     tabs.addTab("QUEUE", buildQueuePanel());
     tabs.addTab("ADMIN", buildPlaceholderPanel());
 
-    //
-    // CUSTOM TAB COMPONENTS
-    //
     tabs.setTabComponentAt(0, new JukeboxTabComponent("HOME", "⌂", new Color(255, 120, 120)));
     tabs.setTabComponentAt(1, new JukeboxTabComponent("SEARCH", "⌕", new Color(0, 220, 255)));
     tabs.setTabComponentAt(2, new JukeboxTabComponent("HOT HERE", "🔥", new Color(255, 80, 120)));
@@ -277,7 +242,7 @@ public class JukeANatorFrame extends JFrame {
 
     return tabs;
   }
-
+  
   private class JukeboxTabComponent extends JPanel {
 
     private static final long serialVersionUID = 1L;
@@ -345,12 +310,6 @@ public class JukeANatorFrame extends JFrame {
       g2.dispose();
 
       super.paintComponent(g);
-    }
-
-    @Override
-    public Dimension getPreferredSize() {
-
-      return new Dimension(200, 92);
     }
   }
   
