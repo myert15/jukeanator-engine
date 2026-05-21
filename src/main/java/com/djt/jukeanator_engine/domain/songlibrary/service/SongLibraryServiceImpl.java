@@ -2,7 +2,6 @@ package com.djt.jukeanator_engine.domain.songlibrary.service;
 
 import static java.util.Objects.requireNonNull;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.slf4j.Logger;
@@ -51,11 +50,6 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
   
   private RootFolderEntity root;
   private boolean isInitialized;
-  
-  private List<String> genres = new ArrayList<>();
-  private List<ArtistFolderEntity> artists = new ArrayList<>();
-  private List<AlbumFolderEntity> albums = new ArrayList<>();
-  private List<SongFileEntity> songs = new ArrayList<>();
 
   public SongLibraryServiceImpl(
       String scanPath,
@@ -92,15 +86,15 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
         .comparing(NumPlaysComparable::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
         .reversed();
 
-    List<SongFileEntity> popularSongs = songs.stream()
+    List<SongFileEntity> popularSongs = root.getSongs().stream()
         .filter(song -> song.getNumPlays() != null && song.getNumPlays().intValue() > 0)
         .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
-    List<ArtistFolderEntity> popularArtists = artists.stream()
+    List<ArtistFolderEntity> popularArtists = root.getArtists().stream()
         .filter(artist -> artist.getNumPlays() != null && artist.getNumPlays().intValue() > 0)
         .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
-    List<AlbumFolderEntity> popularAlbums = albums.stream()
+    List<AlbumFolderEntity> popularAlbums = root.getAlbums().stream()
         .filter(album -> album.getNumPlays() != null && album.getNumPlays().intValue() > 0)
         .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
@@ -157,7 +151,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
                 Comparator.nullsFirst(Integer::compareTo))
             .reversed();
 
-    List<SongFileEntity> matchingSongs = songs.stream()
+    List<SongFileEntity> matchingSongs = root.getSongs().stream()
         .filter(song ->
             calculateSearchResultWeight(
                 song.getName(),
@@ -166,7 +160,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
         .limit(searchResultSize)
         .toList();
 
-    List<ArtistFolderEntity> matchingArtists = artists.stream()
+    List<ArtistFolderEntity> matchingArtists = root.getArtists().stream()
         .filter(artist ->
             calculateSearchResultWeight(
                 artist.getName(),
@@ -175,7 +169,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
         .limit(searchResultSize)
         .toList();
 
-    List<AlbumFolderEntity> matchingAlbums = albums.stream()
+    List<AlbumFolderEntity> matchingAlbums = root.getAlbums().stream()
         .filter(album ->
             calculateSearchResultWeight(
                 album.getName(),
@@ -231,7 +225,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
     if (!isInitialized) {
       throw new SongLibraryException("SongLibraryService has not been initialized yet!");
     }
-    return genres;
+    return root.getGenres();
   }
 
   @Override
@@ -240,7 +234,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
     if (!isInitialized) {
       throw new SongLibraryException("SongLibraryService has not been initialized yet!");
     }
-    return SongLibraryMapper.toArtistDtoList(artists);
+    return SongLibraryMapper.toArtistDtoList(root.getArtists());
   }   
   
   @Override
@@ -249,7 +243,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
     if (!isInitialized) {
       throw new SongLibraryException("SongLibraryService has not been initialized yet!");
     }
-    return SongLibraryMapper.toAlbumDtoList(albums);
+    return SongLibraryMapper.toAlbumDtoList(root.getAlbums());
   }   
   
   @Override
@@ -273,10 +267,10 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
       // Publish the event
       eventPublisher.publishEvent(new ScanFileSystemForSongsEvent(
           scanPath,
-          albums.size(), 
+          root.getAlbums().size(), 
           Instant.now()));
       
-      return Integer.valueOf(albums.size());
+      return Integer.valueOf(root.getAlbums().size());
     } catch (SongLibraryException sle) {
     	throw sle;      
     } catch (Exception e) {
@@ -340,23 +334,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
       this.root = new RootFolderEntity();
     }
     
-    this.albums = this.root.getAllAlbums();
-    this.artists.clear();    
-    this.genres.clear();
-    
-    for (AlbumFolderEntity album : this.albums) {
-    	
-      ArtistFolderEntity artist = album.getParentArtist();
-      if (!this.artists.contains(artist)) {
-    	  this.artists.add(artist);
-      }    	
-    	
-      String genre = album.getParentGenre().getName();
-      if (!this.genres.contains(genre)) {
-        this.genres.add(genre);
-      }
-    }
-    
+    this.root.initialize();    
     this.isInitialized = true;
   }
   

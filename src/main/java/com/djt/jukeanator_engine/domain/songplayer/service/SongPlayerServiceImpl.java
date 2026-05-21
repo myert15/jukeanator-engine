@@ -129,9 +129,13 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
   @Override
   public void playNextTrack() {
 
-    eventPublisher.publishEvent(new SongPlaybackNextTrackRequestedEvent());
-
-    player.stop();
+    SongPlayerStatus songPlayerStatus = player.getStatus();
+    if (songPlayerStatus != SongPlayerStatus.STOPPED) {
+    
+      player.stop();
+    }
+    
+    eventPublisher.publishEvent(new SongPlaybackNextTrackRequestedEvent());    
 
     submitQueueProcessing();
   }
@@ -139,17 +143,25 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
   @Override
   public void pause() {
 
-    player.pause();
+    SongPlayerStatus songPlayerStatus = player.getStatus();
+    if (songPlayerStatus == SongPlayerStatus.PLAYING || songPlayerStatus == SongPlayerStatus.PAUSED) {
 
-    eventPublisher.publishEvent(new SongPlaybackPausedEvent(nowPlayingSong));
+      player.pause();
+
+      eventPublisher.publishEvent(new SongPlaybackPausedEvent(nowPlayingSong));
+    }    
   }
 
   @Override
   public void stop() {
 
-    player.stop();
+    SongPlayerStatus songPlayerStatus = player.getStatus();
+    if (songPlayerStatus == SongPlayerStatus.PLAYING || songPlayerStatus == SongPlayerStatus.PAUSED) {
 
-    eventPublisher.publishEvent(new SongPlaybackStoppedEvent(nowPlayingSong));
+      player.stop();
+
+      eventPublisher.publishEvent(new SongPlaybackStoppedEvent(nowPlayingSong));      
+    }    
   }
 
   @PreDestroy

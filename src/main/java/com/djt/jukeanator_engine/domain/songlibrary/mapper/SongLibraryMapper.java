@@ -21,6 +21,7 @@ public final class SongLibraryMapper {
     for (ArtistFolderEntity artistEntity : artistEntities) {
 
       artistDtos.add(new ArtistDto(
+          artistEntity.getPersistentIdentity(),
           artistEntity.getName(),
           SongLibraryMapper.toAlbumDtoList(
               artistEntity,

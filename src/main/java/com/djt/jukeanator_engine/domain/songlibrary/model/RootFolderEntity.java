@@ -12,6 +12,11 @@ public class RootFolderEntity extends FolderEntity {
   
   private String rootPrefix;
 
+  private transient List<String> genres;
+  private transient List<ArtistFolderEntity> artists;
+  private transient List<AlbumFolderEntity> albums;
+  private transient List<SongFileEntity> songs;
+  
   public RootFolderEntity() {}
 
   /**
@@ -115,5 +120,44 @@ public class RootFolderEntity extends FolderEntity {
     }
     sb.append(getName());
     return sb.toString();
+  }
+
+  public List<String> getGenres() {
+    return genres;
+  }
+
+  public List<ArtistFolderEntity> getArtists() {
+    return artists;
+  }
+
+  public List<AlbumFolderEntity> getAlbums() {
+    return albums;
+  }
+
+  public List<SongFileEntity> getSongs() {
+    return songs;
+  }
+  
+  public void initialize() {
+    
+    this.genres = new ArrayList<>();
+    this.artists = new ArrayList<>();
+    this.albums = getAllAlbums();
+    this.songs = new ArrayList<>();
+    
+    for (AlbumFolderEntity album : this.albums) {
+                
+      String genre = album.getParentGenre().getName();
+      if (!this.genres.contains(genre)) {
+        this.genres.add(genre);
+      }
+      
+      ArtistFolderEntity artist = album.getParentArtist();
+      if (!this.artists.contains(artist)) {
+          this.artists.add(artist);
+      }
+      
+      this.songs.addAll(album.getChildSongs());
+    }    
   }
 }
