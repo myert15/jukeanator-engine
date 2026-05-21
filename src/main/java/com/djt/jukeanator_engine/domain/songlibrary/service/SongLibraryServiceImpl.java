@@ -44,11 +44,12 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
   
   private final ApplicationEventPublisher eventPublisher;
   
-  private String scanPath;
-  private RootFolderEntity root;
+  private String scanPath;  
   private SongLibraryRepository songLibraryRepository;
   private SongScanner songScanner;
   private Integer searchResultSize = Integer.valueOf(50);
+  
+  private RootFolderEntity root;
   private boolean isInitialized;
   
   private List<String> genres = new ArrayList<>();
@@ -84,37 +85,30 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
   public SearchResultDto getMusicByPopularity() {
 
     if (!isInitialized) {
-      throw new SongLibraryException(
-          "SongLibraryService has not been initialized yet!");
+      throw new SongLibraryException("SongLibraryService has not been initialized yet!");
     }
 
-    Comparator<NumPlaysComparable> byNumPlaysDescending =
-        Comparator.comparing(
-            NumPlaysComparable::getNumPlays,
-            Comparator.nullsFirst(Integer::compareTo))
+    Comparator<NumPlaysComparable> byNumPlaysDescending = Comparator
+        .comparing(NumPlaysComparable::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
         .reversed();
 
     List<SongFileEntity> popularSongs = songs.stream()
-        .sorted(byNumPlaysDescending)
-        .limit(searchResultSize)
-        .toList();
+        .filter(song -> song.getNumPlays() != null && song.getNumPlays().intValue() > 0)
+        .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
     List<ArtistFolderEntity> popularArtists = artists.stream()
-        .sorted(byNumPlaysDescending)
-        .limit(searchResultSize)
-        .toList();
+        .filter(artist -> artist.getNumPlays() != null && artist.getNumPlays().intValue() > 0)
+        .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
     List<AlbumFolderEntity> popularAlbums = albums.stream()
-        .sorted(byNumPlaysDescending)
-        .limit(searchResultSize)
-        .toList();
+        .filter(album -> album.getNumPlays() != null && album.getNumPlays().intValue() > 0)
+        .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
-    return new SearchResultDto(
-        SongLibraryMapper.toSongDtoList(popularSongs),
+    return new SearchResultDto(SongLibraryMapper.toSongDtoList(popularSongs),
         SongLibraryMapper.toArtistDtoList(popularArtists),
         SongLibraryMapper.toAlbumDtoList(popularAlbums));
   }
-
+  
   @Override
   public SearchResultDto getMusicBySearch(String searchFor) {
 

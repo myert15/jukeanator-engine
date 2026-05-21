@@ -9,7 +9,7 @@ public class AbstractRepositoryFileSystemImpl {
   protected static Integer MAX_PERSISTENT_IDENTITY_VALUE = Integer.valueOf(0);
   synchronized protected static Integer getNextPersistentIdentityValue() {
     
-    Integer nextValue = Integer.valueOf((MAX_PERSISTENT_IDENTITY_VALUE.intValue()-1));
+    Integer nextValue = Integer.valueOf((MAX_PERSISTENT_IDENTITY_VALUE.intValue()+1));
     MAX_PERSISTENT_IDENTITY_VALUE = nextValue;
     return nextValue;
   }
