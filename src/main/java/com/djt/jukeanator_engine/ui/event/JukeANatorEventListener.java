@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import com.djt.jukeanator_engine.domain.songlibrary.client.SongLibraryServiceHttpClient;
 import com.djt.jukeanator_engine.domain.songlibrary.event.ScanFileSystemForSongsEvent;
 import com.djt.jukeanator_engine.domain.songplayer.client.SongPlayerServiceHttpClient;
+import com.djt.jukeanator_engine.domain.songplayer.event.AllSongsDonePlayingEvent;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackStartedEvent;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackStoppedEvent;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongQueueChangedEvent;
@@ -71,6 +72,14 @@ public class JukeANatorEventListener {
 
   @EventListener
   public void handleSongPlaybackStoppedEvent(SongPlaybackStoppedEvent event) {
+
+    if (frame == null) return;
+
+    frame.setNowPlaying(null);
+  }
+
+  @EventListener
+  public void handleAllSongsDonePlayingEvent(AllSongsDonePlayingEvent event) {
 
     if (frame == null) return;
 

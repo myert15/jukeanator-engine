@@ -13,6 +13,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlaybackStatusDto;
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlayerStatus;
+import com.djt.jukeanator_engine.domain.songplayer.event.AllSongsDonePlayingEvent;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackFinishedEvent;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackNextTrackRequestedEvent;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackPausedEvent;
@@ -205,7 +206,11 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
       /*
        * If something is already playing or paused, do nothing.
        */
+      SongPlayerStatus previousSongPlayerStatus = songPlayerStatus;
       songPlayerStatus = player.getStatus();
+      if (previousSongPlayerStatus != songPlayerStatus && songPlayerStatus == SongPlayerStatus.STOPPED) {
+        eventPublisher.publishEvent(new AllSongsDonePlayingEvent());
+      }
       if (songPlayerStatus != SongPlayerStatus.STOPPED) {
         return;
       }
@@ -229,6 +234,7 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
 
         nowPlayingSong = null;
         log.debug("No songs remaining in queue");
+        eventPublisher.publishEvent(new AllSongsDonePlayingEvent());
         return;
       }
 

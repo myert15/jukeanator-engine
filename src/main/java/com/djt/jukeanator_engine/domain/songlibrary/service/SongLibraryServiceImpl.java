@@ -335,7 +335,6 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
       this.root = new RootFolderEntity();
     }
     
-    this.root.initialize();    
     this.isInitialized = true;
   }
   

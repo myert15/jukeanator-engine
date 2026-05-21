@@ -6,6 +6,7 @@ public sealed interface SongPlayerEvent permits
   SongPlaybackPausedEvent, 
   SongPlaybackStoppedEvent,
   SongPlaybackFinishedEvent, 
+  AllSongsDonePlayingEvent,
   SongPlaybackNextTrackRequestedEvent, 
   SongPlaybackShutdownEvent {
 }

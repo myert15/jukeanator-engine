@@ -26,6 +26,11 @@ public class SongFileEntity extends AbstractFileEntity implements NumPlaysCompar
 		this.numPlays = numPlays;
 	}
 	
+	public Integer incrementNumPlays() {
+	  this.numPlays = Integer.valueOf(this.numPlays.intValue() + 1);
+	  return this.numPlays;
+	}
+	
 	public AlbumFolderEntity getAlbum() {
 	  return (AlbumFolderEntity)this.getParentFolder();
 	}

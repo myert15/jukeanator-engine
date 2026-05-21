@@ -3,9 +3,12 @@ package com.djt.jukeanator_engine.domain.songlibrary.repository;
 import static java.util.Objects.requireNonNull;
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import com.djt.jukeanator_engine.domain.common.exception.EntityDoesNotExistException;
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongLibraryException;
 import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
+import com.djt.jukeanator_engine.domain.songlibrary.model.SongFileEntity;
 
 /**
  * @author tmyers
@@ -13,8 +16,10 @@ import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
 public final class SongLibraryRepositoryFileSystemImpl implements SongLibraryRepository {
   
   public static final String SONG_LIBRARY_FILENAME = "JukeANator.oos";
-	
+  
+  private RootFolderEntity root;	
   private SongLibraryObjectPersistor songLibraryObjectPersistor;
+  private final ExecutorService persistenceExecutor = Executors.newSingleThreadExecutor();
   private String filePath;
   
   public SongLibraryRepositoryFileSystemImpl(String basePath) {
@@ -34,7 +39,9 @@ public final class SongLibraryRepositoryFileSystemImpl implements SongLibraryRep
     try {
       
       // TODO: How to reconcile naturalIdentity with filePath?
-      return this.songLibraryObjectPersistor.loadSongLibraryFromDisk(filePath);
+      this.root = this.songLibraryObjectPersistor.loadSongLibraryFromDisk(filePath);
+      this.root.initialize();
+      return this.root;
       
     } catch (ClassNotFoundException | IOException e) {
       throw new EntityDoesNotExistException("Could not read song library from disk with naturalIdentity: " 
@@ -45,13 +52,14 @@ public final class SongLibraryRepositoryFileSystemImpl implements SongLibraryRep
   }
     
   @Override
-  public void storeAggregateRoot(RootFolderEntity rootFolder) {
+  public void storeAggregateRoot(RootFolderEntity root) {
 
     try {
-      this.songLibraryObjectPersistor.writeSongLibraryToDisk(rootFolder, filePath);
+      this.root = root;
+      this.songLibraryObjectPersistor.writeSongLibraryToDisk(root, filePath);
     } catch (IOException ioe) {
       throw new SongLibraryException("Could not write song library to disk with naturalIdentity: " 
-          + rootFolder.getNaturalIdentity()
+          + root.getNaturalIdentity()
           + " and filePath: "
           + filePath);
     }
@@ -64,13 +72,23 @@ public final class SongLibraryRepositoryFileSystemImpl implements SongLibraryRep
   }
   
   @Override
-  public Integer incrementNumPlaysForSong(Integer albumId, Integer songId) throws EntityDoesNotExistException {
-    
-    // TODO: TDM: Move data structures for song library entities into the root entity and refactor to all be maps 
-    // keyed by persistent identity.
-    //
-    // Assign all entities a persistent identity
-    //throw new SongLibraryException("Not implemented yet!");
-    return Integer.valueOf(1);
+  public Integer incrementNumPlaysForSong(
+      Integer albumId,
+      Integer songId) throws EntityDoesNotExistException {
+
+    SongFileEntity song = this.root.getSongById(albumId, songId);
+    Integer incrementedNumPlays = song.incrementNumPlays();
+    RootFolderEntity rootToPersist = this.root;
+
+    persistenceExecutor.submit(() -> {
+
+      try {
+        storeAggregateRoot(rootToPersist);
+      } catch (Exception e) {
+        throw new SongLibraryException("Could not asynchronously persist song library", e);
+      }
+    });
+
+    return incrementedNumPlays;
   }
 }
