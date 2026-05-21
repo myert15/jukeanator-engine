@@ -47,17 +47,18 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
 
   private final ApplicationEventPublisher eventPublisher;
   private final Deque<SongQueueEntryDto> playbackHistory = new ArrayDeque<>();
-  private final Player player;
+  private final Player player;  
   private final String playerType;
   private final String rootPath;
   private final SongLibraryRepository songLibraryRepository;
   private final SongQueueService songQueueService;
-
+  
   /**
    * Everything below is confined to the queueExecutor thread.
    */
   private RootFolderEntity songLibraryRoot;
   private SongQueueEntryDto nowPlayingSong;
+  private SongPlayerStatus songPlayerStatus;
   private List<String> genres = new ArrayList<>();
   private List<String> artists = new ArrayList<>();
   private List<AlbumFolderEntity> albums = new ArrayList<>();
@@ -115,7 +116,7 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
 
     Long elapsedSeconds = 0L;
     Long totalSeconds = 0L;
-    SongPlayerStatus songPlayerStatus = player.getStatus();
+    songPlayerStatus = player.getStatus();
 
     if (songPlayerStatus != SongPlayerStatus.STOPPED) {
 
@@ -129,7 +130,7 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
   @Override
   public void playNextTrack() {
 
-    SongPlayerStatus songPlayerStatus = player.getStatus();
+    songPlayerStatus = player.getStatus();
     if (songPlayerStatus != SongPlayerStatus.STOPPED) {
     
       player.stop();
@@ -143,7 +144,7 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
   @Override
   public void pause() {
 
-    SongPlayerStatus songPlayerStatus = player.getStatus();
+    songPlayerStatus = player.getStatus();
     if (songPlayerStatus == SongPlayerStatus.PLAYING || songPlayerStatus == SongPlayerStatus.PAUSED) {
 
       player.pause();
@@ -155,12 +156,15 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
   @Override
   public void stop() {
 
-    SongPlayerStatus songPlayerStatus = player.getStatus();
+    songPlayerStatus = player.getStatus();
     if (songPlayerStatus == SongPlayerStatus.PLAYING || songPlayerStatus == SongPlayerStatus.PAUSED) {
 
+      eventPublisher.publishEvent(new SongPlaybackStoppedEvent(nowPlayingSong));
+      
       player.stop();
-
-      eventPublisher.publishEvent(new SongPlaybackStoppedEvent(nowPlayingSong));      
+      songPlayerStatus = SongPlayerStatus.STOPPED;
+      
+      submitQueueProcessing();            
     }    
   }
 
@@ -243,9 +247,8 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
       /*
        * If something is already playing or paused, do nothing.
        */
-      SongPlayerStatus status = player.getStatus();
-
-      if (status != SongPlayerStatus.STOPPED) {
+      songPlayerStatus = player.getStatus();
+      if (songPlayerStatus != SongPlayerStatus.STOPPED) {
         return;
       }
 
