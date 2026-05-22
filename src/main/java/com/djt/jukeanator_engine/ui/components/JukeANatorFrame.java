@@ -1282,12 +1282,13 @@ public class JukeANatorFrame extends JFrame {
   private JPanel buildGenreTile(GenreDto genreDto) {
 
     JPanel panel = new JPanel(new BorderLayout());
-
-    panel.setBackground(Color.BLACK);
+    Color parentBackground = genresGridPanel.getBackground();
+    panel.setBackground(parentBackground);
+    panel.setOpaque(true);
     panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
+    
     JLabel imageLabel = new JLabel();
-
+    imageLabel.setOpaque(false);
     imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
     String genreName = genreDto.getGenreName();
@@ -1339,10 +1340,10 @@ public class JukeANatorFrame extends JFrame {
     textLabel.setForeground(Color.WHITE);
     textLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
     textLabel.setBorder(new EmptyBorder(10, 0, 10, 0));
-
+    textLabel.setOpaque(false);
+    
     panel.add(imageLabel, BorderLayout.CENTER);
     panel.add(textLabel, BorderLayout.SOUTH);
-
     panel.addMouseListener(new java.awt.event.MouseAdapter() {
 
       @Override
