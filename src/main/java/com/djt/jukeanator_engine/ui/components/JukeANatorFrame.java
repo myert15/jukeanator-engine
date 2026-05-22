@@ -71,7 +71,8 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private final CardLayout searchCardLayout = new CardLayout();
   private final JPanel searchRootPanel = new JPanel(searchCardLayout);
-  private final JLabel searchEntryLabel = new JLabel();
+  private JLabel entrySearchLabel;
+  private JLabel resultsSearchLabel;
   private final StringBuilder searchBuffer = new StringBuilder();
 
   // Results state
@@ -439,14 +440,21 @@ public class JukeANatorFrame extends JFrame {
     //
     // ENTRY DISPLAY
     //
-    searchEntryLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 32));
-    searchEntryLabel.setForeground(Color.WHITE);
-    searchEntryLabel.setOpaque(true);
-    searchEntryLabel.setBackground(new Color(40, 40, 55));
-    searchEntryLabel.setBorder(new EmptyBorder(8, 16, 8, 16));
-    searchEntryLabel.setHorizontalAlignment(SwingConstants.CENTER);
-    searchEntryLabel.setText(searchBuffer.length() == 0 ? " " : searchBuffer.toString());
-
+    JLabel entryLabel = new JLabel();
+    entryLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 32));
+    entryLabel.setForeground(Color.WHITE);
+    entryLabel.setOpaque(true);
+    entryLabel.setBackground(new Color(40, 40, 55));
+    entryLabel.setBorder(new EmptyBorder(8, 16, 8, 16));
+    entryLabel.setHorizontalAlignment(SwingConstants.CENTER);
+    entryLabel.setText(searchBuffer.length() == 0 ? " " : searchBuffer.toString());
+    
+    if (forResults) {
+      resultsSearchLabel = entryLabel;
+    } else {
+      entrySearchLabel = entryLabel;
+    }
+    
     //
     // CLEAR BUTTON
     //
@@ -490,7 +498,7 @@ public class JukeANatorFrame extends JFrame {
     rightPanel.add(searchButton);
 
     bar.add(leftPanel, BorderLayout.WEST);
-    bar.add(searchEntryLabel, BorderLayout.CENTER);
+    bar.add(entryLabel, BorderLayout.CENTER);
     bar.add(rightPanel, BorderLayout.EAST);
 
     return bar;
@@ -616,7 +624,15 @@ public class JukeANatorFrame extends JFrame {
   private void updateSearchEntryLabel() {
 
     String text = searchBuffer.toString();
-    searchEntryLabel.setText(text.isEmpty() ? " " : text);
+    String display = text.isEmpty() ? " " : text;
+
+    if (entrySearchLabel != null) {
+      entrySearchLabel.setText(display);
+    }
+
+    if (resultsSearchLabel != null) {
+      resultsSearchLabel.setText(display);
+    }
   }
 
   // ============================================================
@@ -624,6 +640,13 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private void resetSearchState() {
 
+    if (entrySearchLabel != null) {
+      entrySearchLabel.setText(" ");
+    }
+    if (resultsSearchLabel != null) {
+      resultsSearchLabel.setText(" ");
+    }
+    
     //
     // Clear entered text
     //
