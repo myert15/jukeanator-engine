@@ -87,29 +87,29 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
         .comparing(NumPlaysComparable::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
         .reversed();
 
-    List<SongFileEntity> popularSongs = root.getSongs().stream()
-        .filter(song -> song.getNumPlays() != null && song.getNumPlays().intValue() > 0)
+    // Centralized rule: only items with strictly positive plays
+    java.util.function.Predicate<NumPlaysComparable> hasPlays =
+        item -> item.getNumPlays() != null && item.getNumPlays() > 0;
+
+    List<SongFileEntity> popularSongs = root.getSongs().stream().filter(hasPlays)
         .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
-    List<ArtistFolderEntity> popularArtists = root.getArtists().stream()
-        .filter(artist -> artist.getNumPlays() != null && artist.getNumPlays().intValue() > 0)
+    List<ArtistFolderEntity> popularArtists = root.getArtists().stream().filter(hasPlays)
         .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
-    List<AlbumFolderEntity> popularAlbums = root.getAlbums().stream()
-        .filter(album -> album.getNumPlays() != null && album.getNumPlays().intValue() > 0)
+    List<AlbumFolderEntity> popularAlbums = root.getAlbums().stream().filter(hasPlays)
         .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
     return new SearchResultDto(SongLibraryMapper.toSongDtoList(popularSongs),
         SongLibraryMapper.toArtistDtoList(popularArtists),
         SongLibraryMapper.toAlbumDtoList(popularAlbums));
   }
-  
+
   @Override
   public SearchResultDto getMusicBySearch(String searchFor) {
 
     if (!isInitialized) {
-      throw new SongLibraryException(
-          "SongLibraryService has not been initialized yet!");
+      throw new SongLibraryException("SongLibraryService has not been initialized yet!");
     }
 
     requireNonNull(searchFor, "searchFor cannot be null");
@@ -117,77 +117,46 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
     final String normalizedSearch = searchFor.trim().toLowerCase();
 
     if (normalizedSearch.isEmpty()) {
-      return new SearchResultDto(
-          List.of(),
-          List.of(),
-          List.of());
+      return new SearchResultDto(List.of(), List.of(), List.of());
     }
 
     Comparator<NumPlaysComparable> bySearchWeightThenPopularityDescending =
-        Comparator
-            .comparingInt((NumPlaysComparable npc) -> {
+        Comparator.comparingInt((NumPlaysComparable npc) -> {
 
-              if (npc instanceof SongFileEntity song) {
-                return calculateSearchResultWeight(
-                    song.getName(),
-                    normalizedSearch);
-              }
+          if (npc instanceof SongFileEntity song) {
+            return calculateSearchResultWeight(song.getName(), normalizedSearch);
+          }
 
-              if (npc instanceof ArtistFolderEntity artist) {
-                return calculateSearchResultWeight(
-                    artist.getName(),
-                    normalizedSearch);
-              }
+          if (npc instanceof ArtistFolderEntity artist) {
+            return calculateSearchResultWeight(artist.getName(), normalizedSearch);
+          }
 
-              if (npc instanceof AlbumFolderEntity album) {
-                return calculateSearchResultWeight(
-                    album.getName(),
-                    normalizedSearch);
-              }
+          if (npc instanceof AlbumFolderEntity album) {
+            return calculateSearchResultWeight(album.getName(), normalizedSearch);
+          }
 
-              return Integer.valueOf(0);
-            })
-            .thenComparing(
-                NumPlaysComparable::getNumPlays,
-                Comparator.nullsFirst(Integer::compareTo))
+          return Integer.valueOf(0);
+        }).thenComparing(NumPlaysComparable::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
             .reversed();
 
     List<SongFileEntity> matchingSongs = root.getSongs().stream()
-        .filter(song ->
-            calculateSearchResultWeight(
-                song.getName(),
-                normalizedSearch) > 0)
-        .sorted(bySearchWeightThenPopularityDescending)
-        .limit(searchResultSize)
-        .toList();
+        .filter(song -> calculateSearchResultWeight(song.getName(), normalizedSearch) > 0)
+        .sorted(bySearchWeightThenPopularityDescending).limit(searchResultSize).toList();
 
     List<ArtistFolderEntity> matchingArtists = root.getArtists().stream()
-        .filter(artist ->
-            calculateSearchResultWeight(
-                artist.getName(),
-                normalizedSearch) > 0)
-        .sorted(bySearchWeightThenPopularityDescending)
-        .limit(searchResultSize)
-        .toList();
+        .filter(artist -> calculateSearchResultWeight(artist.getName(), normalizedSearch) > 0)
+        .sorted(bySearchWeightThenPopularityDescending).limit(searchResultSize).toList();
 
     List<AlbumFolderEntity> matchingAlbums = root.getAlbums().stream()
-        .filter(album ->
-            calculateSearchResultWeight(
-                album.getName(),
-                normalizedSearch) > 0)
-        .sorted(bySearchWeightThenPopularityDescending)
-        .limit(searchResultSize)
-        .toList();
+        .filter(album -> calculateSearchResultWeight(album.getName(), normalizedSearch) > 0)
+        .sorted(bySearchWeightThenPopularityDescending).limit(searchResultSize).toList();
 
-    return new SearchResultDto(
-        SongLibraryMapper.toSongDtoList(matchingSongs),
+    return new SearchResultDto(SongLibraryMapper.toSongDtoList(matchingSongs),
         SongLibraryMapper.toArtistDtoList(matchingArtists),
         SongLibraryMapper.toAlbumDtoList(matchingAlbums));
   }
 
-  private int calculateSearchResultWeight(
-      String value,
-      String normalizedSearch) {
+  private int calculateSearchResultWeight(String value, String normalizedSearch) {
 
     if (value == null) {
       return Integer.valueOf(0);
@@ -219,10 +188,10 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
 
     return Integer.valueOf(0);
   }
-  
-  @Override  
+
+  @Override
   public List<GenreDto> getGenres() {
-    
+
     if (!isInitialized) {
       throw new SongLibraryException("SongLibraryService has not been initialized yet!");
     }
