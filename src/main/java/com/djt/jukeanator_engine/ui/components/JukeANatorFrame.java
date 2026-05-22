@@ -456,20 +456,6 @@ public class JukeANatorFrame extends JFrame {
     }
     
     //
-    // CLEAR BUTTON
-    //
-    JButton clearButton = new JButton("CLEAR");
-    clearButton.setPreferredSize(new Dimension(180, 60));
-    clearButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
-    clearButton.setForeground(Color.BLACK);
-    clearButton.setBackground(ACCENT_BLUE);
-    clearButton.setFocusPainted(false);
-    clearButton.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
-    clearButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-    clearButton.addActionListener(e -> resetSearchState());
-
-    //
     // SEARCH BUTTON
     //
     JButton searchButton = new JButton("SEARCH");
@@ -484,20 +470,12 @@ public class JukeANatorFrame extends JFrame {
     searchButton.addActionListener(e -> executeSearch());
 
     //
-    // LEFT BUTTON PANEL
-    //
-    JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-    leftPanel.setOpaque(false);
-    leftPanel.add(clearButton);
-
-    //
     // RIGHT BUTTON PANEL
     //
     JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
     rightPanel.setOpaque(false);
     rightPanel.add(searchButton);
 
-    bar.add(leftPanel, BorderLayout.WEST);
     bar.add(entryLabel, BorderLayout.CENTER);
     bar.add(rightPanel, BorderLayout.EAST);
 
@@ -535,8 +513,7 @@ public class JukeANatorFrame extends JFrame {
     JButton clear = createKeyboardButton("CLEAR");
     clear.setPreferredSize(new Dimension(140, 60));
     clear.addActionListener(e -> {
-      searchBuffer.setLength(0);
-      updateSearchEntryLabel();
+      resetSearchState();
     });
     row.add(clear);
 
