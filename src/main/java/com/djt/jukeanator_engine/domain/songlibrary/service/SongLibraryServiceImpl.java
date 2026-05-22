@@ -124,7 +124,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
         Comparator.comparingInt((NumPlaysComparable npc) -> {
 
           if (npc instanceof SongFileEntity song) {
-            return calculateSearchResultWeight(song.getName(), normalizedSearch);
+            return calculateSearchResultWeight(song.getSongName(), normalizedSearch);
           }
 
           if (npc instanceof ArtistFolderEntity artist) {
