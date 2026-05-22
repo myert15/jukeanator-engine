@@ -444,7 +444,22 @@ public class JukeANatorFrame extends JFrame {
     searchEntryLabel.setOpaque(true);
     searchEntryLabel.setBackground(new Color(40, 40, 55));
     searchEntryLabel.setBorder(new EmptyBorder(8, 16, 8, 16));
+    searchEntryLabel.setHorizontalAlignment(SwingConstants.CENTER);
     searchEntryLabel.setText(searchBuffer.length() == 0 ? " " : searchBuffer.toString());
+
+    //
+    // CLEAR BUTTON
+    //
+    JButton clearButton = new JButton("CLEAR");
+    clearButton.setPreferredSize(new Dimension(180, 60));
+    clearButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
+    clearButton.setForeground(Color.BLACK);
+    clearButton.setBackground(ACCENT_BLUE);
+    clearButton.setFocusPainted(false);
+    clearButton.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+    clearButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+    clearButton.addActionListener(e -> resetSearchState());
 
     //
     // SEARCH BUTTON
@@ -460,8 +475,23 @@ public class JukeANatorFrame extends JFrame {
 
     searchButton.addActionListener(e -> executeSearch());
 
+    //
+    // LEFT BUTTON PANEL
+    //
+    JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+    leftPanel.setOpaque(false);
+    leftPanel.add(clearButton);
+
+    //
+    // RIGHT BUTTON PANEL
+    //
+    JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+    rightPanel.setOpaque(false);
+    rightPanel.add(searchButton);
+
+    bar.add(leftPanel, BorderLayout.WEST);
     bar.add(searchEntryLabel, BorderLayout.CENTER);
-    bar.add(searchButton, BorderLayout.EAST);
+    bar.add(rightPanel, BorderLayout.EAST);
 
     return bar;
   }
@@ -587,6 +617,46 @@ public class JukeANatorFrame extends JFrame {
 
     String text = searchBuffer.toString();
     searchEntryLabel.setText(text.isEmpty() ? " " : text);
+  }
+
+  // ============================================================
+  // RESET SEARCH STATE
+  // ============================================================
+  private void resetSearchState() {
+
+    //
+    // Clear entered text
+    //
+    searchBuffer.setLength(0);
+    updateSearchEntryLabel();
+
+    //
+    // Clear search state
+    //
+    lastSearchResult = null;
+
+    artistsOffset = 0;
+    albumsOffset = 0;
+    songsOffset = 0;
+
+    viewAllCategory = "";
+    viewAllPage = 0;
+
+    //
+    // Remove existing results UI
+    //
+    searchResultsPanel.removeAll();
+    searchResultsPanel.revalidate();
+    searchResultsPanel.repaint();
+
+    viewAllContentPanel.removeAll();
+    viewAllContentPanel.revalidate();
+    viewAllContentPanel.repaint();
+
+    //
+    // Return to initial search screen
+    //
+    searchCardLayout.show(searchRootPanel, "ENTRY");
   }
 
   // ============================================================
