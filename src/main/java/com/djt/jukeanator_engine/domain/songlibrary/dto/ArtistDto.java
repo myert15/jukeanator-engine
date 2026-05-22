@@ -29,4 +29,30 @@ public class ArtistDto {
   public List<AlbumDto> getAlbums() {
     return albums;
   }
+  
+  
+  
+  
+  
+  public String getCoverArtPath() {
+    
+    if (!albums.isEmpty()) {
+      return albums.get(0).getCoverArtPath();
+    }
+    return "";
+  }
+
+  public Integer getAlbumCount() {
+    return Integer.valueOf(albums.size());
+  }
+  
+  public Integer getSongCount() {
+    
+    int songCount = 0;
+    for (AlbumDto album: albums) {
+
+      songCount = songCount + album.getSongs().size();
+    }
+    return Integer.valueOf(songCount);
+  }
 }

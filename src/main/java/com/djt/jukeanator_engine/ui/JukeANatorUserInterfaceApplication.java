@@ -39,7 +39,12 @@ public class JukeANatorUserInterfaceApplication {
 
   public void launch() {
 
-    this.frame = new JukeANatorFrame(jukeANatorUserInterfaceProperties);
+    this.frame = new JukeANatorFrame(
+        jukeANatorUserInterfaceProperties,
+        songLibraryServiceClient,
+        songQueueServiceClient,
+        songPlayerServiceClient);
+    
     this.jukeANatorEventListener.setFrame(frame);
     this.jukeANatorEventListener.setSongLibraryServiceHttpClient(songLibraryServiceClient);
     this.jukeANatorEventListener.setSongQueueServiceHttpClient(songQueueServiceClient);
