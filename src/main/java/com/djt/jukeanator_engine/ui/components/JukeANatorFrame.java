@@ -69,6 +69,8 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   // SEARCH TAB
   // ============================================================
+  private static final int KEYBOARD_HEIGHT = 260;
+  private static final int SEARCH_BAR_HEIGHT = 90;  
   private final boolean enableTypeAheadSearch;
   private final CardLayout searchCardLayout = new CardLayout();
   private final JPanel searchRootPanel = new JPanel(searchCardLayout);
@@ -391,41 +393,38 @@ public class JukeANatorFrame extends JFrame {
     JPanel root = new JPanel(new BorderLayout());
     root.setBackground(BG_DARK);
 
-    //
-    // HERO PANEL
-    //
+    // -------------------------
+    // HERO (CENTER)
+    // -------------------------
     JPanel heroPanel = new JPanel(new GridBagLayout());
-    heroPanel.setPreferredSize(new Dimension(100, 200));
     heroPanel.setBackground(new Color(25, 25, 35));
     heroPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, ACCENT_BLUE));
+
+    heroPanel.setPreferredSize(new Dimension(100, 300));
 
     JLabel heroLabel = new JLabel("Search for your favorite music.");
     heroLabel.setForeground(TEXT_PRIMARY);
     heroLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 42));
+
     heroPanel.add(heroLabel);
 
-    //
-    // SEARCH BAR
-    //
+    // -------------------------
+    // SEARCH BAR (NORTH)
+    // -------------------------
     JPanel searchBarPanel = buildSearchBarPanel(false);
+    searchBarPanel.setPreferredSize(new Dimension(100, SEARCH_BAR_HEIGHT));
 
-    //
-    // KEYBOARD
-    //
-    JPanel keyboardWrapper = new JPanel(new GridBagLayout());
-    keyboardWrapper.setBackground(BG_SEARCH);
-    keyboardWrapper.add(buildKeyboardPanel());
+    // -------------------------
+    // KEYBOARD (SOUTH - FIXED)
+    // -------------------------
+    JPanel keyboardPanel = buildFixedKeyboardPanel();
 
-    //
-    // BOTTOM: search bar + keyboard stacked
-    //
-    JPanel bottomPanel = new JPanel(new BorderLayout());
-    bottomPanel.setBackground(BG_SEARCH);
-    bottomPanel.add(searchBarPanel, BorderLayout.NORTH);
-    bottomPanel.add(keyboardWrapper, BorderLayout.CENTER);
-
-    root.add(heroPanel, BorderLayout.NORTH);
-    root.add(bottomPanel, BorderLayout.CENTER);
+    // -------------------------
+    // LAYOUT (MATCH RESULTS STRUCTURE)
+    // -------------------------
+    root.add(searchBarPanel, BorderLayout.NORTH);
+    root.add(heroPanel, BorderLayout.CENTER);
+    root.add(keyboardPanel, BorderLayout.SOUTH);
 
     return root;
   }
@@ -497,6 +496,20 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   // KEYBOARD PANEL
   // ============================================================
+  private JPanel buildFixedKeyboardPanel() {
+    JPanel wrapper = new JPanel(new GridBagLayout());
+    wrapper.setBackground(BG_SEARCH);
+
+    JPanel keyboard = buildKeyboardPanel();
+    wrapper.add(keyboard);
+
+    wrapper.setPreferredSize(new Dimension(100, KEYBOARD_HEIGHT));
+    wrapper.setMinimumSize(new Dimension(100, KEYBOARD_HEIGHT));
+    wrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, KEYBOARD_HEIGHT));
+
+    return wrapper;
+  }
+  
   private JPanel buildKeyboardPanel() {
 
     JPanel panel = new JPanel();
@@ -750,9 +763,7 @@ public class JukeANatorFrame extends JFrame {
     //
     // KEYBOARD AT BOTTOM
     //
-    JPanel keyboardWrapper = new JPanel(new GridBagLayout());
-    keyboardWrapper.setBackground(BG_SEARCH);
-    keyboardWrapper.add(buildKeyboardPanel());
+    JPanel keyboardWrapper = buildFixedKeyboardPanel();
 
     searchResultsPanel.add(searchBarPanel, BorderLayout.NORTH);
     searchResultsPanel.add(columnsPanel, BorderLayout.CENTER);
