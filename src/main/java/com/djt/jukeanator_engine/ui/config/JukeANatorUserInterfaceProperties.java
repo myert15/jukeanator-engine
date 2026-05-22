@@ -16,6 +16,11 @@ public class JukeANatorUserInterfaceProperties {
   private int creditsPer = 3;
   private int fiveBonusCredits = 3;
   private int tenBonusCredits = 10;
+  
+  //
+  // SEARCH CONFIGURATION
+  //
+  private boolean enableTypeAheadSearch = true;
 
   public boolean getEnabled() {
     return enabled;
@@ -55,5 +60,13 @@ public class JukeANatorUserInterfaceProperties {
 
   public void setTenBonusCredits(int tenBonusCredits) {
     this.tenBonusCredits = tenBonusCredits;
+  }
+
+  public boolean isEnableTypeAheadSearch() {
+    return enableTypeAheadSearch;
+  }
+
+  public void setEnableTypeAheadSearch(boolean enableTypeAheadSearch) {
+    this.enableTypeAheadSearch = enableTypeAheadSearch;
   }
 }

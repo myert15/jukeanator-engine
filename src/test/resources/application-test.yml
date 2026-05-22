@@ -36,4 +36,6 @@ user-interface:
   #
   credits-per: 3
   five-bonus-credits: 3
-  ten-bonus-credits: 10     
+  ten-bonus-credits: 10
+  #SEARCH CONFIGURATION
+  enable-type-ahead-search: true

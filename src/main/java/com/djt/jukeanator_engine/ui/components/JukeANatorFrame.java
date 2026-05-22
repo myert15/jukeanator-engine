@@ -69,6 +69,7 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   // SEARCH TAB
   // ============================================================
+  private final boolean enableTypeAheadSearch;
   private final CardLayout searchCardLayout = new CardLayout();
   private final JPanel searchRootPanel = new JPanel(searchCardLayout);
   private JLabel entrySearchLabel;
@@ -153,6 +154,8 @@ public class JukeANatorFrame extends JFrame {
     this.creditsPer = this.jukeANatorUserInterfaceProperties.getCreditsPer();
     this.fiveBonusCredits = this.jukeANatorUserInterfaceProperties.getFiveBonusCredits();
     this.tenBonusCredits = this.jukeANatorUserInterfaceProperties.getTenBonusCredits();
+    
+    this.enableTypeAheadSearch = this.jukeANatorUserInterfaceProperties.isEnableTypeAheadSearch();
 
     initialize();
   }
@@ -458,26 +461,35 @@ public class JukeANatorFrame extends JFrame {
     //
     // SEARCH BUTTON
     //
-    JButton searchButton = new JButton("SEARCH");
-    searchButton.setPreferredSize(new Dimension(180, 60));
-    searchButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
-    searchButton.setForeground(Color.BLACK);
-    searchButton.setBackground(ACCENT_BLUE);
-    searchButton.setFocusPainted(false);
-    searchButton.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
-    searchButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    JButton searchButton = null;
 
-    searchButton.addActionListener(e -> executeSearch());
+    if (!enableTypeAheadSearch) {
 
-    //
-    // RIGHT BUTTON PANEL
-    //
-    JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-    rightPanel.setOpaque(false);
-    rightPanel.add(searchButton);
+      searchButton = new JButton("SEARCH");
+      searchButton.setPreferredSize(new Dimension(180, 60));
+      searchButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
+      searchButton.setForeground(Color.BLACK);
+      searchButton.setBackground(ACCENT_BLUE);
+      searchButton.setFocusPainted(false);
+      searchButton.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+      searchButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+      searchButton.addActionListener(e -> executeSearch());
+    }    
 
     bar.add(entryLabel, BorderLayout.CENTER);
-    bar.add(rightPanel, BorderLayout.EAST);
+    
+    if (!enableTypeAheadSearch && searchButton != null) {
+
+      //
+      // RIGHT BUTTON PANEL
+      //
+      JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+      rightPanel.setOpaque(false);
+      rightPanel.add(searchButton);
+      
+      bar.add(rightPanel, BorderLayout.EAST);
+    }    
 
     return bar;
   }
@@ -515,6 +527,7 @@ public class JukeANatorFrame extends JFrame {
     clear.addActionListener(e -> {
       resetSearchState();
     });
+    
     row.add(clear);
 
     JButton backspace = createKeyboardButton("⌫");
@@ -523,6 +536,10 @@ public class JukeANatorFrame extends JFrame {
       if (searchBuffer.length() > 0) {
         searchBuffer.deleteCharAt(searchBuffer.length() - 1);
         updateSearchEntryLabel();
+
+        if (enableTypeAheadSearch) {
+          executeSearch();
+        }
       }
     });
     row.add(backspace);
@@ -564,6 +581,10 @@ public class JukeANatorFrame extends JFrame {
     space.addActionListener(e -> {
       searchBuffer.append(' ');
       updateSearchEntryLabel();
+
+      if (enableTypeAheadSearch) {
+        executeSearch();
+      }
     });
     row.add(space);
 
@@ -580,9 +601,14 @@ public class JukeANatorFrame extends JFrame {
     // Wire single-character keys to append to search buffer
     //
     if (text.length() == 1 && !text.equals(" ")) {
+
       button.addActionListener(e -> {
         searchBuffer.append(text);
         updateSearchEntryLabel();
+
+        if (enableTypeAheadSearch) {
+          executeSearch();
+        }
       });
     }
 
