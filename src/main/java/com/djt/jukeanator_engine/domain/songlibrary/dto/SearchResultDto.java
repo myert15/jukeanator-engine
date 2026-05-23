@@ -1,12 +1,16 @@
 package com.djt.jukeanator_engine.domain.songlibrary.dto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SearchResultDto {
   
-  private List<SongDto> songs;
-  private List<ArtistDto> artists;
-  private List<AlbumDto> albums;
+  private List<SongDto> songs = new ArrayList<>();
+  private List<ArtistDto> artists = new ArrayList<>();
+  private List<AlbumDto> albums = new ArrayList<>();
+  
+  public SearchResultDto() {
+  }
   
   public SearchResultDto(List<SongDto> songs, List<ArtistDto> artists, List<AlbumDto> albums) {
     this.songs = songs;
