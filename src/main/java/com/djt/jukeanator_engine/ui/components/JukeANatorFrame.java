@@ -1326,6 +1326,7 @@ public class JukeANatorFrame extends JFrame {
   private JPanel buildHotHereGridPanel() {
 
     JPanel root = new JPanel(new BorderLayout());
+    root.setBorder(new EmptyBorder(6, 6, 6, 6));
     root.setBackground(BG_DARK);
     List<?> items = switch (hotHereCategory) {
 
@@ -1357,26 +1358,59 @@ public class JukeANatorFrame extends JFrame {
     //
     // GRID
     //
-    JPanel grid = new JPanel(new GridLayout(5, 3, 1, 1));
+    JPanel grid = new JPanel(new GridLayout(5, 3, 2, 2));
     grid.setBackground(Color.BLACK);
-    for (int i = start; i < end; i++) {
-
-      JPanel row = buildSearchResultRow(i + 1, items.get(i), hotHereCategory);
-      row.setMaximumSize(null);
-      grid.add(row);
-    }
+    grid.setBorder(new EmptyBorder(2, 2, 2, 2));
 
     //
-    // Fill remaining cells
+    // Render in COLUMN-MAJOR order:
     //
-    int visible = end - start;
-    for (int i = visible; i < HOT_HERE_PAGE_SIZE; i++) {
+    // 1 6 11
+    // 2 7 12
+    // 3 8 13
+    // 4 9 14
+    // 5 10 15
+    //
+    for (int row = 0; row < 5; row++) {
 
-      JPanel filler = new JPanel();
-      filler.setBackground(BG_DARK);
-      grid.add(filler);
+      for (int col = 0; col < 3; col++) {
+
+        int relativeIndex = (col * 5) + row;
+        int actualIndex = start + relativeIndex;
+
+        JPanel cell;
+
+        if (actualIndex < end) {
+
+          //
+          // Build actual result row
+          //
+          cell = buildSearchResultRow(actualIndex + 1, items.get(actualIndex), hotHereCategory);
+
+          //
+          // Border styling
+          //
+          cell.setBorder(BorderFactory.createCompoundBorder(
+              BorderFactory.createLineBorder(new Color(80, 80, 90), 1),
+              new EmptyBorder(4, 4, 4, 4)));
+
+          cell.setBackground(new Color(28, 28, 36));
+
+        } else {
+
+          //
+          // Empty filler cell
+          //
+          cell = new JPanel();
+          cell.setBackground(BG_DARK);
+
+          cell.setBorder(BorderFactory.createLineBorder(new Color(45, 45, 55), 1));
+        }
+
+        grid.add(cell);
+      }
     }
-
+ 
     //
     // PAGINATION
     //
