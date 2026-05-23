@@ -8,6 +8,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.FontMetrics;
+import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
@@ -42,6 +43,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
 import com.djt.jukeanator_engine.domain.songplayer.service.SongPlayerService;
+import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 import com.djt.jukeanator_engine.ui.config.JukeANatorUserInterfaceProperties;
@@ -874,6 +876,32 @@ public class JukeANatorFrame extends JFrame {
         repaintChildren(row);
       }
     });
+    
+    if (category.equals("SONGS") && item instanceof SongDto song) {
+
+      row.addMouseListener(new java.awt.event.MouseAdapter() {
+
+        @Override
+        public void mouseClicked(java.awt.event.MouseEvent e) {
+
+          // Resolve the top-level Frame (JukeANatorFrame extends JFrame extends Frame)
+          Frame owner = (Frame) SwingUtilities.getWindowAncestor(row);
+
+          AddSongToQueueDialog.show(
+              owner,
+              song,
+              imageLoader,
+              creditsPer,           // normal play cost  — already an instance field
+              creditsPer * 2,       // priority cost placeholder until defined              
+              // Normal play — priority 0
+              () -> songQueueService.addSongToQueue(
+                  new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 0)),
+              // Priority play — priority 1 (value TBD)
+              () -> songQueueService.addSongToQueue(
+                  new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)));          
+        }
+      });
+    }    
 
     return row;
   }
