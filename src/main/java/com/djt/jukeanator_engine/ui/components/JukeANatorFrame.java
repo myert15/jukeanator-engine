@@ -39,6 +39,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
@@ -828,20 +829,23 @@ public class JukeANatorFrame extends JFrame {
 
     String coverPath = null;
 
-    if (category.equals("ARTISTS")
-        && item instanceof com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto artist) {
+    if (category.equals("ARTISTS") && item instanceof ArtistDto artist) {
+      
       line1.setText(artist.getArtistName());
       line2.setText(artist.getSongCount() + " songs, " + artist.getAlbumCount() + " albums");
       coverPath = artist.getCoverArtPath();
-    } else if (category.equals("ALBUMS")
-        && item instanceof com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto album) {
+      
+    } else if (category.equals("ALBUMS") && item instanceof AlbumDto album) {
+      
       line1.setText(album.getAlbumName());
-      line2.setText(album.getArtistName());
+      line2.setText(album.getArtistName());      
       coverPath = album.getCoverArtPath();
+      
     } else if (category.equals("SONGS") && item instanceof SongDto song) {
       line1.setText(song.getSongName());
       line2.setText(song.getArtistName());
       coverPath = song.getCoverArtPath();
+      
     }
 
     // LOAD THUMBNAIL
@@ -905,8 +909,7 @@ public class JukeANatorFrame extends JFrame {
                   new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)));          
         }
       });
-    } else if (category.equals("ALBUMS")
-        && item instanceof com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto album) {
+    } else if (category.equals("ALBUMS") && item instanceof AlbumDto album) {
 
       row.addMouseListener(new java.awt.event.MouseAdapter() {
 

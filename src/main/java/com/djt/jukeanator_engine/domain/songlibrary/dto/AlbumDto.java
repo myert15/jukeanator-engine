@@ -1,6 +1,7 @@
 package com.djt.jukeanator_engine.domain.songlibrary.dto;
 
 import java.util.List;
+import java.util.Objects;
 
 public class AlbumDto {
 
@@ -70,5 +71,37 @@ public class AlbumDto {
 
   public List<SongDto> getSongs() {
     return songs;
+  }
+  
+  @Override
+  public int hashCode() {
+    return Objects.hash(albumId);
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    AlbumDto other = (AlbumDto) obj;
+    return Objects.equals(albumId, other.albumId);
+  }
+  
+  @Override
+  public String toString() {
+    return "AlbumDto [artistName=" + artistName + ", albumName=" + albumName + "]";
   }  
+  
+  public Integer getNumPlays() {
+    
+    int numPlays = 0;
+    for (SongDto song: songs) {
+
+      numPlays = numPlays + song.getNumPlays();
+    }
+    return Integer.valueOf(numPlays);
+  }    
 }
