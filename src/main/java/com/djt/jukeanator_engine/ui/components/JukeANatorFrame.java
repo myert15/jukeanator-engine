@@ -38,6 +38,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
@@ -57,7 +58,10 @@ public class JukeANatorFrame extends JFrame {
   private final SongQueueService songQueueService;
   private final SongPlayerService songPlayerService;
   private final ImageLoader imageLoader = new ImageLoader();
-
+  private static final int POPULARITY_THRESHOLD_1 = 10;
+  private static final int POPULARITY_THRESHOLD_2 = 25;
+  private static final int POPULARITY_THRESHOLD_3 = 50;
+  
   // COLORS
   private static final Color BG_DARK = new Color(10, 10, 10);
   private static final Color BG_PANEL = new Color(22, 22, 28);
@@ -899,6 +903,33 @@ public class JukeANatorFrame extends JFrame {
               // Priority play — priority 1 (value TBD)
               () -> songQueueService.addSongToQueue(
                   new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)));          
+        }
+      });
+    } else if (category.equals("ALBUMS")
+        && item instanceof com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto album) {
+
+      row.addMouseListener(new java.awt.event.MouseAdapter() {
+
+        @Override
+        public void mouseClicked(java.awt.event.MouseEvent e) {
+
+          Frame owner = (Frame) SwingUtilities.getWindowAncestor(row);
+
+          // Fetch the full album (with track list) from the service.
+          // The AlbumDto in search results may be a summary; the dialog
+          // needs the songs list populated.
+          AlbumDto fullAlbum = songLibraryService.getAlbumById(album.getAlbumId());
+
+          AlbumDetailDialog.show(
+              owner,
+              fullAlbum,
+              imageLoader,
+              songQueueService,
+              creditsPer,
+              creditsPer * 2,               // priority cost placeholder
+              POPULARITY_THRESHOLD_1,
+              POPULARITY_THRESHOLD_2,
+              POPULARITY_THRESHOLD_3);
         }
       });
     }    
