@@ -93,13 +93,12 @@ public class JukeANatorFrame extends JFrame {
   private static final int VIEW_ALL_PAGE_SIZE = 15;
 
   // HOT HERE TAB
-  private static final int HOT_HERE_PAGE_SIZE = 15;
-  private final CardLayout hotHereCardLayout = new CardLayout();
-  private final JPanel hotHereRootPanel = new JPanel(hotHereCardLayout);
+  private static final int HOT_HERE_PREVIEW_COUNT = 10;
+  private int hotHereArtistsOffset = 0;
+  private int hotHereAlbumsOffset = 0;
+  private int hotHereSongsOffset = 0;
   private final JPanel hotHereContentPanel = new JPanel(new BorderLayout());
   private SearchResultDto hotHereResults;
-  private String hotHereCategory = "SONGS";
-  private int hotHerePage = 0;
 
   // GENRE TAB
   private static final int GENRES_PER_PAGE = 12;
@@ -1206,27 +1205,6 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   // HOT HERE PANEL
   // ============================================================
-  // Field declarations — move these up to the instance field section of the class,
-  // replacing the existing HOT HERE block:
-  //
-  // private static final int HOT_HERE_PREVIEW_COUNT = 10;
-  // private SearchResultDto hotHereResults;
-  // private int hotHereArtistsOffset = 0;
-  // private int hotHereAlbumsOffset = 0;
-  // private int hotHereSongsOffset = 0;
-  // private final JPanel hotHereContentPanel = new JPanel(new BorderLayout());
-  //
-  // Remove these old fields (no longer needed):
-  // HOT_HERE_PAGE_SIZE, hotHereCardLayout, hotHereRootPanel,
-  // hotHereCategory, hotHerePage
-
-  private static final int HOT_HERE_PREVIEW_COUNT = 10;
-
-  // Per-column scroll offsets (replace the old hotHerePage / hotHereCategory fields)
-  private int hotHereArtistsOffset = 0;
-  private int hotHereAlbumsOffset = 0;
-  private int hotHereSongsOffset = 0;
-
   private JPanel buildHotHerePanel() {
 
     hotHereContentPanel.setBackground(BG_DARK);
@@ -1791,7 +1769,6 @@ public class JukeANatorFrame extends JFrame {
   
   
   
-  
   // ============================================================
   // TOP PANEL
   // ============================================================
@@ -1804,12 +1781,47 @@ public class JukeANatorFrame extends JFrame {
     //
     // LEFT : CREDITS
     //
-    JPanel creditsPanel = new JPanel();
+    JPanel creditsPanel = new JPanel(new BorderLayout(10, 0));
     creditsPanel.setBackground(Color.BLACK);
     creditsPanel.setOpaque(true);
     creditsPanel.setBorder(null);
-    creditsPanel.setPreferredSize(new Dimension(240, 100));
-    creditsPanel.setLayout(new BoxLayout(creditsPanel, BoxLayout.Y_AXIS));
+    creditsPanel.setPreferredSize(new Dimension(350, 100));
+
+    //
+    // LOCATION LOGO (96x96 — same size as Now Playing cover art)
+    //
+    JLabel locationLogo = new JLabel();
+    locationLogo.setHorizontalAlignment(SwingConstants.CENTER);
+    locationLogo.setVerticalAlignment(SwingConstants.CENTER);
+    locationLogo.setOpaque(true);
+    locationLogo.setBackground(new Color(20, 20, 28));
+    locationLogo.setPreferredSize(new Dimension(96, 96));
+    locationLogo.setBorder(BorderFactory.createLineBorder(new Color(80, 80, 90), 1));
+
+    // Try JPG first
+    ImageIcon logoIcon = imageLoader.loadImage("locationLogo.jpg", 96, 96);
+
+    // Fallback PNG
+    if (logoIcon == null) {
+      logoIcon = imageLoader.loadImage("locationLogo.png", 96, 96);
+    }
+
+    if (logoIcon != null) {
+      locationLogo.setIcon(logoIcon);
+    } else {
+      // Fallback text
+      locationLogo.setText("★");
+      locationLogo.setForeground(Color.WHITE);
+      locationLogo.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 28));
+    }
+
+    //
+    // CREDITS TEXT (stacked labels, same as before)
+    //
+    JPanel creditsTextPanel = new JPanel();
+    creditsTextPanel.setBackground(Color.BLACK);
+    creditsTextPanel.setOpaque(true);
+    creditsTextPanel.setLayout(new BoxLayout(creditsTextPanel, BoxLayout.Y_AXIS));
 
     JLabel creditsTitle = new JLabel("CREDITS: 12");
     creditsTitle.setForeground(Color.YELLOW);
@@ -1819,9 +1831,12 @@ public class JukeANatorFrame extends JFrame {
     creditDescription.setForeground(Color.WHITE);
     creditDescription.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
 
-    creditsPanel.add(creditsTitle);
-    creditsPanel.add(Box.createVerticalStrut(5));
-    creditsPanel.add(creditDescription);
+    creditsTextPanel.add(creditsTitle);
+    creditsTextPanel.add(Box.createVerticalStrut(5));
+    creditsTextPanel.add(creditDescription);
+
+    creditsPanel.add(locationLogo, BorderLayout.WEST);
+    creditsPanel.add(creditsTextPanel, BorderLayout.CENTER);
 
     //
     // CENTER : BANNER
@@ -1838,6 +1853,7 @@ public class JukeANatorFrame extends JFrame {
     // RIGHT : NOW PLAYING
     //
     JPanel nowPlayingPanel = buildNowPlayingPanel();
+
     panel.add(creditsPanel, BorderLayout.WEST);
     panel.add(bannerPanel, BorderLayout.CENTER);
     panel.add(nowPlayingPanel, BorderLayout.EAST);
