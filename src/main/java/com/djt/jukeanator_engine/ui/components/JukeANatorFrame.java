@@ -1292,7 +1292,7 @@ public class JukeANatorFrame extends JFrame {
     //
     // Try JPG first
     //
-    ImageIcon logoIcon = loadClasspathImage(
+    ImageIcon logoIcon = loadImage(
         "locationLogo.jpg",
         220,
         220);
@@ -1302,7 +1302,7 @@ public class JukeANatorFrame extends JFrame {
     //
     if (logoIcon == null) {
 
-      logoIcon = loadClasspathImage(
+      logoIcon = loadImage(
           "locationLogo.png",
           220,
           220);
@@ -2404,13 +2404,24 @@ public class JukeANatorFrame extends JFrame {
     }
   }
   
+  private ImageIcon loadImage(String resourceName, int width, int height) {
+    
+    ImageIcon imageIcon = loadFilesystemImage(resourceName, width, height);
+    if (imageIcon == null) {
+      imageIcon = loadClasspathImage(resourceName, width, height);
+    }
+    return imageIcon;
+  }
+  
   private ImageIcon loadFilesystemImage(String resourceName, int width, int height) {
     
     if (resourceName == null || resourceName.isBlank()) {
       return null;
-    }
-    
+    }    
     Path path = Paths.get(resourceName);
+    if (!path.toFile().exists()) {
+      return null;
+    }
     URL imageUrl;
     try {
       imageUrl = path.toUri().toURL();
@@ -2418,7 +2429,6 @@ public class JukeANatorFrame extends JFrame {
       e.printStackTrace();
       return null;
     }
-    
     return loadImage(imageUrl, width, height);
   }
   
@@ -2427,16 +2437,13 @@ public class JukeANatorFrame extends JFrame {
     if (resourceName == null || resourceName.isBlank()) {
       return null;
     }
-    
     URL imageUrl = getClass().getResource(resourceName);
-    
     return loadImage(imageUrl, width, height);
   }
   
   private ImageIcon loadImage(URL imageUrl, int width, int height) {
     
     try {
-
       if (imageUrl == null) {
         return null;
       }
