@@ -84,14 +84,7 @@ public class JukeANatorFrame extends JFrame {
   // Results panels (rebuilt on each search)
   private final JPanel searchResultsPanel = new JPanel(new BorderLayout());
 
-  // View-all state
-  private final CardLayout viewAllCardLayout = new CardLayout();
-  private final JPanel viewAllRootPanel = new JPanel(viewAllCardLayout);
-  private final JPanel viewAllContentPanel = new JPanel(new BorderLayout());
-  private String viewAllCategory = "";
-  private int viewAllPage = 0;
-  private static final int VIEW_ALL_PAGE_SIZE = 15;
-
+  
   // HOT HERE TAB
   private static final int HOT_HERE_PREVIEW_COUNT = 10;
   private int hotHereArtistsOffset = 0;
@@ -371,26 +364,14 @@ public class JukeANatorFrame extends JFrame {
 
     searchRootPanel.setBackground(BG_DARK);
 
-    //
     // CARD 1: ENTRY (hero + search bar + keyboard)
-    //
     JPanel entryCard = buildSearchEntryCard();
 
-    //
     // CARD 2: RESULTS (search bar + keyboard + 3-column results)
-    //
     searchResultsPanel.setBackground(BG_DARK);
 
-    //
-    // CARD 3: VIEW ALL
-    //
-    viewAllRootPanel.setBackground(BG_DARK);
-    viewAllRootPanel.add(viewAllContentPanel, "CONTENT");
-    viewAllCardLayout.show(viewAllRootPanel, "CONTENT");
-
-    searchRootPanel.add(entryCard, "ENTRY");
+    searchRootPanel.add(entryCard,          "ENTRY");
     searchRootPanel.add(searchResultsPanel, "RESULTS");
-    searchRootPanel.add(viewAllRootPanel, "VIEWALL");
 
     searchCardLayout.show(searchRootPanel, "ENTRY");
 
@@ -403,53 +384,35 @@ public class JukeANatorFrame extends JFrame {
     JPanel root = new JPanel(new BorderLayout());
     root.setBackground(BG_DARK);
 
-    // -------------------------
-    // HERO (CENTER)
-    // -------------------------
     JPanel heroPanel = new JPanel(new GridBagLayout());
     heroPanel.setBackground(new Color(25, 25, 35));
     heroPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, ACCENT_BLUE));
-
     heroPanel.setPreferredSize(new Dimension(100, 300));
 
     JLabel heroLabel = new JLabel("Search for your favorite music.");
     heroLabel.setForeground(TEXT_PRIMARY);
     heroLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 42));
-
     heroPanel.add(heroLabel);
 
-    // -------------------------
-    // SEARCH BAR (NORTH)
-    // -------------------------
     JPanel searchBarPanel = buildSearchBarPanel(false);
     searchBarPanel.setPreferredSize(new Dimension(100, SEARCH_BAR_HEIGHT));
 
-    // -------------------------
-    // KEYBOARD (SOUTH - FIXED)
-    // -------------------------
     JPanel keyboardPanel = buildFixedKeyboardPanel();
 
-    // -------------------------
-    // LAYOUT (MATCH RESULTS STRUCTURE)
-    // -------------------------
     root.add(searchBarPanel, BorderLayout.NORTH);
-    root.add(heroPanel, BorderLayout.CENTER);
-    root.add(keyboardPanel, BorderLayout.SOUTH);
+    root.add(heroPanel,      BorderLayout.CENTER);
+    root.add(keyboardPanel,  BorderLayout.SOUTH);
 
     return root;
   }
 
   // SEARCH BAR PANEL
-  // Shared between entry card and results card
   private JPanel buildSearchBarPanel(boolean forResults) {
 
     JPanel bar = new JPanel(new BorderLayout(10, 0));
     bar.setBackground(new Color(20, 20, 30));
     bar.setBorder(new EmptyBorder(12, 20, 12, 20));
 
-    //
-    // ENTRY DISPLAY
-    //
     JLabel entryLabel = new JLabel();
     entryLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 32));
     entryLabel.setForeground(Color.WHITE);
@@ -458,20 +421,15 @@ public class JukeANatorFrame extends JFrame {
     entryLabel.setBorder(new EmptyBorder(8, 16, 8, 16));
     entryLabel.setHorizontalAlignment(SwingConstants.CENTER);
     entryLabel.setText(searchBuffer.length() == 0 ? " " : searchBuffer.toString());
-    
+
     if (forResults) {
       resultsSearchLabel = entryLabel;
     } else {
       entrySearchLabel = entryLabel;
     }
-    
-    //
-    // SEARCH BUTTON
-    //
+
     JButton searchButton = null;
-
     if (!enableTypeAheadSearch) {
-
       searchButton = new JButton("SEARCH");
       searchButton.setPreferredSize(new Dimension(180, 60));
       searchButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
@@ -480,29 +438,24 @@ public class JukeANatorFrame extends JFrame {
       searchButton.setFocusPainted(false);
       searchButton.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
       searchButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
       searchButton.addActionListener(e -> executeSearch());
-    }    
+    }
 
     bar.add(entryLabel, BorderLayout.CENTER);
-    
-    if (!enableTypeAheadSearch && searchButton != null) {
 
-      //
-      // RIGHT BUTTON PANEL
-      //
+    if (!enableTypeAheadSearch && searchButton != null) {
       JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
       rightPanel.setOpaque(false);
       rightPanel.add(searchButton);
-      
       bar.add(rightPanel, BorderLayout.EAST);
-    }    
+    }
 
     return bar;
   }
 
   // KEYBOARD PANEL
   private JPanel buildFixedKeyboardPanel() {
+
     JPanel wrapper = new JPanel(new GridBagLayout());
     wrapper.setBackground(BG_SEARCH);
 
@@ -515,7 +468,7 @@ public class JukeANatorFrame extends JFrame {
 
     return wrapper;
   }
-  
+
   private JPanel buildKeyboardPanel() {
 
     JPanel panel = new JPanel();
@@ -538,15 +491,11 @@ public class JukeANatorFrame extends JFrame {
     for (char c : "QWERTYUIOP".toCharArray()) {
       row.add(createKeyboardButton(String.valueOf(c)));
     }
-
     row.add(createKeyboardButton("'"));
 
     JButton clear = createKeyboardButton("CLEAR");
     clear.setPreferredSize(new Dimension(140, 60));
-    clear.addActionListener(e -> {
-      resetSearchState();
-    });
-    
+    clear.addActionListener(e -> resetSearchState());
     row.add(clear);
 
     JButton backspace = createKeyboardButton("⌫");
@@ -555,7 +504,6 @@ public class JukeANatorFrame extends JFrame {
       if (searchBuffer.length() > 0) {
         searchBuffer.deleteCharAt(searchBuffer.length() - 1);
         updateSearchEntryLabel();
-
         if (enableTypeAheadSearch) {
           executeSearch();
         }
@@ -578,7 +526,7 @@ public class JukeANatorFrame extends JFrame {
     JButton numeric = createKeyboardButton("123@");
     numeric.setPreferredSize(new Dimension(140, 60));
     row.add(numeric);
-    
+
     JButton alpha = createKeyboardButton("ABC");
     alpha.setPreferredSize(new Dimension(140, 60));
     row.add(alpha);
@@ -600,7 +548,6 @@ public class JukeANatorFrame extends JFrame {
     space.addActionListener(e -> {
       searchBuffer.append(' ');
       updateSearchEntryLabel();
-
       if (enableTypeAheadSearch) {
         executeSearch();
       }
@@ -616,15 +563,10 @@ public class JukeANatorFrame extends JFrame {
     button.setPreferredSize(new Dimension(70, 60));
     styleKeyboardButton(button);
 
-    //
-    // Wire single-character keys to append to search buffer
-    //
     if (text.length() == 1 && !text.equals(" ")) {
-
       button.addActionListener(e -> {
         searchBuffer.append(text);
         updateSearchEntryLabel();
-
         if (enableTypeAheadSearch) {
           executeSearch();
         }
@@ -645,60 +587,29 @@ public class JukeANatorFrame extends JFrame {
 
   private void updateSearchEntryLabel() {
 
-    String text = searchBuffer.toString();
-    String display = text.isEmpty() ? " " : text;
-
-    if (entrySearchLabel != null) {
-      entrySearchLabel.setText(display);
-    }
-
-    if (resultsSearchLabel != null) {
-      resultsSearchLabel.setText(display);
-    }
+    String display = searchBuffer.toString().isEmpty() ? " " : searchBuffer.toString();
+    if (entrySearchLabel   != null) entrySearchLabel.setText(display);
+    if (resultsSearchLabel != null) resultsSearchLabel.setText(display);
   }
 
   // RESET SEARCH STATE
   private void resetSearchState() {
 
-    if (entrySearchLabel != null) {
-      entrySearchLabel.setText(" ");
-    }
-    if (resultsSearchLabel != null) {
-      resultsSearchLabel.setText(" ");
-    }
-    
-    //
-    // Clear entered text
-    //
+    if (entrySearchLabel   != null) entrySearchLabel.setText(" ");
+    if (resultsSearchLabel != null) resultsSearchLabel.setText(" ");
+
     searchBuffer.setLength(0);
     updateSearchEntryLabel();
 
-    //
-    // Clear search state
-    //
     lastSearchResult = null;
+    artistsOffset    = 0;
+    albumsOffset     = 0;
+    songsOffset      = 0;
 
-    artistsOffset = 0;
-    albumsOffset = 0;
-    songsOffset = 0;
-
-    viewAllCategory = "";
-    viewAllPage = 0;
-
-    //
-    // Remove existing results UI
-    //
     searchResultsPanel.removeAll();
     searchResultsPanel.revalidate();
     searchResultsPanel.repaint();
 
-    viewAllContentPanel.removeAll();
-    viewAllContentPanel.revalidate();
-    viewAllContentPanel.repaint();
-
-    //
-    // Return to initial search screen
-    //
     searchCardLayout.show(searchRootPanel, "ENTRY");
   }
 
@@ -706,27 +617,18 @@ public class JukeANatorFrame extends JFrame {
   private void executeSearch() {
 
     String query = searchBuffer.toString().trim();
+    if (query.isEmpty()) return;
 
-    if (query.isEmpty()) {
-      return;
-    }
-
-    //
-    // Call the service — runs on EDT since this is a UI action;
-    // wrap in SwingWorker if the call is slow.
-    //
     try {
-
       lastSearchResult = songLibraryService.getMusicBySearch(query);
-      artistsOffset = 0;
-      albumsOffset = 0;
-      songsOffset = 0;
+      artistsOffset    = 0;
+      albumsOffset     = 0;
+      songsOffset      = 0;
 
       rebuildSearchResultsPanel();
       searchCardLayout.show(searchRootPanel, "RESULTS");
 
     } catch (Exception ex) {
-
       // TODO: show error state
     }
   }
@@ -736,46 +638,36 @@ public class JukeANatorFrame extends JFrame {
 
     searchResultsPanel.removeAll();
 
-    //
-    // SEARCH BAR (repeated at top of results)
-    //
     JPanel searchBarPanel = buildSearchBarPanel(true);
 
-    //
-    // THREE COLUMNS
-    //
     JPanel columnsPanel = new JPanel(new GridLayout(1, 3, 2, 0));
     columnsPanel.setBackground(Color.BLACK);
     columnsPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
 
     columnsPanel.add(buildSearchResultColumn("ARTISTS",
         lastSearchResult.getArtists() == null ? List.of() : lastSearchResult.getArtists(),
-        artistsOffset, "ARTISTS"));
+        artistsOffset));
 
     columnsPanel.add(buildSearchResultColumn("ALBUMS",
         lastSearchResult.getAlbums() == null ? List.of() : lastSearchResult.getAlbums(),
-        albumsOffset, "ALBUMS"));
+        albumsOffset));
 
     columnsPanel.add(buildSearchResultColumn("SONGS",
-        lastSearchResult.getSongs() == null ? List.of() : lastSearchResult.getSongs(), songsOffset,
-        "SONGS"));
+        lastSearchResult.getSongs() == null ? List.of() : lastSearchResult.getSongs(),
+        songsOffset));
 
-    //
-    // KEYBOARD AT BOTTOM
-    //
     JPanel keyboardWrapper = buildFixedKeyboardPanel();
 
-    searchResultsPanel.add(searchBarPanel, BorderLayout.NORTH);
-    searchResultsPanel.add(columnsPanel, BorderLayout.CENTER);
-    searchResultsPanel.add(keyboardWrapper, BorderLayout.SOUTH);
+    searchResultsPanel.add(searchBarPanel,   BorderLayout.NORTH);
+    searchResultsPanel.add(columnsPanel,     BorderLayout.CENTER);
+    searchResultsPanel.add(keyboardWrapper,  BorderLayout.SOUTH);
 
     searchResultsPanel.revalidate();
     searchResultsPanel.repaint();
   }
 
-  // SEARCH RESULT COLUMN (Artists / Albums / Songs)
-  private <T> JPanel buildSearchResultColumn(String header, List<T> items, int offset,
-      String category) {
+  // SEARCH RESULT COLUMN — up/down nav only, no VIEW ALL
+  private <T> JPanel buildSearchResultColumn(String header, List<T> items, int offset) {
 
     JPanel column = new JPanel(new BorderLayout());
     column.setBackground(new Color(15, 15, 20));
@@ -793,25 +685,21 @@ public class JukeANatorFrame extends JFrame {
     headerLabel.setBackground(new Color(20, 20, 30));
 
     //
-    // ROWS (up to SEARCH_PREVIEW_COUNT)
+    // ROWS
     //
     JPanel rowsPanel = new JPanel();
     rowsPanel.setBackground(new Color(15, 15, 20));
     rowsPanel.setLayout(new BoxLayout(rowsPanel, BoxLayout.Y_AXIS));
 
-    int start = offset;
     for (int slot = 0; slot < SEARCH_PREVIEW_COUNT; slot++) {
 
-      int itemIndex = start + slot;
-      JPanel row;
-      if (itemIndex < total) {
-        T item = items.get(itemIndex);
-        row = buildSearchResultRow(itemIndex + 1, item, category);
-      } else {
-        // EMPTY PLACEHOLDER ROW (keeps height consistent)
-        row = buildEmptySearchResultRow();
-      }
+      int itemIndex = offset + slot;
+      JPanel row = (itemIndex < total)
+          ? buildSearchResultRow(itemIndex + 1, items.get(itemIndex), header)
+          : buildEmptySearchResultRow();
+
       rowsPanel.add(row);
+
       if (slot < SEARCH_PREVIEW_COUNT - 1) {
         JSeparator sep = new JSeparator();
         sep.setForeground(new Color(50, 50, 65));
@@ -821,7 +709,7 @@ public class JukeANatorFrame extends JFrame {
     }
 
     //
-    // NAVIGATION (up / view all / down)
+    // NAVIGATION — up / down only
     //
     JPanel navPanel = new JPanel(new BorderLayout(4, 0));
     navPanel.setBackground(new Color(20, 20, 30));
@@ -831,7 +719,7 @@ public class JukeANatorFrame extends JFrame {
     styleNavButton(upButton);
     upButton.setEnabled(offset > 0);
     upButton.addActionListener(e -> {
-      adjustOffset(category, -1);
+      adjustOffset(header, -1);
       rebuildSearchResultsPanel();
     });
 
@@ -839,26 +727,16 @@ public class JukeANatorFrame extends JFrame {
     styleNavButton(downButton);
     downButton.setEnabled(offset + SEARCH_PREVIEW_COUNT < total);
     downButton.addActionListener(e -> {
-      adjustOffset(category, 1);
+      adjustOffset(header, 1);
       rebuildSearchResultsPanel();
     });
 
-    JButton viewAllButton = new JButton("VIEW ALL");
-    viewAllButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-    viewAllButton.setForeground(Color.WHITE);
-    viewAllButton.setBackground(new Color(50, 50, 70));
-    viewAllButton.setFocusPainted(false);
-    viewAllButton.setBorderPainted(false);
-    viewAllButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-    viewAllButton.addActionListener(e -> showViewAll(category));
-
-    navPanel.add(upButton, BorderLayout.WEST);
-    navPanel.add(viewAllButton, BorderLayout.CENTER);
+    navPanel.add(upButton,   BorderLayout.WEST);
     navPanel.add(downButton, BorderLayout.EAST);
 
     column.add(headerLabel, BorderLayout.NORTH);
-    column.add(rowsPanel, BorderLayout.CENTER);
-    column.add(navPanel, BorderLayout.SOUTH);
+    column.add(rowsPanel,   BorderLayout.CENTER);
+    column.add(navPanel,    BorderLayout.SOUTH);
 
     return column;
   }
@@ -870,7 +748,6 @@ public class JukeANatorFrame extends JFrame {
     row.setBorder(new EmptyBorder(8, 10, 8, 10));
     row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
 
-    // Keep structure identical to real rows so height is consistent
     JLabel numLabel = new JLabel("");
     numLabel.setPreferredSize(new Dimension(36, 56));
 
@@ -880,20 +757,20 @@ public class JukeANatorFrame extends JFrame {
     JPanel textPanel = new JPanel();
     textPanel.setOpaque(false);
 
-    row.add(numLabel, BorderLayout.WEST);
-    row.add(thumb, BorderLayout.CENTER);
+    row.add(numLabel,  BorderLayout.WEST);
+    row.add(thumb,     BorderLayout.CENTER);
     row.add(textPanel, BorderLayout.CENTER);
 
     row.setOpaque(true);
     return row;
   }
-  
+
   private void adjustOffset(String category, int delta) {
 
     switch (category) {
       case "ARTISTS" -> artistsOffset = Math.max(0, artistsOffset + delta);
-      case "ALBUMS" -> albumsOffset = Math.max(0, albumsOffset + delta);
-      case "SONGS" -> songsOffset = Math.max(0, songsOffset + delta);
+      case "ALBUMS"  -> albumsOffset  = Math.max(0, albumsOffset  + delta);
+      case "SONGS"   -> songsOffset   = Math.max(0, songsOffset   + delta);
     }
   }
 
@@ -917,27 +794,21 @@ public class JukeANatorFrame extends JFrame {
     row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
     row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-    //
     // ROW NUMBER
-    //
     JLabel numLabel = new JLabel(String.format("%02d", rowNum));
     numLabel.setForeground(TEXT_SECONDARY);
     numLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
     numLabel.setPreferredSize(new Dimension(36, 56));
     numLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-    //
     // THUMBNAIL
-    //
     JLabel thumb = new JLabel();
     thumb.setPreferredSize(new Dimension(56, 56));
     thumb.setHorizontalAlignment(SwingConstants.CENTER);
     thumb.setOpaque(true);
     thumb.setBackground(new Color(40, 40, 55));
 
-    //
     // TEXT
-    //
     JPanel textPanel = new JPanel();
     textPanel.setOpaque(false);
     textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
@@ -967,9 +838,7 @@ public class JukeANatorFrame extends JFrame {
       coverPath = song.getCoverArtPath();
     }
 
-    //
     // LOAD THUMBNAIL
-    //
     final String finalCoverPath = coverPath;
     if (finalCoverPath != null) {
       try {
@@ -982,21 +851,16 @@ public class JukeANatorFrame extends JFrame {
     textPanel.add(Box.createVerticalStrut(3));
     textPanel.add(line2);
 
-    row.add(numLabel, BorderLayout.WEST);
-    row.add(thumb, BorderLayout.AFTER_LINE_ENDS); // east-ish via next line
-
+    // ASSEMBLE: [numLabel + thumb] | textPanel
     JPanel leftSection = new JPanel(new BorderLayout(8, 0));
     leftSection.setOpaque(false);
     leftSection.add(numLabel, BorderLayout.WEST);
     leftSection.add(thumb, BorderLayout.CENTER);
 
-    row.removeAll();
     row.add(leftSection, BorderLayout.WEST);
     row.add(textPanel, BorderLayout.CENTER);
 
-    //
     // HOVER EFFECT
-    //
     row.addMouseListener(new java.awt.event.MouseAdapter() {
       @Override
       public void mouseEntered(java.awt.event.MouseEvent e) {
@@ -1013,192 +877,19 @@ public class JukeANatorFrame extends JFrame {
 
     return row;
   }
-
+  
   private void repaintChildren(java.awt.Container c) {
     for (java.awt.Component child : c.getComponents()) {
       child.repaint();
     }
-  }
+  }  
 
-  // VIEW ALL
-  private void showViewAll(String category) {
-
-    viewAllCategory = category;
-    viewAllPage = 0;
-    rebuildViewAllPanel();
-    searchCardLayout.show(searchRootPanel, "VIEWALL");
-  }
-
-  private void rebuildViewAllPanel() {
-
-    viewAllContentPanel.removeAll();
-
-    List<?> items = switch (viewAllCategory) {
-      case "ARTISTS" -> lastSearchResult.getArtists() != null ? lastSearchResult.getArtists()
-          : List.of();
-      case "ALBUMS" -> lastSearchResult.getAlbums() != null ? lastSearchResult.getAlbums()
-          : List.of();
-      default -> lastSearchResult.getSongs() != null ? lastSearchResult.getSongs() : List.of();
-    };
-
-    int total = items.size();
-    int totalPages = Math.max(1, (int) Math.ceil(total / (double) VIEW_ALL_PAGE_SIZE));
-
-    //
-    // LEFT PANEL: category label, count, search term, back button
-    //
-    JPanel leftPanel = new JPanel(new BorderLayout());
-    leftPanel.setBackground(new Color(20, 20, 30));
-    leftPanel.setPreferredSize(new Dimension(220, 1));
-    leftPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(60, 60, 80)));
-
-    JPanel leftContent = new JPanel();
-    leftContent.setOpaque(false);
-    leftContent.setLayout(new BoxLayout(leftContent, BoxLayout.Y_AXIS));
-    leftContent.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-    //
-    // Category icon placeholder (large square)
-    //
-    JPanel iconBox = new JPanel();
-    iconBox.setBackground(new Color(40, 40, 60));
-    iconBox.setMaximumSize(new Dimension(160, 160));
-    iconBox.setPreferredSize(new Dimension(160, 160));
-    iconBox.setAlignmentX(CENTER_ALIGNMENT);
-
-    JLabel categoryIcon = new JLabel(getCategoryIcon(viewAllCategory));
-    categoryIcon.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 64));
-    categoryIcon.setForeground(ACCENT_BLUE);
-    categoryIcon.setHorizontalAlignment(SwingConstants.CENTER);
-    iconBox.setLayout(new GridBagLayout());
-    iconBox.add(categoryIcon);
-
-    JLabel categoryLabel = new JLabel(viewAllCategory + " (" + total + ")");
-    categoryLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
-    categoryLabel.setForeground(ACCENT_BLUE);
-    categoryLabel.setAlignmentX(CENTER_ALIGNMENT);
-    categoryLabel.setBorder(new EmptyBorder(14, 0, 4, 0));
-
-    JLabel viewingLabel = new JLabel("VIEWING ALL");
-    viewingLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-    viewingLabel.setForeground(TEXT_SECONDARY);
-    viewingLabel.setAlignmentX(CENTER_ALIGNMENT);
-
-    JLabel forLabel = new JLabel("FOR");
-    forLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-    forLabel.setForeground(TEXT_SECONDARY);
-    forLabel.setAlignmentX(CENTER_ALIGNMENT);
-    forLabel.setBorder(new EmptyBorder(10, 0, 4, 0));
-
-    JLabel queryLabel = new JLabel("\"" + searchBuffer.toString().trim() + "\"");
-    queryLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
-    queryLabel.setForeground(Color.WHITE);
-    queryLabel.setAlignmentX(CENTER_ALIGNMENT);
-
-    leftContent.add(iconBox);
-    leftContent.add(categoryLabel);
-    leftContent.add(viewingLabel);
-    leftContent.add(forLabel);
-    leftContent.add(queryLabel);
-
-    //
-    // BACK BUTTON at bottom of left panel
-    //
-    JButton backButton = new JButton("BACK");
-    backButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
-    backButton.setForeground(Color.WHITE);
-    backButton.setBackground(new Color(50, 50, 70));
-    backButton.setFocusPainted(false);
-    backButton.setPreferredSize(new Dimension(160, 55));
-    backButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-    backButton.addActionListener(e -> searchCardLayout.show(searchRootPanel, "RESULTS"));
-
-    JPanel backWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER));
-    backWrapper.setOpaque(false);
-    backWrapper.add(backButton);
-
-    leftPanel.add(leftContent, BorderLayout.CENTER);
-    leftPanel.add(backWrapper, BorderLayout.SOUTH);
-
-    //
-    // RIGHT PANEL: 3-column grid of results
-    //
-    JPanel rightPanel = new JPanel(new BorderLayout());
-    rightPanel.setBackground(BG_DARK);
-
-    JPanel gridPanel = new JPanel(new GridLayout(0, 3, 1, 1));
-    gridPanel.setBackground(Color.BLACK);
-
-    int start = viewAllPage * VIEW_ALL_PAGE_SIZE;
-    int end = Math.min(start + VIEW_ALL_PAGE_SIZE, total);
-
-    for (int i = start; i < end; i++) {
-      Object item = items.get(i);
-      JPanel row = buildSearchResultRow(i + 1, item, viewAllCategory);
-      row.setMaximumSize(null);
-      gridPanel.add(row);
-    }
-
-    //
-    // Fill remaining cells to keep grid uniform
-    //
-    int filled = end - start;
-    int remainder = VIEW_ALL_PAGE_SIZE - filled;
-    for (int i = 0; i < remainder; i++) {
-      JPanel empty = new JPanel();
-      empty.setBackground(BG_DARK);
-      gridPanel.add(empty);
-    }
-
-    //
-    // PAGINATION (bottom right)
-    //
-    JPanel pageNavPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
-    pageNavPanel.setBackground(new Color(20, 20, 30));
-
-    if (viewAllPage > 0) {
-      JButton prevPage = new JButton("❮");
-      styleNavButton(prevPage);
-      prevPage.addActionListener(e -> {
-        viewAllPage--;
-        rebuildViewAllPanel();
-      });
-      pageNavPanel.add(prevPage);
-    }
-
-    JLabel pageLabel = new JLabel((viewAllPage + 1) + " / " + totalPages);
-    pageLabel.setForeground(TEXT_SECONDARY);
-    pageLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 16));
-    pageNavPanel.add(pageLabel);
-
-    if (end < total) {
-      JButton nextPage = new JButton("❯");
-      styleNavButton(nextPage);
-      nextPage.addActionListener(e -> {
-        viewAllPage++;
-        rebuildViewAllPanel();
-      });
-      pageNavPanel.add(nextPage);
-    }
-
-    rightPanel.add(gridPanel, BorderLayout.CENTER);
-    rightPanel.add(pageNavPanel, BorderLayout.SOUTH);
-
-    viewAllContentPanel.add(leftPanel, BorderLayout.WEST);
-    viewAllContentPanel.add(rightPanel, BorderLayout.CENTER);
-
-    viewAllContentPanel.revalidate();
-    viewAllContentPanel.repaint();
-  }
-
-  private String getCategoryIcon(String category) {
-    return switch (category) {
-      case "ARTISTS" -> "♪";
-      case "ALBUMS" -> "▣";
-      default -> "♫";
-    };
-  }
   
+  
+  
+  
+  
+
   
   
   
