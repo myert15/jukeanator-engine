@@ -73,6 +73,14 @@ public class JukeANatorFrame extends JFrame {
   private static final Color TEXT_PRIMARY = Color.WHITE;
   private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
 
+  
+  // HOME TAB
+  private static final int HOME_GRID_COLS = 4;
+  private static final int HOME_GRID_ROWS = 3;
+  private static final int HOME_TILE_ART_W = 190;
+  private static final int HOME_TILE_ART_H = 190;
+  
+  
   // SEARCH TAB
   private static final int KEYBOARD_HEIGHT = 260;
   private static final int SEARCH_BAR_HEIGHT = 90;  
@@ -101,7 +109,10 @@ public class JukeANatorFrame extends JFrame {
   private int hotHereSongsOffset = 0;
   private final JPanel hotHereContentPanel = new JPanel(new BorderLayout());
   private SearchResultDto hotHereResults;
-
+  private final CardLayout hotHereCardLayout = new CardLayout();
+  private final JPanel     hotHereRootPanel  = new JPanel(hotHereCardLayout);
+  
+  
   // GENRE TAB
   private static final int GENRES_PER_PAGE = 12;
   private final JPanel genresRootPanel = new JPanel(new CardLayout());
@@ -114,6 +125,7 @@ public class JukeANatorFrame extends JFrame {
   private final Map<String, ImageIcon> genreIconCache = new HashMap<>();
   private final DefaultListModel<GenreDto> genresListModel = new DefaultListModel<>();
 
+  
   // QUEUE TAB
   private final CardLayout queueCardLayout = new CardLayout();
   private final JPanel queueRootPanel = new JPanel(queueCardLayout);
@@ -125,6 +137,7 @@ public class JukeANatorFrame extends JFrame {
   private final DefaultListModel<SongQueueEntryDto> queueListModel = new DefaultListModel<>();
   private final JList<SongQueueEntryDto> queueList = new JList<>(queueListModel);  
 
+  
   // NOW PLAYING
   private SongQueueEntryDto nowPlayingSong;
   private final JLabel albumArtLabel = new JLabel();
@@ -134,11 +147,13 @@ public class JukeANatorFrame extends JFrame {
   private final JLabel playStatus = new JLabel();
   private boolean musicPaused = false;
   
+  
   // SONG CREDITS
   private final int creditsPer;
   private final int fiveBonusCredits;
   private final int tenBonusCredits; 
 
+  
   // CONSTRUCTOR
   public JukeANatorFrame(
       JukeANatorUserInterfaceProperties jukeANatorUserInterfaceProperties,
@@ -279,7 +294,7 @@ public class JukeANatorFrame extends JFrame {
     tabs.setBorder(null);
     tabs.setOpaque(true);
 
-    tabs.addTab("HOME", buildPlaceholderPanel());
+    tabs.addTab("HOME", buildHomePanel());
     tabs.addTab("SEARCH", buildSearchPanel());
     tabs.addTab("HOT HERE", buildHotHerePanel());
     tabs.addTab("GENRES", buildGenresPanel());
@@ -358,6 +373,36 @@ public class JukeANatorFrame extends JFrame {
       super.paintComponent(g);
     }
   }
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  // ============================================================
+  // HOME PANEL
+  // ============================================================
+  private JPanel buildHomePanel() {
+
+    return new HomePanel(
+        songLibraryService,
+        songQueueService,
+        imageLoader,
+        creditsPer,
+        creditsPer * 2,           // priority cost placeholder
+        POPULARITY_THRESHOLD_1,
+        POPULARITY_THRESHOLD_2,
+        POPULARITY_THRESHOLD_3,
+        enableBigScrollBars,
+        HOME_GRID_COLS,
+        HOME_GRID_ROWS,
+        HOME_TILE_ART_W,
+        HOME_TILE_ART_H);
+  }  
   
   
   
@@ -839,6 +884,45 @@ public class JukeANatorFrame extends JFrame {
       line2.setText(artist.getSongCount() + " songs, " + artist.getAlbumCount() + " albums");
       coverPath = artist.getCoverArtPath();
       
+      row.addMouseListener(new java.awt.event.MouseAdapter() {
+
+        @Override
+        public void mouseClicked(java.awt.event.MouseEvent e) {
+
+          // Determine which root panel / card layout we are inside.
+          // Both Search and Hot Here use their own CardLayout root panels.
+          // We push an ARTIST card into the appropriate one.
+          JPanel tabRoot = findTabRootPanel(row);
+          CardLayout cl = findCardLayout(row);
+
+          if (tabRoot == null || cl == null)
+            return;
+
+          // Fetch full artist with albums list
+          ArtistDto fullArtist;
+          try {
+            fullArtist = songLibraryService.getArtistById(artist.getArtistId());
+          } catch (Exception ex) {
+            return;
+          }
+
+          ArtistDetailPanel artistPanel =
+              new ArtistDetailPanel(fullArtist, imageLoader, HOME_GRID_COLS, // reuse same grid
+                                                                             // config for
+                                                                             // consistency
+                  HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H, "← BACK",
+                  () -> cl.show(tabRoot, getPreviousCard(tabRoot)),
+                  album -> openAlbumDetailFromRow(row, album));
+
+          // Add the artist panel as a new card (remove stale one first)
+          removeCardIfPresent(tabRoot, "ARTIST");
+          tabRoot.add(artistPanel, "ARTIST");
+          cl.show(tabRoot, "ARTIST");
+          tabRoot.revalidate();
+          tabRoot.repaint();
+        }
+      });
+      
     } else if (category.equals("ALBUMS") && item instanceof AlbumDto album) {
       
       line1.setText(album.getAlbumName());
@@ -951,14 +1035,68 @@ public class JukeANatorFrame extends JFrame {
     }
   }  
 
+  /**
+   * Walks up the component tree from {@code c} to find the first JPanel
+   * whose layout is a CardLayout — this is the tab's root navigation panel
+   * (searchRootPanel or hotHereRootPanel).
+   */
+  private JPanel findTabRootPanel(java.awt.Component c) {
+    java.awt.Container parent = c.getParent();
+    while (parent != null) {
+      if (parent instanceof JPanel p && p.getLayout() instanceof CardLayout) {
+        return p;
+      }
+      parent = parent.getParent();
+    }
+    return null;
+  }
+
+  private CardLayout findCardLayout(java.awt.Component c) {
+    JPanel root = findTabRootPanel(c);
+    return root != null ? (CardLayout) root.getLayout() : null;
+  }
+
+  /**
+   * Returns the card name that was showing before ARTIST was pushed.
+   * Search uses "RESULTS" (or "ENTRY"), Hot Here uses "CONTENT".
+   */
+  private String getPreviousCard(JPanel tabRoot) {
+    if (tabRoot == searchRootPanel)  return "RESULTS";
+    if (tabRoot == hotHereContentPanel) return "CONTENT";
+    return "CONTENT";
+  }
+
+  private void removeCardIfPresent(JPanel panel, String cardName) {
+    for (java.awt.Component comp : panel.getComponents()) {
+      // CardLayout doesn't expose card names publicly; we tag panels via
+      // client property so we can find and remove the old ARTIST card.
+      Object tag = ((JPanel) comp).getClientProperty("cardName");
+      if (cardName.equals(tag)) {
+        panel.remove(comp);
+        return;
+      }
+    }
+  }  
   
-  
+  private void openAlbumDetailFromRow(java.awt.Component anchor, AlbumDto album) {
+    Frame owner = (Frame) SwingUtilities.getWindowAncestor(anchor);
+    AlbumDto fullAlbum;
+    try {
+      fullAlbum = songLibraryService.getAlbumById(album.getAlbumId());
+    } catch (Exception e) {
+      fullAlbum = album;
+    }
+    AlbumDetailDialog.show(owner, fullAlbum, imageLoader, songQueueService, creditsPer,
+        creditsPer * 2, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3,
+        enableBigScrollBars);
+  }  
   
   
   
 
   
   
+
   
   // ============================================================
   // HOT HERE PANEL
@@ -966,8 +1104,8 @@ public class JukeANatorFrame extends JFrame {
   private JPanel buildHotHerePanel() {
 
     hotHereContentPanel.setBackground(BG_DARK);
+    hotHereRootPanel.setBackground(BG_DARK);
 
-    // Load data once
     try {
       hotHereResults = songLibraryService.getMusicByPopularity();
     } catch (Exception e) {
@@ -976,7 +1114,10 @@ public class JukeANatorFrame extends JFrame {
 
     rebuildHotHereColumnsPanel();
 
-    return hotHereContentPanel;
+    hotHereRootPanel.add(hotHereContentPanel, "CONTENT");
+    hotHereCardLayout.show(hotHereRootPanel, "CONTENT");
+
+    return hotHereRootPanel;
   }
 
   // REBUILD HOT HERE COLUMNS
