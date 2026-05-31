@@ -2,6 +2,7 @@ package com.djt.jukeanator_engine.domain.songqueue.service;
 
 import static java.util.Objects.requireNonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,9 @@ import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.SongFileEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.repository.SongLibraryRepository;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongQueueChangedEvent;
+import com.djt.jukeanator_engine.domain.songqueue.dto.AddMultipleSongsToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
+import com.djt.jukeanator_engine.domain.songqueue.dto.SongIdentifier;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
 import com.djt.jukeanator_engine.domain.songqueue.event.AddSongToQueueEvent;
 import com.djt.jukeanator_engine.domain.songqueue.exception.SongQueueException;
@@ -81,6 +84,42 @@ public final class SongQueueServiceImpl implements SongQueueService, AggregateRo
     Integer albumId = addSongToQueueRequest.getAlbumId();
     Integer songId = addSongToQueueRequest.getSongId();
     Integer priority = addSongToQueueRequest.getPriority();
+
+    Integer songQueueIndex = addSongToQueue(albumId, songId, priority);
+    
+    // Publish the event
+    eventPublisher.publishEvent(
+        new AddSongToQueueEvent(
+            getQueuedSongs(),
+            Instant.now()));
+    
+    return songQueueIndex;          
+  }
+  
+  @Override
+  public List<Integer> addMultipleSongsToQueue(AddMultipleSongsToQueueRequest addMultipleSongsToQueueRequest) {
+    
+    if (addMultipleSongsToQueueRequest == null || addMultipleSongsToQueueRequest.getSongIdentifiers().isEmpty()) {
+      return List.of();
+    }
+    
+    List<Integer> songQueueIndices = new ArrayList<>();
+    Integer priority = addMultipleSongsToQueueRequest.getPriority();
+    for (SongIdentifier songIdentifier: addMultipleSongsToQueueRequest.getSongIdentifiers()) {
+    
+      songQueueIndices.add(addSongToQueue(songIdentifier.getAlbumId(), songIdentifier.getSongId(), priority));
+    }
+
+    // Publish the event
+    eventPublisher.publishEvent(
+        new AddSongToQueueEvent(
+            getQueuedSongs(),
+            Instant.now()));
+    
+    return songQueueIndices;
+  }
+
+  private Integer addSongToQueue(Integer albumId, Integer songId, Integer priority) {
     
     try {
       AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
@@ -92,16 +131,6 @@ public final class SongQueueServiceImpl implements SongQueueService, AggregateRo
           Integer songQueueIndex = songQueueRoot.addSongToQueue(song, priority);
           
           songQueueRepository.storeAggregateRoot(songQueueRoot);
-
-          // Publish the event
-          eventPublisher.publishEvent(
-              new AddSongToQueueEvent(
-                  getQueuedSongs(),
-                  albumId,
-                  songId,
-                  priority,
-                  songQueueIndex,
-                  Instant.now()));
           
           return songQueueIndex;          
         }
