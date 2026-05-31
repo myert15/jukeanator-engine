@@ -1368,46 +1368,33 @@ public class JukeANatorFrame extends JFrame {
   // GENRE DETAILS
   private void showGenreDetails(GenreDto genreDto) {
 
+    // Fetch all albums for this genre from the library service.
+    // Falls back to an empty list if the service call fails.
+    List<AlbumDto> genreAlbums;
+    try {
+      genreAlbums = songLibraryService.getAlbumsForGenre(genreDto.getGenreId());
+    } catch (Exception ex) {
+      genreAlbums = List.of();
+    }
+
+    // Build the genre detail panel (mirrors ArtistDetailPanel layout):
+    // NORTH — styled header: ← GENRES button | genre icon + name + album count
+    // CENTER — paginated AlbumGridPanel showing every album in this genre
+    final List<AlbumDto> albums = genreAlbums;
+    GenreDetailPanel detailPanel = new GenreDetailPanel(genreDto, albums, imageLoader,
+        HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H, "← GENRES",
+        () -> genresCardLayout.show(genresContentPanel, "GRID"),
+        album -> openAlbumDetailFromRow(genreDetailsPanel, album));
+
+    // Swap the content of genreDetailsPanel and show the DETAILS card.
     genreDetailsPanel.removeAll();
-
-    JPanel detailsPanel = new JPanel(new GridBagLayout());
-
-    detailsPanel.setBackground(BG_DARK);
-
-    JLabel label = new JLabel(
-        "Genre Details: " + genreDto.getGenreName());
-
-    label.setForeground(Color.WHITE);
-    label.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 42));
-
-    detailsPanel.add(label);
-
-    JButton backButton = new JButton("BACK");
-
-    backButton.setPreferredSize(new Dimension(180, 60));
-    backButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
-    backButton.setForeground(Color.WHITE);
-    backButton.setBackground(Color.BLACK);
-
-    backButton.addActionListener(e -> {
-
-      genresCardLayout.show(genresContentPanel, "GRID");
-    });
-
-    JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-
-    topPanel.setOpaque(false);
-    topPanel.add(backButton);
-
-    genreDetailsPanel.add(topPanel, BorderLayout.NORTH);
-    genreDetailsPanel.add(detailsPanel, BorderLayout.CENTER);
-
+    genreDetailsPanel.setLayout(new BorderLayout());
+    genreDetailsPanel.add(detailPanel, BorderLayout.CENTER);
     genreDetailsPanel.revalidate();
     genreDetailsPanel.repaint();
 
     genresCardLayout.show(genresContentPanel, "DETAILS");
   }
-
   
   
   

@@ -71,6 +71,14 @@ public class SongLibraryServiceHttpClient implements SongLibraryService {
   }
 
   @Override
+  public List<AlbumDto> getAlbumsForGenre(Integer genreId) {
+
+    return restClient.get()
+        .uri("/api/song-library/genres/" + genreId + "/albums").retrieve()
+        .body(new ParameterizedTypeReference<>() {});
+  }
+  
+  @Override
   public ArtistDto getArtistById(Integer artistId) {
     
     return restClient.get()

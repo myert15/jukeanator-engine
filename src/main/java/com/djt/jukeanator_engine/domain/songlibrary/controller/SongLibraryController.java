@@ -69,7 +69,13 @@ public class SongLibraryController implements SongLibraryService {
   public List<AlbumDto> getAlbums() {
     return songLibraryService.getAlbums();
   }
-
+  
+  @Override
+  @GetMapping("/genres/{id}/albums")
+  public List<AlbumDto> getAlbumsForGenre(@PathVariable Integer genreId) {
+      return songLibraryService.getAlbumsForGenre(genreId);
+  }
+  
   @Override
   @GetMapping("/albums/{id}")
   public AlbumDto getAlbumById(@PathVariable Integer id) {

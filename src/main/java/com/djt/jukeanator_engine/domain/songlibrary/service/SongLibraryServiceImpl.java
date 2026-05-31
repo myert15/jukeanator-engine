@@ -234,6 +234,21 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
   }   
   
   @Override
+  public List<AlbumDto> getAlbumsForGenre(Integer genreId) {
+
+    if (!isInitialized) {
+      throw new SongLibraryException("SongLibraryService has not been initialized yet!");
+    }
+
+    if (genreId == null) {
+      return List.of();
+    }
+
+    return SongLibraryMapper.toAlbumDtoList(root.getAlbums().stream()
+        .filter(album -> genreId.equals(album.getParentGenre().getPersistentIdentity())).toList());
+  }
+  
+  @Override
   public ArtistDto getArtistById(Integer artistId) {
     
     try {

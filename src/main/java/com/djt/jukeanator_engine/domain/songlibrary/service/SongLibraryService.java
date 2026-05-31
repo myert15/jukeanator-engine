@@ -45,6 +45,12 @@ public interface SongLibraryService {
   List<AlbumDto> getAlbums();
 
   /**
+   * @param genreId
+   * @return
+   */
+  List<AlbumDto> getAlbumsForGenre(Integer genreId);
+  
+  /**
    * 
    * @param artistId
    * @return
