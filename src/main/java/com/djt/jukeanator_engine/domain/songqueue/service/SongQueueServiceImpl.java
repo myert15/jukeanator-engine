@@ -22,6 +22,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.SongFileEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.repository.SongLibraryRepository;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongQueueChangedEvent;
+import com.djt.jukeanator_engine.domain.songqueue.dto.AddAlbumToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddMultipleSongsToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongIdentifier;
@@ -94,6 +95,32 @@ public final class SongQueueServiceImpl implements SongQueueService, AggregateRo
             Instant.now()));
     
     return songQueueIndex;          
+  }
+  
+  @Override
+  public List<Integer> addAlbumToQueue(AddAlbumToQueueRequest addAlbumToQueueRequest) {
+    
+    if (addAlbumToQueueRequest == null) {
+      return List.of();
+    }
+    
+    Integer albumId = addAlbumToQueueRequest.getAlbumId();
+    Integer priority = addAlbumToQueueRequest.getPriority();
+    
+    List<SongIdentifier> songIdentifiers = new ArrayList<>();
+    try {
+      AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
+      if (album != null) {
+        for (SongFileEntity song: album.getChildSongs()) {
+          
+          songIdentifiers.add(new SongIdentifier(albumId, song.getPersistentIdentity()));
+        }
+      }         
+    } catch (EntityDoesNotExistException e) { 
+      throw new SongQueueException("Could not add album to queue, albumId: " + albumId + ", priority: " + priority);
+    }
+    
+    return addMultipleSongsToQueue(new AddMultipleSongsToQueueRequest(songIdentifiers, priority));
   }
   
   @Override

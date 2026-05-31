@@ -18,23 +18,11 @@ public class AddSongToQueueRequest {
     return albumId;
   }
 
-  public void setAlbumId(Integer albumId) {
-    this.albumId = albumId;
-  }
-
   public Integer getSongId() {
     return songId;
   }
 
-  public void setSongId(Integer songId) {
-    this.songId = songId;
-  }
-
   public Integer getPriority() {
     return priority;
-  }
-
-  public void setPriority(Integer priority) {
-    this.priority = priority;
   }
 }

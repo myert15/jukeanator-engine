@@ -1,7 +1,6 @@
 package com.djt.jukeanator_engine.domain.songqueue.controller;
 
 import static java.util.Objects.requireNonNull;
-
 import java.util.List;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +8,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.djt.jukeanator_engine.domain.songqueue.dto.AddAlbumToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddMultipleSongsToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
@@ -47,6 +47,12 @@ public class SongQueueController implements SongQueueService {
     return songQueueService.addSongToQueue(addSongToQueueRequest);
   }
 
+  @PostMapping("/addAlbum")
+  public List<Integer> addAlbumToQueue(@RequestBody AddAlbumToQueueRequest addAlbumToQueueRequest) {
+
+    return songQueueService.addAlbumToQueue(addAlbumToQueueRequest);
+  }
+  
   @PostMapping("/addMultipleSongs")  
   public List<Integer> addMultipleSongsToQueue(AddMultipleSongsToQueueRequest addMultipleSongsToQueueRequest) {
     

@@ -1,9 +1,9 @@
 package com.djt.jukeanator_engine.domain.songqueue.client;
 
 import java.util.List;
-
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClient;
+import com.djt.jukeanator_engine.domain.songqueue.dto.AddAlbumToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddMultipleSongsToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
@@ -43,6 +43,16 @@ public class SongQueueServiceHttpClient implements SongQueueService {
         .body(Integer.class);
   }
 
+  @Override
+  public List<Integer> addAlbumToQueue(AddAlbumToQueueRequest addAlbumToQueueRequest) {
+
+    return restClient.post()
+        .uri("/api/song-queue/addAlbum")
+        .body(addAlbumToQueueRequest)
+        .retrieve()
+        .body(new ParameterizedTypeReference<List<Integer>>() {});
+  }
+  
   @Override
   public List<Integer> addMultipleSongsToQueue(
       AddMultipleSongsToQueueRequest addMultipleSongsToQueueRequest) {
