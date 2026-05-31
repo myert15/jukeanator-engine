@@ -65,6 +65,15 @@ public class SongQueueServiceHttpClient implements SongQueueService {
   }
   
   @Override
+  public Integer flushQueue() {
+
+    return restClient.post()
+        .uri("/api/song-queue/flushQueue")
+        .retrieve()
+        .body(Integer.class);
+  }
+  
+  @Override
   public SongQueueEntryDto dequeueNextSong() {
 
     return restClient.get()

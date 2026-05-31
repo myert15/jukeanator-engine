@@ -145,6 +145,20 @@ public final class SongQueueServiceImpl implements SongQueueService, AggregateRo
     
     return songQueueIndices;
   }
+  
+  @Override
+  public Integer flushQueue() {
+    
+    Integer numSongsFlushed = songQueueRoot.flushQueue();
+    
+    songQueueRepository.storeAggregateRoot(songQueueRoot);
+    
+    eventPublisher.publishEvent(
+        new SongQueueChangedEvent(
+            SongQueueMapper.toDto(songQueueRoot.getSongs())));
+    
+    return numSongsFlushed;
+  }
 
   private Integer addSongToQueue(Integer albumId, Integer songId, Integer priority) {
     

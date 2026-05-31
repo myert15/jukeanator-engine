@@ -38,6 +38,11 @@ public interface SongQueueService {
   List<Integer> addMultipleSongsToQueue(AddMultipleSongsToQueueRequest addMultipleSongsToQueueRequest);
   
   /**
+   * @return
+   */
+  Integer flushQueue();
+  
+  /**
    * 
    * @return
    */

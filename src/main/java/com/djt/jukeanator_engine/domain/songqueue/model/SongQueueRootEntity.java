@@ -40,6 +40,13 @@ public class SongQueueRootEntity extends AbstractPersistentEntity {
     return list;
   }
   
+  public Integer flushQueue() {
+
+    Integer numSongsFlushed = Integer.valueOf(this.songs.size());
+    this.songs.clear();
+    return numSongsFlushed;
+  }
+  
   public int addSongToQueue(SongFileEntity song, Integer priority) {
     
     SongQueueEntryEntity entry = new SongQueueEntryEntity(song, priority);
