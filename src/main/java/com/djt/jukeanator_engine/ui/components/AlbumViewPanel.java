@@ -258,7 +258,7 @@ public class AlbumViewPanel extends JPanel {
     if (songs != null) {
       for (int i = 0; i < songs.size(); i++) {
         SongDto song = songs.get(i);
-        rows.add(buildTrackRow(i + 1, song, t1, t2, t3, listener));
+        rows.add(buildTrackRow(album, i + 1, song, t1, t2, t3, listener));
         if (i < songs.size() - 1) {
           JSeparator sep = new JSeparator();
           sep.setForeground(SEPARATOR);
@@ -293,6 +293,7 @@ public class AlbumViewPanel extends JPanel {
   // TRACK ROW
   // ─────────────────────────────────────────────────────────────────────────
   private JPanel buildTrackRow(
+      AlbumDto          album,
       int               trackNum,
       SongDto           song,
       int               t1,
@@ -321,20 +322,27 @@ public class AlbumViewPanel extends JPanel {
     numLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
     numLabel.setPreferredSize(new Dimension(34, 30));
     numLabel.setHorizontalAlignment(SwingConstants.CENTER);
+    
+    String songDescription = "";
+    if (album.getArtistName().equals("Compilations")) {
+      songDescription = song.getSongName() + " - " + song.getArtistName();
+    } else {
+      songDescription = song.getSongName();
+    }
 
     // ── Song name ─────────────────────────────────────────────────────────
-    JLabel nameLabel = new JLabel(song.getSongName() != null ? song.getSongName() : "");
-    nameLabel.setForeground(TEXT_PRIMARY);
-    nameLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 17));
+    JLabel songDescriptionLabel = new JLabel(songDescription);
+    songDescriptionLabel.setForeground(TEXT_PRIMARY);
+    songDescriptionLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 17));
 
     // ── Left cluster: bars + track num ────────────────────────────────────
     JPanel left = new JPanel(new BorderLayout(6, 0));
     left.setOpaque(false);
     left.add(barsPanel, BorderLayout.WEST);
-    left.add(numLabel,  BorderLayout.CENTER);
+    left.add(numLabel, BorderLayout.CENTER);
 
-    row.add(left,      BorderLayout.WEST);
-    row.add(nameLabel, BorderLayout.CENTER);
+    row.add(left, BorderLayout.WEST);
+    row.add(songDescriptionLabel, BorderLayout.CENTER);
 
     // ── Hover + click ─────────────────────────────────────────────────────
     row.addMouseListener(new java.awt.event.MouseAdapter() {
