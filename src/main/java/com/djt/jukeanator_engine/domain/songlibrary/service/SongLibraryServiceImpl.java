@@ -244,8 +244,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
       return List.of();
     }
 
-    return SongLibraryMapper.toAlbumDtoList(root.getAlbums().stream()
-        .filter(album -> genreId.equals(album.getParentGenre().getPersistentIdentity())).toList());
+    return SongLibraryMapper.toAlbumDtoList(root.getAlbumsForGenre(genreId));
   }
   
   @Override

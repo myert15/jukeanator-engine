@@ -12,6 +12,7 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -75,7 +76,14 @@ public class GenreDetailPanel extends JPanel {
 
     List<AlbumDto> safeAlbums = albums != null ? albums : List.of();
 
-    add(buildHeader(genre, safeAlbums.size(), backLabel, onBack), BorderLayout.NORTH);
+    add(buildHeader(
+        genre,
+        safeAlbums.size(),
+        imageLoader,
+        backLabel,
+        onBack),
+    BorderLayout.NORTH);
+    
     add(new AlbumGridPanel(safeAlbums, imageLoader, gridCols, gridRows, artW, artH, onAlbumClicked),
         BorderLayout.CENTER);
   }
@@ -83,7 +91,12 @@ public class GenreDetailPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // HEADER — back button | genre icon + name + stats
   // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildHeader(GenreDto genre, int albumCount, String backLabel, Runnable onBack) {
+  private JPanel buildHeader(
+      GenreDto genre,
+      int albumCount,
+      ImageLoader imageLoader,
+      String backLabel,
+      Runnable onBack) {
 
     JPanel header = new JPanel(new BorderLayout(16, 0));
     header.setBackground(BG_HEADER);
@@ -131,23 +144,47 @@ public class GenreDetailPanel extends JPanel {
       }
     });
 
-    // ── Genre icon (▣ symbol — same icon used on the tab) ─────────────────
-    JLabel icon = new JLabel("▣");
+    // ── Genre image ────────────────────────────────────────────────────────
+    JLabel icon = new JLabel();
     icon.setPreferredSize(new Dimension(72, 72));
     icon.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
     icon.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
-    icon.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 40));
-    icon.setForeground(ACCENT_BLUE);
     icon.setOpaque(true);
     icon.setBackground(new Color(20, 20, 32));
     icon.setBorder(BorderFactory.createLineBorder(COLOR_BORDER, 1));
 
+    String genreName = genre.getGenreName() != null ? genre.getGenreName() : "";
+
+    try {
+
+      String resourceName = genreName + ".png";
+
+      java.net.URL resource = getClass().getResource(resourceName);
+
+      if (resource != null) {
+
+        ImageIcon imageIcon = imageLoader.loadImage(resourceName, 72, 72);
+
+        if (imageIcon != null) {
+          icon.setIcon(imageIcon);
+        }
+      }
+
+    } catch (Exception ignored) {
+    }
+
+    if (icon.getIcon() == null) {
+
+      icon.setText("♪");
+      icon.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 32));
+      icon.setForeground(new Color(100, 100, 120));
+    }
+    
     // ── Text block ────────────────────────────────────────────────────────
     JPanel textBlock = new JPanel();
     textBlock.setOpaque(false);
     textBlock.setLayout(new BoxLayout(textBlock, BoxLayout.Y_AXIS));
 
-    String genreName = genre.getGenreName() != null ? genre.getGenreName() : "";
     JLabel nameLabel = new JLabel(genreName);
     nameLabel.setForeground(TEXT_PRIMARY);
     nameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 26));

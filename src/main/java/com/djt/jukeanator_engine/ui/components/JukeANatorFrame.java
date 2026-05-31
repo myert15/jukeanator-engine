@@ -1382,7 +1382,7 @@ public class JukeANatorFrame extends JFrame {
     // CENTER — paginated AlbumGridPanel showing every album in this genre
     final List<AlbumDto> albums = genreAlbums;
     GenreDetailPanel detailPanel = new GenreDetailPanel(genreDto, albums, imageLoader,
-        HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H, "← GENRES",
+        HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H, "← BACK",
         () -> genresCardLayout.show(genresContentPanel, "GRID"),
         album -> openAlbumDetailFromRow(genreDetailsPanel, album));
 
