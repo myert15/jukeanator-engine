@@ -1462,7 +1462,7 @@ public class JukeANatorFrame extends JFrame {
     //
     // BACK BUTTON
     //
-    JButton backButton = new JButton("BACK");
+    JButton backButton = new JButton("← BACK");
     backButton.setPreferredSize(new Dimension(180, 60));
     backButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
     backButton.setForeground(Color.WHITE);
