@@ -23,120 +23,71 @@ import javax.swing.border.EmptyBorder;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 
-/**
- * Reusable panel that displays full album information and a scrollable
- * track listing with per-song popularity bars.
- *
- * <p>Popularity bars are determined by three thresholds:
- * <ul>
- *   <li>numPlays &lt; threshold1              → no bars (blank)</li>
- *   <li>threshold1 ≤ numPlays &lt; threshold2 → 1 green bar</li>
- *   <li>threshold2 ≤ numPlays &lt; threshold3 → 2 green bars</li>
- *   <li>numPlays ≥ threshold3                 → 3 green bars</li>
- * </ul>
- *
- * <p>Pass {@code enableBigScrollBars = true} for touchscreen deployments;
- * the vertical scroll bar will use {@link TouchScrollBarUI} and be
- * {@value TouchScrollBarUI#BAR_WIDTH}px wide with large tap targets.
- *
- * <p>Usage — dialog context:
- * <pre>
- *   AlbumViewPanel panel = new AlbumViewPanel(
- *       album, imageLoader,
- *       10, 25, 50,
- *       enableBigScrollBars,
- *       song -> AddSongToQueueDialog.show(...));
- * </pre>
- *
- * <p>Usage — home screen (no song-click callback needed yet):
- * <pre>
- *   AlbumViewPanel panel = new AlbumViewPanel(
- *       album, imageLoader,
- *       10, 25, 50,
- *       enableBigScrollBars,
- *       null);
- * </pre>
- */
 public class AlbumViewPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
+  private static final int LEFT_PANEL_WIDTH = 320;
+  private static final int COVER_SIZE = 320;
+  
   // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color BG_MAIN         = new Color(15,  15,  20);
-  private static final Color BG_SIDEBAR      = new Color(22,  22,  30);
-  private static final Color BG_ROW          = new Color(20,  20,  28);
-  private static final Color BG_ROW_HOVER    = new Color(35,  35,  50);
-  private static final Color ACCENT_BLUE     = new Color(0,  210, 255);
-  private static final Color ACCENT_GREEN    = new Color(60,  210,  80);
-  private static final Color ACCENT_EXPLICIT = new Color(220,  60,  60);
-  private static final Color TEXT_PRIMARY    = Color.WHITE;
-  private static final Color TEXT_SECONDARY  = new Color(180, 180, 180);
-  private static final Color SEPARATOR       = new Color(50,  50,  65);
+  private static final Color BG_MAIN = new Color(15, 15, 20);
+  private static final Color BG_SIDEBAR = new Color(22, 22, 30);
+  private static final Color BG_ROW = new Color(20, 20, 28);
+  private static final Color BG_ROW_HOVER = new Color(35, 35, 50);
+  private static final Color ACCENT_BLUE = new Color(0, 210, 255);
+  private static final Color ACCENT_GREEN = new Color(60, 210, 80);
+  private static final Color ACCENT_EXPLICIT = new Color(220, 60, 60);
+  private static final Color TEXT_PRIMARY = Color.WHITE;
+  private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
+  private static final Color SEPARATOR = new Color(50, 50, 65);
 
   // ── Popularity bar geometry ───────────────────────────────────────────────
-  private static final int   BAR_WIDTH    = 5;
-  private static final int   BAR_GAP      = 3;
-  private static final int   BAR_MAX_H    = 18;
-  private static final int[] BAR_HEIGHTS  = { 8, 13, 18 };
+  private static final int BAR_WIDTH = 5;
+  private static final int BAR_GAP = 3;
+  private static final int BAR_MAX_H = 18;
+  private static final int[] BAR_HEIGHTS = {8, 13, 18};
 
   // ── Song-click callback ───────────────────────────────────────────────────
   public interface SongClickListener {
     void onSongClicked(SongDto song);
   }
 
-  //── Album-click callback ───────────────────────────────────────────────────
+  // ── Album-click callback ───────────────────────────────────────────────────
   public interface AlbumClickListener {
     void onAlbumClicked(AlbumDto album);
   }
-  
+
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * @param album               Album to display.
-   * @param imageLoader         Shared loader instance.
-   * @param threshold1          Min plays for 1 bar.
-   * @param threshold2          Min plays for 2 bars.
-   * @param threshold3          Min plays for 3 bars.
-   * @param enableBigScrollBars If true, applies {@link TouchScrollBarUI} to the
-   *                            track-list scroll bar.
-   * @param songClickListener   Called when a song row is clicked; null to disable.
-   * @param albumClickListener  Called when the album cover art is clicked; null to disable.
-   */
-  public AlbumViewPanel(
-      AlbumDto          album,
-      ImageLoader       imageLoader,
-      int               threshold1,
-      int               threshold2,
-      int               threshold3,
-      boolean           enableBigScrollBars,
-      SongClickListener songClickListener,
+  public AlbumViewPanel(AlbumDto album, ImageLoader imageLoader, int threshold1, int threshold2,
+      int threshold3, boolean enableBigScrollBars, SongClickListener songClickListener,
       AlbumClickListener albumClickListener) {
 
     setLayout(new BorderLayout(0, 0));
     setBackground(BG_MAIN);
 
-    add(buildSidebar(album, imageLoader, albumClickListener),
-        BorderLayout.WEST);
-    add(buildTrackList(album, threshold1, threshold2, threshold3,
-                       enableBigScrollBars, songClickListener),
-        BorderLayout.CENTER);
+    add(buildSidebar(album, imageLoader, albumClickListener), BorderLayout.WEST);
+    add(buildTrackList(album, threshold1, threshold2, threshold3, enableBigScrollBars,
+        songClickListener), BorderLayout.CENTER);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // LEFT SIDEBAR  — cover art + album metadata
+  // LEFT SIDEBAR — cover art + album metadata
   // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildSidebar(AlbumDto album, ImageLoader imageLoader, AlbumClickListener albumClickListener) {
+  private JPanel buildSidebar(AlbumDto album, ImageLoader imageLoader,
+      AlbumClickListener albumClickListener) {
 
     JPanel sidebar = new JPanel(new BorderLayout(0, 0));
     sidebar.setBackground(BG_SIDEBAR);
-    sidebar.setPreferredSize(new Dimension(260, 0));
+    sidebar.setPreferredSize(new Dimension(LEFT_PANEL_WIDTH, 0));
+    sidebar.setMinimumSize(new Dimension(LEFT_PANEL_WIDTH, 0));
     sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, SEPARATOR));
 
     // ── Cover art ─────────────────────────────────────────────────────────
     JLabel cover = new JLabel();
-    cover.setPreferredSize(new Dimension(260, 260));
+    cover.setPreferredSize(new Dimension(COVER_SIZE, COVER_SIZE));
     cover.setHorizontalAlignment(SwingConstants.CENTER);
     cover.setVerticalAlignment(SwingConstants.CENTER);
     cover.setOpaque(true);
@@ -145,8 +96,10 @@ public class AlbumViewPanel extends JPanel {
     if (album.getCoverArtPath() != null) {
       try {
         ImageIcon icon = imageLoader.loadFilesystemImage(album.getCoverArtPath(), 260, 260);
-        if (icon != null) cover.setIcon(icon);
-      } catch (Exception ignored) {}
+        if (icon != null)
+          cover.setIcon(icon);
+      } catch (Exception ignored) {
+      }
     }
 
     if (cover.getIcon() == null) {
@@ -154,9 +107,9 @@ public class AlbumViewPanel extends JPanel {
       cover.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 64));
       cover.setForeground(new Color(80, 80, 100));
     }
-    
+
     cover.setBorder(BorderFactory.createLineBorder(new Color(50, 50, 65), 1));
-    
+
     if (albumClickListener != null) {
 
       cover.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -187,14 +140,12 @@ public class AlbumViewPanel extends JPanel {
     meta.setBorder(new EmptyBorder(14, 14, 14, 14));
 
     // Album name — wraps if long
-    meta.add(wrappingMetaLabel(
-        album.getAlbumName(), Font.BOLD, 20, TEXT_PRIMARY));
+    meta.add(wrappingMetaLabel(album.getAlbumName(), Font.BOLD, 20, TEXT_PRIMARY));
     meta.add(Box.createVerticalStrut(6));
 
     // Artist name — wraps if long
-    meta.add(wrappingMetaLabel(
-        album.getArtistName(), Font.BOLD, 16, ACCENT_BLUE));
-    meta.add(Box.createVerticalStrut(10));
+    meta.add(wrappingMetaLabel(album.getArtistName(), Font.BOLD, 16, ACCENT_BLUE));
+    meta.add(Box.createVerticalStrut(6));
 
     if (album.getReleaseDate() != null && !album.getReleaseDate().isBlank()) {
       meta.add(singleLineMetaLabel(album.getReleaseDate(), Font.PLAIN, 13, TEXT_SECONDARY));
@@ -209,18 +160,22 @@ public class AlbumViewPanel extends JPanel {
     if (Boolean.TRUE.equals(album.getHasExplicit())) {
       JLabel explicit = singleLineMetaLabel("EXPLICIT", Font.BOLD, 12, ACCENT_EXPLICIT);
       explicit.setBorder(BorderFactory.createCompoundBorder(
-          BorderFactory.createLineBorder(ACCENT_EXPLICIT, 1),
-          new EmptyBorder(2, 6, 2, 6)));
+          BorderFactory.createLineBorder(ACCENT_EXPLICIT, 1), new EmptyBorder(2, 6, 2, 6)));
       meta.add(Box.createVerticalStrut(6));
       meta.add(explicit);
     }
 
     int trackCount = album.getSongs() == null ? 0 : album.getSongs().size();
-    meta.add(Box.createVerticalStrut(10));
+    meta.add(Box.createVerticalStrut(6));
     meta.add(singleLineMetaLabel(trackCount + " tracks", Font.PLAIN, 13, TEXT_SECONDARY));
 
-    sidebar.add(cover, BorderLayout.NORTH);
-    sidebar.add(meta,  BorderLayout.CENTER);
+    JPanel content = new JPanel();
+    content.setOpaque(false);
+    content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+    content.add(cover);
+    content.add(meta);
+    
+    sidebar.add(content, BorderLayout.NORTH);
 
     return sidebar;
   }
@@ -228,12 +183,7 @@ public class AlbumViewPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // RIGHT PANEL — scrollable track list
   // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildTrackList(
-      AlbumDto          album,
-      int               t1,
-      int               t2,
-      int               t3,
-      boolean           enableBigScrollBars,
+  private JPanel buildTrackList(AlbumDto album, int t1, int t2, int t3, boolean enableBigScrollBars,
       SongClickListener listener) {
 
     JPanel wrapper = new JPanel(new BorderLayout());
@@ -279,8 +229,7 @@ public class AlbumViewPanel extends JPanel {
 
     if (enableBigScrollBars) {
       scroll.getVerticalScrollBar().setUI(new TouchScrollBarUI());
-      scroll.getVerticalScrollBar().setPreferredSize(
-          new Dimension(TouchScrollBarUI.BAR_WIDTH, 0));
+      scroll.getVerticalScrollBar().setPreferredSize(new Dimension(TouchScrollBarUI.BAR_WIDTH, 0));
     }
 
     wrapper.add(header, BorderLayout.NORTH);
@@ -292,12 +241,7 @@ public class AlbumViewPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // TRACK ROW
   // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildTrackRow(
-      AlbumDto          album,
-      SongDto           song,
-      int               t1,
-      int               t2,
-      int               t3,
+  private JPanel buildTrackRow(AlbumDto album, SongDto song, int t1, int t2, int t3,
       SongClickListener listener) {
 
     JPanel row = new JPanel(new BorderLayout(10, 0));
@@ -321,7 +265,7 @@ public class AlbumViewPanel extends JPanel {
     numLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
     numLabel.setPreferredSize(new Dimension(34, 30));
     numLabel.setHorizontalAlignment(SwingConstants.CENTER);
-    
+
     String songDescription = "";
     if (album.getArtistName().equals("Compilations")) {
       songDescription = song.getSongName() + " - " + song.getArtistName();
@@ -360,7 +304,8 @@ public class AlbumViewPanel extends JPanel {
 
       @Override
       public void mouseClicked(java.awt.event.MouseEvent e) {
-        if (listener != null) listener.onSongClicked(song);
+        if (listener != null)
+          listener.onSongClicked(song);
       }
     });
 
@@ -393,16 +338,13 @@ public class AlbumViewPanel extends JPanel {
       for (int i = 0; i < 3; i++) {
 
         int barH = BAR_HEIGHTS[i];
-        int x    = i * (BAR_WIDTH + BAR_GAP);
-        int y    = baseline - barH;
+        int x = i * (BAR_WIDTH + BAR_GAP);
+        int y = baseline - barH;
 
         if (i < activeBars) {
           int alpha = 180 + (i * 25);
-          g2.setColor(new Color(
-              ACCENT_GREEN.getRed(),
-              ACCENT_GREEN.getGreen(),
-              ACCENT_GREEN.getBlue(),
-              Math.min(alpha, 255)));
+          g2.setColor(new Color(ACCENT_GREEN.getRed(), ACCENT_GREEN.getGreen(),
+              ACCENT_GREEN.getBlue(), Math.min(alpha, 255)));
         } else {
           g2.setColor(new Color(60, 60, 70, 120));
         }
@@ -421,13 +363,12 @@ public class AlbumViewPanel extends JPanel {
   /**
    * A wrapping label for long strings (album name, artist name).
    *
-   * <p>Uses a non-editable, transparent {@link JTextArea} styled to look
-   * like a {@link JLabel}.  {@code JTextArea} participates in BoxLayout
-   * correctly once {@code setLineWrap(true)} and a fixed max-width are set.
-   * The sidebar is 260px wide with 14px padding each side = 232px usable.
+   * <p>
+   * Uses a non-editable, transparent {@link JTextArea} styled to look like a {@link JLabel}.
+   * {@code JTextArea} participates in BoxLayout correctly once {@code setLineWrap(true)} and a
+   * fixed max-width are set. The sidebar is 260px wide with 14px padding each side = 232px usable.
    */
-  private static JTextArea wrappingMetaLabel(
-      String text, int style, int size, Color color) {
+  private static JTextArea wrappingMetaLabel(String text, int style, int size, Color color) {
 
     JTextArea area = new JTextArea(text != null ? text : "");
     area.setFont(new Font(Font.SANS_SERIF, style, size));
@@ -443,16 +384,15 @@ public class AlbumViewPanel extends JPanel {
 
     // Cap width to the usable sidebar width so wrapping triggers correctly.
     // BoxLayout respects maximum width, so we match preferred/max.
-    area.setMaximumSize(new Dimension(232, Integer.MAX_VALUE));
-
+    area.setMaximumSize(new Dimension(LEFT_PANEL_WIDTH - 28, Integer.MAX_VALUE));
+    
     return area;
   }
 
   /**
    * A standard single-line label for short metadata fields.
    */
-  private static JLabel singleLineMetaLabel(
-      String text, int style, int size, Color color) {
+  private static JLabel singleLineMetaLabel(String text, int style, int size, Color color) {
 
     JLabel label = new JLabel(text != null ? text : "");
     label.setForeground(color);
@@ -467,9 +407,12 @@ public class AlbumViewPanel extends JPanel {
   private static int barsForPlays(Integer numPlays, int t1, int t2, int t3) {
 
     int plays = (numPlays == null) ? 0 : numPlays;
-    if (plays >= t3) return 3;
-    if (plays >= t2) return 2;
-    if (plays >= t1) return 1;
+    if (plays >= t3)
+      return 3;
+    if (plays >= t2)
+      return 2;
+    if (plays >= t1)
+      return 1;
     return 0;
   }
 

@@ -16,7 +16,6 @@ import java.awt.GraphicsEnvironment;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
-//import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.net.URL;
@@ -114,6 +113,8 @@ public class JukeANatorFrame extends JFrame {
   
   
   // GENRE TAB
+  private GenrePanel genrePanel;
+  
   private static final int GENRES_PER_PAGE = 12;
   private final JPanel genresRootPanel = new JPanel(new CardLayout());
   private final JPanel genresGridPanel = new JPanel(new GridLayout(2, 6, 20, 20));
@@ -296,8 +297,9 @@ public class JukeANatorFrame extends JFrame {
 
     tabs.addTab("HOME", buildHomePanel());
     tabs.addTab("SEARCH", buildSearchPanel());
-    tabs.addTab("HOT HERE", buildHotHerePanel());
-    tabs.addTab("GENRES", buildGenresPanel());
+    tabs.addTab("HOT HERE", buildHotHerePanel());    
+    this.genrePanel = buildGenresPanel();
+    tabs.addTab("GENRES", genrePanel);
     tabs.addTab("QUEUE", buildQueuePanel());
     tabs.addTab("ADMIN", buildPlaceholderPanel());
 
@@ -417,6 +419,25 @@ public class JukeANatorFrame extends JFrame {
   // SEARCH PANEL
   // ============================================================
   private JPanel buildSearchPanel() {
+
+    return new SearchPanel(
+        songLibraryService,
+        songQueueService,
+        imageLoader,
+        creditsPer,
+        creditsPer * 2,           // priority cost placeholder
+        POPULARITY_THRESHOLD_1,
+        POPULARITY_THRESHOLD_2,
+        POPULARITY_THRESHOLD_3,
+        enableBigScrollBars,
+        enableTypeAheadSearch,
+        HOME_GRID_COLS,
+        HOME_GRID_ROWS,
+        HOME_TILE_ART_W,
+        HOME_TILE_ART_H);    
+  } 
+  
+  private JPanel OLDbuildSearchPanel() {
 
     searchRootPanel.setBackground(BG_DARK);
 
@@ -1121,6 +1142,24 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private JPanel buildHotHerePanel() {
 
+    return new HotHerePanel(
+        songLibraryService,
+        songQueueService,
+        imageLoader,
+        creditsPer,
+        creditsPer * 2,           // priority cost placeholder
+        POPULARITY_THRESHOLD_1,
+        POPULARITY_THRESHOLD_2,
+        POPULARITY_THRESHOLD_3,
+        enableBigScrollBars,
+        HOME_GRID_COLS,
+        HOME_GRID_ROWS,
+        HOME_TILE_ART_W,
+        HOME_TILE_ART_H);
+  }  
+  
+  private JPanel OLDbuildHotHerePanel() {
+
     hotHereContentPanel.setBackground(BG_DARK);
     hotHereRootPanel.setBackground(BG_DARK);
 
@@ -1253,9 +1292,27 @@ public class JukeANatorFrame extends JFrame {
 
   
   // ============================================================
-  // GENRES PANEL
+  // GENRE PANEL
   // ============================================================
-  private JPanel buildGenresPanel() {
+  private GenrePanel buildGenresPanel() {
+
+    return new GenrePanel(
+        songLibraryService,
+        songQueueService,
+        imageLoader,
+        creditsPer,
+        creditsPer * 2,           // priority cost placeholder
+        POPULARITY_THRESHOLD_1,
+        POPULARITY_THRESHOLD_2,
+        POPULARITY_THRESHOLD_3,
+        enableBigScrollBars,
+        HOME_GRID_COLS,
+        HOME_GRID_ROWS,
+        HOME_TILE_ART_W,
+        HOME_TILE_ART_H);
+  }
+  
+  private JPanel OLDbuildGenresPanel() {
 
     genresRootPanel.setBackground(BG_DARK);
     genresContentPanel.setBackground(BG_DARK);
@@ -1882,6 +1939,8 @@ public class JukeANatorFrame extends JFrame {
 
   // GENRE LIST
   public void setGenres(List<GenreDto> genres) {
+    
+    this.genrePanel.setGenres(genres);
 
     SwingUtilities.invokeLater(() -> {
 

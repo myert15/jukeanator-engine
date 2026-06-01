@@ -89,11 +89,8 @@ public class AlbumDetailCard extends JPanel {
     JPanel buttons = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 12, 0));
     buttons.setOpaque(false);
 
-    JButton backButton = createFooterButton("← BACK TO ALBUMS", navigator::popToRoot);
-    //JButton closeButton = createFooterButton("CLOSE", () -> navigator.popToRoot());
-
+    JButton backButton = createFooterButton("← BACK", navigator::popToRoot);
     buttons.add(backButton);
-    //buttons.add(closeButton);
 
     //
     // TIMEOUT

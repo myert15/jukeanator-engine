@@ -1,0 +1,285 @@
+package com.djt.jukeanator_engine.ui.components;
+
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Frame;
+import java.awt.GridLayout;
+import java.util.List;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
+import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
+import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
+import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
+
+/**
+ * The "HOT HERE" tab panel.
+ *
+ * <p>
+ * Card layout:
+ * <ol>
+ * <li><b>CONTENT</b> — three-column popularity chart (artists / albums / songs).</li>
+ * <li><b>ARTIST</b> — {@link ArtistDetailPanel} pushed when an artist row is tapped.</li>
+ * <li><b>DETAIL</b> — {@link AlbumDetailCard} pushed when an album tile/row is tapped.</li>
+ * </ol>
+ *
+ * <p>
+ * Implements {@link TabNavigator} so {@link AlbumDetailCard} can pop itself back to CONTENT without
+ * knowing which tab it lives in.
+ */
+public class HotHerePanel extends JPanel implements TabNavigator {
+
+  private static final long serialVersionUID = 1L;
+
+  // ── Palette ───────────────────────────────────────────────────────────────
+  private static final Color BG_DARK = new Color(10, 10, 10);
+
+  // ── Preview row count ─────────────────────────────────────────────────────
+  private static final int PREVIEW_COUNT = 10;
+
+  // ── Card names ────────────────────────────────────────────────────────────
+  private static final String CARD_CONTENT = "CONTENT";
+  private static final String CARD_ARTIST = "ARTIST";
+  private static final String CARD_DETAIL = "DETAIL";
+
+  // ── Layout ────────────────────────────────────────────────────────────────
+  private final CardLayout cardLayout = new CardLayout();
+  private final JPanel rootPanel = new JPanel(cardLayout);
+  private final JPanel contentPanel = new JPanel(new BorderLayout());
+
+  // ── Offset state per column ───────────────────────────────────────────────
+  private int artistsOffset = 0;
+  private int albumsOffset = 0;
+  private int songsOffset = 0;
+
+  // ── Active detail card ────────────────────────────────────────────────────
+  private AlbumDetailCard currentDetailCard;
+
+  // ── Popularity data (loaded once at construction) ─────────────────────────
+  private final SearchResultDto results;
+
+  // ── Dependencies ──────────────────────────────────────────────────────────
+  private final SongLibraryService songLibraryService;
+  private final SongQueueService songQueueService;
+  private final ImageLoader imageLoader;
+  private final int normalPlayCost;
+  private final int priorityCost;
+  private final int popularityT1;
+  private final int popularityT2;
+  private final int popularityT3;
+  private final boolean enableBigScrollBars;
+  private final int gridCols;
+  private final int gridRows;
+  private final int artW;
+  private final int artH;
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONSTRUCTOR
+  // ─────────────────────────────────────────────────────────────────────────
+
+  public HotHerePanel(SongLibraryService songLibraryService, SongQueueService songQueueService,
+      ImageLoader imageLoader, int normalPlayCost, int priorityCost, int popularityT1,
+      int popularityT2, int popularityT3, boolean enableBigScrollBars, int gridCols, int gridRows,
+      int artW, int artH) {
+
+    this.songLibraryService = songLibraryService;
+    this.songQueueService = songQueueService;
+    this.imageLoader = imageLoader;
+    this.normalPlayCost = normalPlayCost;
+    this.priorityCost = priorityCost;
+    this.popularityT1 = popularityT1;
+    this.popularityT2 = popularityT2;
+    this.popularityT3 = popularityT3;
+    this.enableBigScrollBars = enableBigScrollBars;
+    this.gridCols = gridCols;
+    this.gridRows = gridRows;
+    this.artW = artW;
+    this.artH = artH;
+
+    SearchResultDto loaded;
+    try {
+      loaded = songLibraryService.getMusicByPopularity();
+    } catch (Exception e) {
+      loaded = new SearchResultDto();
+    }
+    this.results = loaded;
+
+    setLayout(new BorderLayout());
+    setBackground(BG_DARK);
+
+    contentPanel.setBackground(BG_DARK);
+    rootPanel.setBackground(BG_DARK);
+    add(rootPanel, BorderLayout.CENTER);
+
+    rootPanel.add(contentPanel, CARD_CONTENT);
+    rootPanel.add(placeholder(), CARD_ARTIST);
+    rootPanel.add(placeholder(), CARD_DETAIL);
+
+    rebuildColumnsPanel();
+    cardLayout.show(rootPanel, CARD_CONTENT);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // TabNavigator
+  // ─────────────────────────────────────────────────────────────────────────
+
+  @Override
+  public void pushAlbumDetail(AlbumDto album) {
+
+    Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
+    AlbumDto full = fetchFull(album);
+    int albumNormal = normalPlayCost * full.getSongs().size();
+    int albumPriority = priorityCost * full.getSongs().size();
+
+    if (currentDetailCard != null) {
+      currentDetailCard.dismiss();
+    }
+
+    currentDetailCard = new AlbumDetailCard(owner, full, imageLoader, songQueueService, albumNormal,
+        albumPriority, popularityT1, popularityT2, popularityT3, enableBigScrollBars, this);
+
+    replaceCard(CARD_DETAIL, currentDetailCard);
+    cardLayout.show(rootPanel, CARD_DETAIL);
+  }
+
+  @Override
+  public void popToRoot() {
+
+    if (currentDetailCard != null) {
+      currentDetailCard.dismiss();
+      currentDetailCard = null;
+    }
+    cardLayout.show(rootPanel, CARD_CONTENT);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONTENT PANEL
+  // ─────────────────────────────────────────────────────────────────────────
+  private void rebuildColumnsPanel() {
+
+    contentPanel.removeAll();
+
+    List<ArtistDto> artists = safeList(results.getArtists());
+    List<AlbumDto> albums = safeList(results.getAlbums());
+    List<SongDto> songs = safeList(results.getSongs());
+
+    JPanel columns = new JPanel(new GridLayout(1, 3, 2, 0));
+    columns.setBackground(Color.BLACK);
+
+    columns.add(ResultsColumnPanel.build("ARTISTS", artists, artistsOffset, PREVIEW_COUNT,
+        imageLoader, () -> {
+          artistsOffset = Math.max(0, artistsOffset - 1);
+          rebuildColumnsPanel();
+        }, () -> {
+          artistsOffset++;
+          rebuildColumnsPanel();
+        }, (item) -> handleRowClick("ARTISTS", item)));
+
+    columns.add(
+        ResultsColumnPanel.build("ALBUMS", albums, albumsOffset, PREVIEW_COUNT, imageLoader, () -> {
+          albumsOffset = Math.max(0, albumsOffset - 1);
+          rebuildColumnsPanel();
+        }, () -> {
+          albumsOffset++;
+          rebuildColumnsPanel();
+        }, (item) -> handleRowClick("ALBUMS", item)));
+
+    columns.add(
+        ResultsColumnPanel.build("SONGS", songs, songsOffset, PREVIEW_COUNT, imageLoader, () -> {
+          songsOffset = Math.max(0, songsOffset - 1);
+          rebuildColumnsPanel();
+        }, () -> {
+          songsOffset++;
+          rebuildColumnsPanel();
+        }, (item) -> handleRowClick("SONGS", item)));
+
+    contentPanel.add(columns, BorderLayout.CENTER);
+    contentPanel.revalidate();
+    contentPanel.repaint();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ROW CLICK DISPATCH
+  // ─────────────────────────────────────────────────────────────────────────
+  private <T> void handleRowClick(String category, T item) {
+
+    switch (category) {
+      case "ARTISTS" -> {
+        if (item instanceof ArtistDto a)
+          pushArtist(a);
+      }
+      case "ALBUMS" -> {
+        if (item instanceof AlbumDto a)
+          pushAlbumDetail(a);
+      }
+      case "SONGS" -> {
+        if (item instanceof SongDto song) {
+          Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
+          AddSongToQueueDialog.show(owner, song, imageLoader, normalPlayCost, priorityCost,
+              () -> songQueueService.addSongToQueue(
+                  new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 0)),
+              () -> songQueueService.addSongToQueue(
+                  new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)));
+        }
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ARTIST CARD
+  // ─────────────────────────────────────────────────────────────────────────
+  private void pushArtist(ArtistDto artist) {
+
+    ArtistDto full;
+    try {
+      full = songLibraryService.getArtistById(artist.getArtistId());
+    } catch (Exception e) {
+      return;
+    }
+
+    ArtistDetailPanel panel =
+        new ArtistDetailPanel(full, imageLoader, gridCols, gridRows, artW, artH, "← BACK",
+            () -> cardLayout.show(rootPanel, CARD_CONTENT), album -> pushAlbumDetail(album));
+
+    replaceCard(CARD_ARTIST, panel);
+    cardLayout.show(rootPanel, CARD_ARTIST);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // HELPERS
+  // ─────────────────────────────────────────────────────────────────────────
+  private AlbumDto fetchFull(AlbumDto album) {
+    try {
+      return songLibraryService.getAlbumById(album.getAlbumId());
+    } catch (Exception e) {
+      return album;
+    }
+  }
+
+  private void replaceCard(String name, JPanel newPanel) {
+    for (int i = rootPanel.getComponentCount() - 1; i >= 0; i--) {
+      if (name.equals(rootPanel.getComponent(i).getName())) {
+        rootPanel.remove(i);
+        break;
+      }
+    }
+    newPanel.setName(name);
+    rootPanel.add(newPanel, name);
+    rootPanel.revalidate();
+    rootPanel.repaint();
+  }
+
+  private static <T> List<T> safeList(List<T> list) {
+    return list != null ? list : List.of();
+  }
+
+  private JPanel placeholder() {
+    JPanel p = new JPanel();
+    p.setBackground(BG_DARK);
+    return p;
+  }
+}
