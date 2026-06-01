@@ -109,4 +109,12 @@ public class SongLibraryServiceHttpClient implements SongLibraryService {
         .uri("/api/song-library/scan").body(scanRequest).retrieve()
         .body(Integer.class);
   }
+  
+  @Override
+  public Integer resetSongStatistics() {
+
+    return restClient.post()
+        .uri("/api/song-library/resetSongStatistics").retrieve()
+        .body(Integer.class);
+  }
 }

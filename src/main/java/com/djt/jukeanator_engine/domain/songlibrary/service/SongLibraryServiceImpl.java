@@ -312,6 +312,32 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
           + songScanner.getAcceptedSongFileExtensions(), e);
     }
   }
+  
+  @Override
+  public Integer resetSongStatistics() {
+    try {
+      
+      // Reset all the song statistics
+      this.root.resetSongStatistics();
+      
+      // Store the song library
+      this.songLibraryRepository.storeAggregateRoot(this.root);
+      
+      // Initialize the song library
+      initializeSongLibrary();
+      
+      // Publish the event
+      eventPublisher.publishEvent(new ScanFileSystemForSongsEvent(
+          scanPath,
+          root.getAlbums().size(), 
+          Instant.now()));
+      
+      return Integer.valueOf(root.getAlbums().size());
+      
+    } catch (Exception e) {
+      throw new SongLibraryException("Could not reset song statistics", e);
+    }
+  }
 
   // Repository methods
   @Override

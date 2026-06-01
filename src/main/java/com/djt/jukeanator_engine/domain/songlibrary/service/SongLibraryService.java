@@ -79,4 +79,9 @@ public interface SongLibraryService {
    * @throws SongScanFailedException
    */
   Integer scanFileSystemForSongs(ScanRequest request) throws SongScanFailedException;
+  
+  /**
+   * 
+   */
+  Integer resetSongStatistics();
 }

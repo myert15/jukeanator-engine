@@ -93,4 +93,10 @@ public class SongLibraryController implements SongLibraryService {
 
     return songLibraryService.scanFileSystemForSongs(scanRequest);
   }
+
+  @PostMapping("/resetSongStatistics")
+  public Integer resetSongStatistics() {
+
+    return songLibraryService.resetSongStatistics();
+  } 
 }

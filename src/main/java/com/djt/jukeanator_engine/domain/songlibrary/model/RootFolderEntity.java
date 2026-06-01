@@ -274,6 +274,18 @@ public class RootFolderEntity extends FolderEntity {
       e.printStackTrace();
     }
   }
+  
+  public void resetSongStatistics() {
+    
+    if (this.songsMap == null) {
+      initialize();
+    }
+
+    for (SongFileEntity song : this.songsMap.values()) {
+
+      song.setNumPlays(0);
+    }
+  }
 
   private String normalizeSongPath(String path) {
 
