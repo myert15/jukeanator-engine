@@ -20,36 +20,6 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 
-/**
- * A paginated, configurable grid of album cover-art tiles.
- *
- * <p>
- * The grid dimensions (columns × rows) are supplied at construction time so the same component
- * works for landscape widescreen (e.g. 4 × 3), portrait tablet (e.g. 3 × 4), or any other layout
- * the deployment needs.
- *
- * <p>
- * Each tile shows:
- * <ul>
- * <li>Cover art (fills the tile, letterboxed if aspect ratio differs)</li>
- * <li>Album name (single line, truncated with "…" if too long)</li>
- * <li>Artist name (smaller, secondary colour)</li>
- * </ul>
- *
- * <p>
- * A prev / page-indicator / next footer handles pagination when the album list exceeds one page.
- *
- * <p>
- * Usage:
- * 
- * <pre>
- *   AlbumGridPanel grid = new AlbumGridPanel(
- *       albums, imageLoader,
- *       4, 3,          // columns, rows
- *       200, 200,      // tile art width, height in px
- *       album -> AlbumDetailDialog.show(...));
- * </pre>
- */
 public class AlbumGridPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;

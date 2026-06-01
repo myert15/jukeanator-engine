@@ -15,22 +15,6 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 
-/**
- * The "HOME" tab panel.
- *
- * <p>
- * Card layout with three cards:
- * <ol>
- * <li><b>GRID</b> — full {@link AlbumGridPanel} showing every album in the library.</li>
- * <li><b>ARTIST</b> — {@link ArtistDetailPanel} shown when navigating to an artist.</li>
- * <li><b>DETAIL</b> — {@link AlbumDetailCard} shown when the user taps an album tile; replaces the
- * former modal {@code AlbumDetailDialog}.</li>
- * </ol>
- *
- * <p>
- * Implements {@link TabNavigator} so that {@link AlbumDetailCard} can call back into this panel to
- * pop itself off the stack without needing a reference to the concrete type.
- */
 public class HomePanel extends JPanel implements TabNavigator {
 
   private static final long serialVersionUID = 1L;

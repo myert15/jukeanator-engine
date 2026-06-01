@@ -8,41 +8,6 @@ import javax.swing.JPanel;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 
-/**
- * Reusable panel that renders an artist header (photo + name + stats) above a paginated
- * {@link AlbumGridPanel}. A configurable back/close button sits in the header so the panel can be
- * embedded in any navigation context.
- *
- * <p>
- * Grid layout (cols × rows) and tile art size are configurable so the same panel works in
- * landscape, portrait, or any resolution.
- *
- * <p>
- * Usage — inside a CardLayout (Search / Hot Here):
- * 
- * <pre>
- *   ArtistDetailPanel panel = new ArtistDetailPanel(
- *       artist, imageLoader,
- *       gridCols, gridRows, artW, artH,
- *       enableBigScrollBars,
- *       "← BACK",
- *       () -> cardLayout.show(rootPanel, "RESULTS"),
- *       album -> AlbumDetailDialog.show(...));
- * </pre>
- *
- * <p>
- * Usage — Home tab (back button navigates to the full album grid):
- * 
- * <pre>
- *   ArtistDetailPanel panel = new ArtistDetailPanel(
- *       artist, imageLoader,
- *       gridCols, gridRows, artW, artH,
- *       enableBigScrollBars,
- *       "← HOME",
- *       () -> showHomeGrid(),
- *       album -> AlbumDetailDialog.show(...));
- * </pre>
- */
 public class ArtistDetailPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
