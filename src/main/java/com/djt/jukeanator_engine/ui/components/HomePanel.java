@@ -19,29 +19,23 @@ import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
  * The "HOME" tab panel.
  *
  * <p>
- * Card layout with two cards:
+ * Card layout with three cards:
  * <ol>
- * <li><b>GRID</b> — a full {@link AlbumGridPanel} showing every album in the library, loaded once
- * on construction.</li>
- * <li><b>ARTIST</b> — an {@link ArtistDetailPanel} shown when the user navigates to an artist from
- * elsewhere (future use); navigating back returns to GRID.</li>
+ * <li><b>GRID</b> — full {@link AlbumGridPanel} showing every album in the library.</li>
+ * <li><b>ARTIST</b> — {@link ArtistDetailPanel} shown when navigating to an artist.</li>
+ * <li><b>DETAIL</b> — {@link AlbumDetailCard} shown when the user taps an album tile; replaces the
+ * former modal {@code AlbumDetailDialog}.</li>
  * </ol>
  *
  * <p>
- * Album tiles open {@link AlbumDetailDialog} directly (no separate card needed — the dialog is
- * modal).
- *
- * <p>
- * Grid dimensions and tile sizes are driven by
- * {@link com.djt.jukeanator_engine.ui.config.JukeANatorUserInterfaceProperties} fields
- * {@code homeGridCols}, {@code homeGridRows}, {@code homeTileArtWidth}, {@code homeTileArtHeight}
- * (add these to the properties class; defaults below).
+ * Implements {@link TabNavigator} so that {@link AlbumDetailCard} can call back into this panel to
+ * pop itself off the stack without needing a reference to the concrete type.
  */
-public class HomePanel extends JPanel {
+public class HomePanel extends JPanel implements TabNavigator {
 
   private static final long serialVersionUID = 1L;
 
-  // ── Default grid config (override via properties) ─────────────────────────
+  // ── Default grid config ───────────────────────────────────────────────────
   public static final int DEFAULT_COLS = 4;
   public static final int DEFAULT_ROWS = 3;
   public static final int DEFAULT_ART_W = 190;
@@ -50,12 +44,17 @@ public class HomePanel extends JPanel {
   // ── Palette ───────────────────────────────────────────────────────────────
   private static final Color BG_DARK = new Color(10, 10, 10);
 
-  // ── Cards ─────────────────────────────────────────────────────────────────
+  // ── Card names ────────────────────────────────────────────────────────────
   private static final String CARD_GRID = "GRID";
   private static final String CARD_ARTIST = "ARTIST";
+  private static final String CARD_DETAIL = "DETAIL";
 
+  // ── Layout ────────────────────────────────────────────────────────────────
   private final CardLayout cardLayout = new CardLayout();
   private final JPanel rootPanel = new JPanel(cardLayout);
+
+  // ── Active detail card (tracked so its timer can be stopped) ─────────────
+  private AlbumDetailCard currentDetailCard;
 
   // ── Dependencies ──────────────────────────────────────────────────────────
   private final SongLibraryService songLibraryService;
@@ -116,12 +115,77 @@ public class HomePanel extends JPanel {
     rootPanel.setBackground(BG_DARK);
     add(rootPanel, BorderLayout.CENTER);
 
+    // Seed the three cards. ARTIST and DETAIL start as empty placeholders;
+    // real content is swapped in on demand via replaceCard().
     rootPanel.add(buildGridCard(), CARD_GRID);
-
-    // ARTIST card is a placeholder; real content is swapped in on demand
-    rootPanel.add(new JPanel(), CARD_ARTIST);
+    rootPanel.add(placeholder(), CARD_ARTIST);
+    rootPanel.add(placeholder(), CARD_DETAIL);
 
     cardLayout.show(rootPanel, CARD_GRID);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // TabNavigator — called by AlbumDetailCard
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Fetches the full album (with songs), builds an {@link AlbumDetailCard}, places it in the DETAIL
+   * card slot, and flips to it. Any previously active detail card has its timer stopped first so
+   * there are no dangling Swing timers.
+   */
+  @Override
+  public void pushAlbumDetail(AlbumDto album) {
+
+    Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
+
+    AlbumDto full = fetchFull(album);
+    int albumNormal = normalPlayCost * full.getSongs().size();
+    int albumPriority = priorityCost * full.getSongs().size();
+
+    if (currentDetailCard != null) {
+      currentDetailCard.dismiss(); // stop the countdown timer
+    }
+
+    currentDetailCard = new AlbumDetailCard(owner, full, imageLoader, songQueueService, albumNormal,
+        albumPriority, popularityT1, popularityT2, popularityT3, enableBigScrollBars, this); // TabNavigator
+                                                                                             // back-reference
+
+    replaceCard(CARD_DETAIL, currentDetailCard);
+    cardLayout.show(rootPanel, CARD_DETAIL);
+  }
+
+  /**
+   * Stops the detail card's countdown timer and returns to the root grid. Safe to call even when no
+   * detail card is currently active.
+   */
+  @Override
+  public void popToRoot() {
+
+    if (currentDetailCard != null) {
+      currentDetailCard.dismiss();
+      currentDetailCard = null;
+    }
+    cardLayout.show(rootPanel, CARD_GRID);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ARTIST CARD
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Navigate to the artist detail view within the Home tab. Can be called from outside (e.g. a
+   * future "Featured Artists" section on the Home tab).
+   */
+  public void showArtist(ArtistDto artist) {
+
+    ArtistDetailPanel artistPanel =
+        new ArtistDetailPanel(artist, imageLoader, gridCols, gridRows, artW, artH, "← HOME",
+            () -> cardLayout.show(rootPanel, CARD_GRID), album -> pushAlbumDetail(album)); // reuse
+                                                                                           // TabNavigator
+                                                                                           // path
+
+    replaceCard(CARD_ARTIST, artistPanel);
+    cardLayout.show(rootPanel, CARD_ARTIST);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -143,87 +207,64 @@ public class HomePanel extends JPanel {
         new DetailHeaderPanel(null, null, null, "♫", "ALL ALBUMS", allAlbums.size() + " albums");
 
     if (allAlbums.isEmpty()) {
-
       JLabel empty = new JLabel("No albums found.", SwingConstants.CENTER);
-
       empty.setForeground(AlbumGridPanel.TEXT_SECONDARY);
       empty.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 22));
-
       card.add(header, BorderLayout.NORTH);
       card.add(empty, BorderLayout.CENTER);
-
       return card;
     }
 
     AlbumGridPanel grid = new AlbumGridPanel(allAlbums, imageLoader, gridCols, gridRows, artW, artH,
-        album -> openAlbumDetail(album));
+        album -> pushAlbumDetail(album)); // TabNavigator path
 
     card.add(header, BorderLayout.NORTH);
     card.add(grid, BorderLayout.CENTER);
-
     return card;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // ARTIST CARD (navigated to from external callers, e.g. future artist list)
+  // HELPERS
   // ─────────────────────────────────────────────────────────────────────────
 
   /**
-   * Navigate to the artist detail view within the Home tab. Can be called from outside (e.g. if a
-   * future "Featured Artists" section lives on the Home tab and the user taps an artist name).
+   * Fetches the full {@link AlbumDto} (including the songs list) for the given album. Falls back to
+   * the supplied stub if the service call fails.
    */
-  public void showArtist(ArtistDto artist) {
+  private AlbumDto fetchFull(AlbumDto album) {
+    try {
+      return songLibraryService.getAlbumById(album.getAlbumId());
+    } catch (Exception e) {
+      return album;
+    }
+  }
 
-    ArtistDetailPanel artistPanel =
-        new ArtistDetailPanel(artist, imageLoader, gridCols, gridRows, artW, artH, "← HOME",
-            () -> cardLayout.show(rootPanel, CARD_GRID), album -> openAlbumDetail(album));
+  /**
+   * Replaces the component registered under {@code name} in {@code rootPanel} with
+   * {@code newPanel}, then revalidates the container.
+   *
+   * <p>
+   * Using the component's {@link java.awt.Component#getName() name} property rather than a
+   * positional index makes this robust against reordering and future card additions.
+   */
+  private void replaceCard(String name, JPanel newPanel) {
 
-    rootPanel.remove(rootPanel.getComponent(getComponentIndex(CARD_ARTIST)));
-    rootPanel.add(artistPanel, CARD_ARTIST);
-
-    cardLayout.show(rootPanel, CARD_ARTIST);
+    for (int i = rootPanel.getComponentCount() - 1; i >= 0; i--) {
+      if (name.equals(rootPanel.getComponent(i).getName())) {
+        rootPanel.remove(i);
+        break;
+      }
+    }
+    newPanel.setName(name);
+    rootPanel.add(newPanel, name);
     rootPanel.revalidate();
     rootPanel.repaint();
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // OPEN ALBUM DETAIL
-  // ─────────────────────────────────────────────────────────────────────────
-  private void openAlbumDetail(AlbumDto album) {
-
-    Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
-
-    // Fetch full album (with songs list)
-    AlbumDto fullAlbum;
-    try {
-      fullAlbum = songLibraryService.getAlbumById(album.getAlbumId());
-    } catch (Exception e) {
-      fullAlbum = album;
-    }
-    
-    // priority cost placeholder
-    int numSongs = fullAlbum.getSongs().size();
-    int albumNormalPlayCost = normalPlayCost * numSongs;
-    int albumPriorityPlayCost = priorityCost * numSongs;
-
-    AlbumDetailDialog.show(
-        owner, 
-        fullAlbum, 
-        imageLoader, 
-        songQueueService, 
-        albumNormalPlayCost,
-        albumPriorityPlayCost, 
-        popularityT1, 
-        popularityT2, 
-        popularityT3, 
-        enableBigScrollBars);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // HELPER — find component index by card name in a CardLayout panel
-  // ─────────────────────────────────────────────────────────────────────────
-  private int getComponentIndex(String cardName) {
-    // CardLayout stores components in order; GRID=0, ARTIST=1
-    return cardName.equals(CARD_GRID) ? 0 : 1;
+  /** Minimal opaque placeholder used to seed card slots before real content arrives. */
+  private JPanel placeholder() {
+    JPanel p = new JPanel();
+    p.setBackground(BG_DARK);
+    return p;
   }
 }
