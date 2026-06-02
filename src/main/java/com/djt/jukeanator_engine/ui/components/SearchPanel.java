@@ -8,8 +8,12 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.LinearGradientPaint;
+import java.awt.RenderingHints;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -26,36 +30,30 @@ import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 
-/**
- * The "SEARCH" tab panel.
- *
- * <p>
- * Card layout:
- * <ol>
- * <li><b>ENTRY</b> — hero text + search bar + on-screen keyboard.</li>
- * <li><b>RESULTS</b> — search bar + three-column results + keyboard.</li>
- * <li><b>ARTIST</b> — {@link ArtistDetailPanel} pushed when an artist row is tapped.</li>
- * <li><b>DETAIL</b> — {@link AlbumDetailCard} pushed when an album tile/row is tapped.</li>
- * </ol>
- *
- * <p>
- * Implements {@link TabNavigator} so {@link AlbumDetailCard} can pop itself back to RESULTS without
- * knowing which tab it lives in.
- */
 public class SearchPanel extends JPanel implements TabNavigator {
 
   private static final long serialVersionUID = 1L;
 
   // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color BG_DARK = new Color(10, 10, 10);
-  private static final Color BG_SEARCH = new Color(32, 32, 40);
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
   private static final Color TEXT_PRIMARY = Color.WHITE;
+
+  // Key colours
+  private static final Color KEY_TOP = new Color(88, 88, 96);
+  private static final Color KEY_MID = new Color(62, 62, 70);
+  private static final Color KEY_FACE = new Color(48, 48, 55);
+  private static final Color KEY_FRONT = new Color(22, 22, 26);
+  private static final Color KEY_SHADOW = new Color(12, 12, 14);
 
   // ── Layout constants ──────────────────────────────────────────────────────
   private static final int KEYBOARD_HEIGHT = 260;
   private static final int SEARCH_BAR_HEIGHT = 90;
   private static final int SEARCH_PREVIEW_COUNT = 6;
+
+  // Unified Screen Margin Padding to expose base background gradient
+  private static final int SCREEN_PADDING_HORIZONTAL = 60;
+  // Must match the exact column edge margin defined in ResultsColumnPanel.java
+  private static final int COLUMN_INTERNAL_EDGE_GAP = 10;
 
   // ── Card names ────────────────────────────────────────────────────────────
   private static final String CARD_ENTRY = "ENTRY";
@@ -63,25 +61,29 @@ public class SearchPanel extends JPanel implements TabNavigator {
   private static final String CARD_ARTIST = "ARTIST";
   private static final String CARD_DETAIL = "DETAIL";
 
-  // ── Layout ────────────────────────────────────────────────────────────────
+  private enum KeyboardMode {
+    ABC, NUMERIC
+  }
+
+  private KeyboardMode keyboardMode = KeyboardMode.ABC;
+
   private final CardLayout cardLayout = new CardLayout();
   private final JPanel rootPanel = new JPanel(cardLayout);
 
-  // ── Search state ──────────────────────────────────────────────────────────
   private final StringBuilder searchBuffer = new StringBuilder();
   private SearchResultDto lastResult;
   private int artistsOffset = 0;
   private int albumsOffset = 0;
   private int songsOffset = 0;
 
-  // ── Labels synced across both search-bar instances ────────────────────────
   private JLabel entrySearchLabel;
   private JLabel resultsSearchLabel;
 
-  // ── Results card rebuilt on each search ───────────────────────────────────
   private final JPanel resultsCard = new JPanel(new BorderLayout());
 
-  // ── Active detail card ────────────────────────────────────────────────────
+  private JPanel entryKeyboardWrapper;
+  private JPanel resultsKeyboardWrapper;
+
   private AlbumDetailCard currentDetailCard;
 
   // ── Dependencies ──────────────────────────────────────────────────────────
@@ -104,21 +106,10 @@ public class SearchPanel extends JPanel implements TabNavigator {
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
 
-  public SearchPanel(
-      SongLibraryService songLibraryService, 
-      SongQueueService songQueueService,
-      ImageLoader imageLoader, 
-      int normalPlayCost, 
-      int priorityCost, 
-      int popularityT1,
-      int popularityT2, 
-      int popularityT3, 
-      boolean enableBigScrollBars,
-      boolean enableTypeAheadSearch, 
-      int gridCols, 
-      int gridRows, 
-      int artW, 
-      int artH) {
+  public SearchPanel(SongLibraryService songLibraryService, SongQueueService songQueueService,
+      ImageLoader imageLoader, int normalPlayCost, int priorityCost, int popularityT1,
+      int popularityT2, int popularityT3, boolean enableBigScrollBars,
+      boolean enableTypeAheadSearch, int gridCols, int gridRows, int artW, int artH) {
 
     this.songLibraryService = songLibraryService;
     this.songQueueService = songQueueService;
@@ -136,12 +127,12 @@ public class SearchPanel extends JPanel implements TabNavigator {
     this.artH = artH;
 
     setLayout(new BorderLayout());
-    setBackground(BG_DARK);
+    setOpaque(false);
 
-    rootPanel.setBackground(BG_DARK);
+    rootPanel.setOpaque(false);
     add(rootPanel, BorderLayout.CENTER);
 
-    resultsCard.setBackground(BG_DARK);
+    resultsCard.setOpaque(false);
 
     rootPanel.add(buildEntryCard(), CARD_ENTRY);
     rootPanel.add(resultsCard, CARD_RESULTS);
@@ -151,21 +142,15 @@ public class SearchPanel extends JPanel implements TabNavigator {
     cardLayout.show(rootPanel, CARD_ENTRY);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // TabNavigator
-  // ─────────────────────────────────────────────────────────────────────────
-
   @Override
   public void pushAlbumDetail(AlbumDto album) {
-
     Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
     AlbumDto full = fetchFull(album);
     int albumNormal = normalPlayCost * full.getSongs().size();
     int albumPriority = priorityCost * full.getSongs().size();
 
-    if (currentDetailCard != null) {
+    if (currentDetailCard != null)
       currentDetailCard.dismiss();
-    }
 
     currentDetailCard = new AlbumDetailCard(owner, full, imageLoader, songQueueService, albumNormal,
         albumPriority, popularityT1, popularityT2, popularityT3, enableBigScrollBars, this);
@@ -174,13 +159,8 @@ public class SearchPanel extends JPanel implements TabNavigator {
     cardLayout.show(rootPanel, CARD_DETAIL);
   }
 
-  /**
-   * Returns to RESULTS if a search is active, otherwise to ENTRY. Called by AlbumDetailCard when
-   * its countdown expires or CLOSE is tapped.
-   */
   @Override
   public void popToRoot() {
-
     if (currentDetailCard != null) {
       currentDetailCard.dismiss();
       currentDetailCard = null;
@@ -189,46 +169,78 @@ public class SearchPanel extends JPanel implements TabNavigator {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // ENTRY CARD
+  // FIXED ITEM #3: HERO PANEL WITH ENHANCED LIGHTENING GLASS OVERLAY
   // ─────────────────────────────────────────────────────────────────────────
+
   private JPanel buildEntryCard() {
-
     JPanel root = new JPanel(new BorderLayout());
-    root.setBackground(BG_DARK);
+    root.setOpaque(false);
 
-    JPanel hero = new JPanel(new GridBagLayout());
-    hero.setBackground(new Color(25, 25, 35));
-    hero.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, ACCENT_BLUE));
-    hero.setPreferredSize(new Dimension(100, 300));
+    // Outer alignment container shell ensuring margins allow background gradient to pass through
+    JPanel heroWrapper = new JPanel(new BorderLayout());
+    heroWrapper.setOpaque(false);
+    heroWrapper
+        .setBorder(new EmptyBorder(0, SCREEN_PADDING_HORIZONTAL, 0, SCREEN_PADDING_HORIZONTAL));
+
+    // Enhanced inner panel incorporating the exact same frosted glass lighten execution as the
+    // keyboard panel
+    JPanel enhancedHeroBody = new JPanel(new GridBagLayout()) {
+      private static final long serialVersionUID = 1L;
+
+      @Override
+      protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Exact lightened glass alpha layer setup matching keyboard panel style
+        g2.setColor(new Color(255, 255, 255, 30));
+        g2.fillRect(0, 0, getWidth(), getHeight());
+
+        g2.dispose();
+        super.paintComponent(g);
+      }
+    };
+    enhancedHeroBody.setOpaque(false);
+    enhancedHeroBody.setPreferredSize(new Dimension(100, 300));
 
     JLabel heroLabel = new JLabel("Search for your favorite music.");
     heroLabel.setForeground(TEXT_PRIMARY);
     heroLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 42));
-    hero.add(heroLabel);
+    enhancedHeroBody.add(heroLabel);
+
+    heroWrapper.add(enhancedHeroBody, BorderLayout.CENTER);
 
     JPanel searchBar = buildSearchBarPanel(false);
     searchBar.setPreferredSize(new Dimension(100, SEARCH_BAR_HEIGHT));
 
+    entryKeyboardWrapper = buildKeyboardWrapper(true);
+
     root.add(searchBar, BorderLayout.NORTH);
-    root.add(hero, BorderLayout.CENTER);
-    root.add(buildFixedKeyboard(), BorderLayout.SOUTH);
+    root.add(heroWrapper, BorderLayout.CENTER);
+    root.add(entryKeyboardWrapper, BorderLayout.SOUTH);
     return root;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // SEARCH BAR
+  // FIXED ITEM #1 & #2: SEARCH BAR LAYOUT AND RE-ALIGNED BORDER
   // ─────────────────────────────────────────────────────────────────────────
+
   private JPanel buildSearchBarPanel(boolean forResults) {
+    JPanel wrapper = new JPanel(new BorderLayout());
+    wrapper.setOpaque(false);
+    wrapper
+        .setBorder(new EmptyBorder(12, SCREEN_PADDING_HORIZONTAL, 12, SCREEN_PADDING_HORIZONTAL));
 
     JPanel bar = new JPanel(new BorderLayout(10, 0));
-    bar.setBackground(new Color(20, 20, 30));
-    bar.setBorder(new EmptyBorder(12, 20, 12, 20));
+    bar.setBackground(Color.BLACK);
+    // Asymmetrical clean white border setup: Top=2px, Left/Bottom/Right=1px
+    bar.setBorder(BorderFactory.createMatteBorder(2, 1, 1, 1, Color.WHITE));
 
     JLabel lbl = new JLabel();
     lbl.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 32));
     lbl.setForeground(Color.WHITE);
     lbl.setOpaque(true);
-    lbl.setBackground(new Color(40, 40, 55));
+    lbl.setBackground(Color.BLACK);
     lbl.setBorder(new EmptyBorder(8, 16, 8, 16));
     lbl.setHorizontalAlignment(SwingConstants.CENTER);
     lbl.setText(searchBuffer.length() == 0 ? " " : searchBuffer.toString());
@@ -257,36 +269,70 @@ public class SearchPanel extends JPanel implements TabNavigator {
       bar.add(right, BorderLayout.EAST);
     }
 
-    return bar;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // KEYBOARD
-  // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildFixedKeyboard() {
-
-    JPanel wrapper = new JPanel(new GridBagLayout());
-    wrapper.setBackground(BG_SEARCH);
-    wrapper.add(buildKeyboardPanel());
-    wrapper.setPreferredSize(new Dimension(100, KEYBOARD_HEIGHT));
-    wrapper.setMinimumSize(new Dimension(100, KEYBOARD_HEIGHT));
-    wrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, KEYBOARD_HEIGHT));
+    wrapper.add(bar, BorderLayout.CENTER);
     return wrapper;
   }
 
-  private JPanel buildKeyboardPanel() {
+  // ─────────────────────────────────────────────────────────────────────────
+  // KEYBOARD WRAPPER
+  // ─────────────────────────────────────────────────────────────────────────
 
+  private JPanel buildKeyboardWrapper(boolean isEntryCard) {
+    JPanel outerWrapper = new JPanel(new BorderLayout());
+    outerWrapper.setOpaque(false);
+    outerWrapper.setPreferredSize(new Dimension(100, KEYBOARD_HEIGHT));
+    outerWrapper.setMinimumSize(new Dimension(100, KEYBOARD_HEIGHT));
+    outerWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, KEYBOARD_HEIGHT));
+    outerWrapper
+        .setBorder(new EmptyBorder(0, SCREEN_PADDING_HORIZONTAL, 0, SCREEN_PADDING_HORIZONTAL));
+
+    JPanel frostedBodyPanel = new JPanel(new BorderLayout()) {
+      private static final long serialVersionUID = 1L;
+
+      @Override
+      protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(new Color(255, 255, 255, 30));
+        g2.fillRect(0, 0, getWidth(), getHeight());
+        g2.dispose();
+        super.paintComponent(g);
+      }
+    };
+    frostedBodyPanel.setOpaque(false);
+
+    JPanel centreShell = new JPanel(new GridBagLayout());
+    centreShell.setOpaque(false);
+    centreShell.add(buildKeyboardPanel());
+
+    frostedBodyPanel.add(centreShell, BorderLayout.CENTER);
+    outerWrapper.add(frostedBodyPanel, BorderLayout.CENTER);
+
+    return outerWrapper;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // KEYBOARD LAYOUT TRACKING
+  // ─────────────────────────────────────────────────────────────────────────
+
+  private JPanel buildKeyboardPanel() {
     JPanel p = new JPanel(new GridLayout(3, 1, 10, 10));
     p.setOpaque(false);
-    p.setBorder(new EmptyBorder(20, 50, 20, 50));
-    p.add(buildKeyRow1());
-    p.add(buildKeyRow2());
-    p.add(buildKeyRow3());
+    p.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+    if (keyboardMode == KeyboardMode.ABC) {
+      p.add(buildAbcRow1());
+      p.add(buildAbcRow2());
+      p.add(buildAbcRow3());
+    } else {
+      p.add(buildNumRow1());
+      p.add(buildNumRow2());
+      p.add(buildNumRow3());
+    }
     return p;
   }
 
-  private JPanel buildKeyRow1() {
-
+  private JPanel buildAbcRow1() {
     JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
     row.setOpaque(false);
     for (char c : "QWERTYUIOP".toCharArray())
@@ -297,32 +343,22 @@ public class SearchPanel extends JPanel implements TabNavigator {
     clear.addActionListener(e -> resetSearch());
     row.add(clear);
 
-    JButton back = styledKey("⌫", new Dimension(100, 60));
-    back.addActionListener(e -> {
-      if (searchBuffer.length() > 0) {
-        searchBuffer.deleteCharAt(searchBuffer.length() - 1);
-        syncSearchLabel();
-        if (enableTypeAheadSearch)
-          executeSearch();
-      }
-    });
-    row.add(back);
+    row.add(buildBackspaceButton());
     return row;
   }
 
-  private JPanel buildKeyRow2() {
-
+  private JPanel buildAbcRow2() {
     JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
     row.setOpaque(false);
     for (char c : "ASDFGHJKL".toCharArray())
       row.add(letterKey(String.valueOf(c)));
-    row.add(styledKey("123@", new Dimension(140, 60)));
-    row.add(styledKey("ABC", new Dimension(140, 60)));
+
+    row.add(buildModeToggleButton("123@", KeyboardMode.NUMERIC));
+    row.add(buildModeToggleButton("ABC", KeyboardMode.ABC));
     return row;
   }
 
-  private JPanel buildKeyRow3() {
-
+  private JPanel buildAbcRow3() {
     JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
     row.setOpaque(false);
     for (char c : "ZXCVBNM".toCharArray())
@@ -339,37 +375,169 @@ public class SearchPanel extends JPanel implements TabNavigator {
     return row;
   }
 
-  private JButton letterKey(String text) {
+  private JPanel buildNumRow1() {
+    JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+    row.setOpaque(false);
+    for (String s : new String[] {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"})
+      row.add(letterKey(s));
 
-    JButton btn = styledKey(text, new Dimension(70, 60));
-    if (text.length() == 1 && !text.equals(" ")) {
-      btn.addActionListener(e -> {
-        searchBuffer.append(text);
+    JButton clear = styledKey("CLEAR", new Dimension(140, 60));
+    clear.addActionListener(e -> resetSearch());
+    row.add(clear);
+
+    row.add(buildBackspaceButton());
+    return row;
+  }
+
+  private JPanel buildNumRow2() {
+    JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+    row.setOpaque(false);
+    for (String s : new String[] {"!", "@", "#", "$", "%", "^", "&", "*", "\""})
+      row.add(letterKey(s));
+
+    row.add(buildModeToggleButton("123@", KeyboardMode.NUMERIC));
+    row.add(buildModeToggleButton("ABC", KeyboardMode.ABC));
+    return row;
+  }
+
+  private JPanel buildNumRow3() {
+    JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+    row.setOpaque(false);
+    for (String s : new String[] {"(", ")", "[", "]", "/", "\\", "?", ":", ";", "~"})
+      row.add(letterKey(s));
+
+    JButton space = styledKey("SPACE", new Dimension(420, 60));
+    space.addActionListener(e -> {
+      searchBuffer.append(' ');
+      syncSearchLabel();
+      if (enableTypeAheadSearch)
+        executeSearch();
+    });
+    row.add(space);
+    return row;
+  }
+
+  private JButton buildBackspaceButton() {
+    JButton back = styledKey("⌫", new Dimension(100, 60));
+    back.addActionListener(e -> {
+      if (searchBuffer.length() > 0) {
+        searchBuffer.deleteCharAt(searchBuffer.length() - 1);
         syncSearchLabel();
         if (enableTypeAheadSearch)
           executeSearch();
-      });
+      }
+    });
+    return back;
+  }
+
+  private JButton buildModeToggleButton(String label, KeyboardMode targetMode) {
+    JButton btn = styledKey(label, new Dimension(140, 60));
+    if ((targetMode == KeyboardMode.ABC && keyboardMode == KeyboardMode.ABC)
+        || (targetMode == KeyboardMode.NUMERIC && keyboardMode == KeyboardMode.NUMERIC)) {
+      btn.setBackground(new Color(0, 160, 200));
     }
+    btn.addActionListener(e -> {
+      if (keyboardMode != targetMode) {
+        keyboardMode = targetMode;
+        refreshKeyboardWrappers();
+      }
+    });
+    return btn;
+  }
+
+  private void refreshKeyboardWrappers() {
+    swapKeyboardInWrapper(entryKeyboardWrapper);
+    swapKeyboardInWrapper(resultsKeyboardWrapper);
+  }
+
+  private void swapKeyboardInWrapper(JPanel wrapper) {
+    if (wrapper == null)
+      return;
+
+    JPanel frostedBody = (JPanel) wrapper.getComponent(0);
+    frostedBody.removeAll();
+
+    JPanel centreShell = new JPanel(new GridBagLayout());
+    centreShell.setOpaque(false);
+    centreShell.add(buildKeyboardPanel());
+    frostedBody.add(centreShell, BorderLayout.CENTER);
+
+    wrapper.repaint();
+    wrapper.revalidate();
+  }
+
+  private JButton letterKey(String text) {
+    JButton btn = styledKey(text, new Dimension(70, 60));
+    btn.addActionListener(e -> {
+      searchBuffer.append(text);
+      syncSearchLabel();
+      if (enableTypeAheadSearch)
+        executeSearch();
+    });
     return btn;
   }
 
   private JButton styledKey(String text, Dimension size) {
+    JButton btn = new JButton(text) {
+      private static final long serialVersionUID = 1L;
 
-    JButton btn = new JButton(text);
+      @Override
+      protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+            RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        int w = getWidth();
+        int h = getHeight();
+        int arc = 7;
+        int bandH = Math.round(h * 0.28f);
+        int faceH = h - bandH;
+
+        g2.setColor(KEY_SHADOW);
+        g2.fillRoundRect(1, 3, w - 2, h - 2, arc, arc);
+
+        g2.setColor(KEY_FRONT);
+        g2.fillRoundRect(1, faceH - arc / 2, w - 2, bandH + arc / 2, arc, arc);
+
+        float[] frac = {0.0f, 0.55f, 1.0f};
+        Color[] cols = {KEY_TOP, KEY_MID, KEY_FACE};
+        g2.setPaint(new LinearGradientPaint(0, 0, 0, faceH, frac, cols));
+        g2.fillRoundRect(1, 0, w - 2, faceH + arc / 2, arc, arc);
+
+        g2.setColor(new Color(130, 130, 138, 180));
+        g2.drawLine(arc, 1, w - arc - 1, 1);
+
+        g2.setColor(new Color(88, 88, 96, 80));
+        g2.drawLine(1, 2, 1, faceH - 2);
+        g2.drawLine(w - 2, 2, w - 2, faceH - 2);
+
+        g2.setColor(model.isArmed() ? ACCENT_BLUE : TEXT_PRIMARY);
+        g2.setFont(getFont());
+        java.awt.FontMetrics fm = g2.getFontMetrics();
+        int tx = (w - fm.stringWidth(getText())) / 2;
+        int ty = (faceH - fm.getHeight()) / 2 + fm.getAscent();
+        g2.drawString(getText(), tx, ty);
+
+        g2.dispose();
+      }
+
+      @Override
+      protected void paintBorder(Graphics g) {}
+    };
+
     btn.setPreferredSize(size);
     btn.setFocusPainted(false);
-    btn.setBackground(new Color(70, 70, 80));
+    btn.setContentAreaFilled(false);
+    btn.setBorderPainted(false);
+    btn.setOpaque(false);
     btn.setForeground(TEXT_PRIMARY);
     btn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
-    btn.setBorder(BorderFactory.createLineBorder(ACCENT_BLUE, 1));
+    btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     return btn;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // SEARCH EXECUTION
-  // ─────────────────────────────────────────────────────────────────────────
   private void executeSearch() {
-
     String query = searchBuffer.toString().trim();
     if (query.isEmpty())
       return;
@@ -382,12 +550,10 @@ public class SearchPanel extends JPanel implements TabNavigator {
       rebuildResultsCard();
       cardLayout.show(rootPanel, CARD_RESULTS);
     } catch (Exception ignored) {
-      // TODO: surface error state
     }
   }
 
   private void resetSearch() {
-
     searchBuffer.setLength(0);
     syncSearchLabel();
     lastResult = null;
@@ -401,7 +567,6 @@ public class SearchPanel extends JPanel implements TabNavigator {
   }
 
   private void syncSearchLabel() {
-
     String display = searchBuffer.toString().isEmpty() ? " " : searchBuffer.toString();
     if (entrySearchLabel != null)
       entrySearchLabel.setText(display);
@@ -410,58 +575,65 @@ public class SearchPanel extends JPanel implements TabNavigator {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // RESULTS CARD
+  // FIXED ITEM #1: EXACT SCREEN BOUNDARY MARGIN COLUMN ALIGNMENT
   // ─────────────────────────────────────────────────────────────────────────
-  private void rebuildResultsCard() {
 
+  private void rebuildResultsCard() {
     resultsCard.removeAll();
 
     List<ArtistDto> artists = safeList(lastResult.getArtists());
     List<AlbumDto> albums = safeList(lastResult.getAlbums());
     List<SongDto> songs = safeList(lastResult.getSongs());
 
-    JPanel columns = new JPanel(new GridLayout(1, 3, 2, 0));
-    columns.setBackground(Color.BLACK);
+    JPanel columnsLayoutContainer = new JPanel(new GridLayout(1, 3, 0, 0));
+    columnsLayoutContainer.setOpaque(false);
 
-    columns.add(ResultsColumnPanel.build("ARTISTS", artists, artistsOffset, SEARCH_PREVIEW_COUNT,
-        imageLoader, () -> {
+    // MATHEMATICAL FIX: By subtracting COLUMN_INTERNAL_EDGE_GAP (10px) from
+    // SCREEN_PADDING_HORIZONTAL (60px),
+    // the outer edges of the content layout expand exactly 10px outwards. This completely
+    // counteracts the inner column body's
+    // internal border padding, aligning the columns perfectly with the search entry field border.
+    int unifiedPaddingCalculation = SCREEN_PADDING_HORIZONTAL - COLUMN_INTERNAL_EDGE_GAP;
+    columnsLayoutContainer
+        .setBorder(new EmptyBorder(10, unifiedPaddingCalculation, 10, unifiedPaddingCalculation));
+
+    columnsLayoutContainer.add(ResultsColumnPanel.build("ARTISTS", artists, artistsOffset,
+        SEARCH_PREVIEW_COUNT, imageLoader, () -> {
           artistsOffset = Math.max(0, artistsOffset - 1);
           rebuildResultsCard();
         }, () -> {
           artistsOffset++;
           rebuildResultsCard();
-        }, (item) -> handleRowClick("ARTISTS", item)));
+        }, item -> handleRowClick("ARTISTS", item)));
 
-    columns.add(ResultsColumnPanel.build("ALBUMS", albums, albumsOffset, SEARCH_PREVIEW_COUNT,
-        imageLoader, () -> {
+    columnsLayoutContainer.add(ResultsColumnPanel.build("ALBUMS", albums, albumsOffset,
+        SEARCH_PREVIEW_COUNT, imageLoader, () -> {
           albumsOffset = Math.max(0, albumsOffset - 1);
           rebuildResultsCard();
         }, () -> {
           albumsOffset++;
           rebuildResultsCard();
-        }, (item) -> handleRowClick("ALBUMS", item)));
+        }, item -> handleRowClick("ALBUMS", item)));
 
-    columns.add(ResultsColumnPanel.build("SONGS", songs, songsOffset, SEARCH_PREVIEW_COUNT,
-        imageLoader, () -> {
+    columnsLayoutContainer.add(ResultsColumnPanel.build("SONGS", songs, songsOffset,
+        SEARCH_PREVIEW_COUNT, imageLoader, () -> {
           songsOffset = Math.max(0, songsOffset - 1);
           rebuildResultsCard();
         }, () -> {
           songsOffset++;
           rebuildResultsCard();
-        }, (item) -> handleRowClick("SONGS", item)));
+        }, item -> handleRowClick("SONGS", item)));
+
+    resultsKeyboardWrapper = buildKeyboardWrapper(false);
 
     resultsCard.add(buildSearchBarPanel(true), BorderLayout.NORTH);
-    resultsCard.add(columns, BorderLayout.CENTER);
-    resultsCard.add(buildFixedKeyboard(), BorderLayout.SOUTH);
+    resultsCard.add(columnsLayoutContainer, BorderLayout.CENTER);
+    resultsCard.add(resultsKeyboardWrapper, BorderLayout.SOUTH);
     resultsCard.revalidate();
     resultsCard.repaint();
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // ROW CLICK DISPATCH
-  // ─────────────────────────────────────────────────────────────────────────
   private <T> void handleRowClick(String category, T item) {
-
     switch (category) {
       case "ARTISTS" -> {
         if (item instanceof ArtistDto a)
@@ -484,11 +656,7 @@ public class SearchPanel extends JPanel implements TabNavigator {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // ARTIST CARD
-  // ─────────────────────────────────────────────────────────────────────────
   private void pushArtist(ArtistDto artist) {
-
     ArtistDto full;
     try {
       full = songLibraryService.getArtistById(artist.getArtistId());
@@ -504,9 +672,6 @@ public class SearchPanel extends JPanel implements TabNavigator {
     cardLayout.show(rootPanel, CARD_ARTIST);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // HELPERS
-  // ─────────────────────────────────────────────────────────────────────────
   private AlbumDto fetchFull(AlbumDto album) {
     try {
       return songLibraryService.getAlbumById(album.getAlbumId());
@@ -534,7 +699,7 @@ public class SearchPanel extends JPanel implements TabNavigator {
 
   private JPanel placeholder() {
     JPanel p = new JPanel();
-    p.setBackground(BG_DARK);
+    p.setOpaque(false);
     return p;
   }
 }

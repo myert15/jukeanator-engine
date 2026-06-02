@@ -13,8 +13,10 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridBagLayout;
 import java.awt.Image;
+import java.awt.LinearGradientPaint;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.geom.Point2D;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -29,6 +31,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
@@ -55,7 +58,6 @@ public class JukeANatorFrame extends JFrame {
   
   // COLORS
   private static final Color BG_DARK = new Color(10, 10, 10);
-  private static final Color BG_PANEL = new Color(22, 22, 28);
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
   private static final Color TEXT_PRIMARY = Color.WHITE;
   private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
@@ -134,8 +136,44 @@ public class JukeANatorFrame extends JFrame {
     setTitle("JukeANator");
     setUndecorated(true);
     setBackground(Color.BLACK);
-    getContentPane().setBackground(BG_DARK);
-    getContentPane().setLayout(new BorderLayout());
+    
+    JPanel contentPane = new JPanel(new BorderLayout()) {
+      private static final long serialVersionUID = 1L;
+
+      @Override
+      protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        int w = getWidth();
+        int h = getHeight();
+
+        // Base dark fill first
+        g2.setColor(new Color(10, 10, 10));
+        g2.fillRect(0, 0, w, h);
+
+        // Diagonal rainbow overlay — top-left to bottom-right,
+        // matching the AMI screenshot's warm-left / cool-right spread
+        float[] fractions = {0.0f, 0.20f, 0.42f, 0.62f, 0.82f, 1.0f};
+        Color[] colors = {new Color(140, 50, 50, 90), // deep red, top-left
+            new Color(140, 90, 30, 80), // amber
+            new Color(80, 110, 40, 70), // olive
+            new Color(30, 100, 110, 70), // teal
+            new Color(40, 60, 140, 80), // blue
+            new Color(100, 30, 140, 90), // violet, bottom-right
+        };
+        g2.setPaint(new LinearGradientPaint(new Point2D.Float(0, 0), new Point2D.Float(w, h), // diagonal:
+                                                                                              // top-left
+                                                                                              // →
+                                                                                              // bottom-right
+            fractions, colors));
+        g2.fillRect(0, 0, w, h);
+
+        g2.dispose();
+      }
+    };
+    contentPane.setOpaque(true);
+    setContentPane(contentPane);
 
     //
     // TOP 10%
@@ -165,7 +203,23 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private JTabbedPane buildContentPanelTabs() {
 
-    JTabbedPane tabs = new JTabbedPane(JTabbedPane.BOTTOM);
+    // Make the JTabbedPane content area and tab backgrounds non-opaque globally or locally
+    UIManager.put("TabbedPane.tabsOpaque", Boolean.FALSE);
+    UIManager.put("TabbedPane.opaque", Boolean.FALSE);
+    UIManager.put("TabbedPane.contentOpaque", Boolean.FALSE);
+
+    // Some Swing Look and Feels require setting transparent colors explicitly
+    UIManager.put("TabbedPane.unselectedBackground", new Color(0, 0, 0, 0));
+    UIManager.put("TabbedPane.background", new Color(0, 0, 0, 0));
+
+    JTabbedPane tabs = new JTabbedPane(JTabbedPane.BOTTOM) {
+      private static final long serialVersionUID = 1L;
+
+      @Override
+      protected void paintComponent(Graphics g) {
+        // Do not fill background — let JFrame gradient show through
+      }
+    };
     tabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
 
     tabs.setUI(new javax.swing.plaf.basic.BasicTabbedPaneUI() {
@@ -200,13 +254,15 @@ public class JukeANatorFrame extends JFrame {
       @Override
       protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex, int x, int y,
           int w, int h, boolean isSelected) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setComposite(java.awt.AlphaComposite.SrcOver);
         if (isSelected) {
-          g.setColor(new Color(70, 70, 70));
-          g.fillRect(x, y, w, h);
+          g2.setColor(new Color(255, 255, 255, 35));
         } else {
-          g.setColor(Color.BLACK);
-          g.fillRect(x, y, w, h);
+          g2.setColor(new Color(0, 0, 0, 120));
         }
+        g2.fillRect(x, y, w, h);
+        g2.dispose();
       }
 
       @Override
@@ -223,7 +279,14 @@ public class JukeANatorFrame extends JFrame {
 
       @Override
       protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
-        // DO NOTHING
+        // Explicitly clear the content border area to fully transparent
+        // so the JFrame gradient shows through
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setComposite(java.awt.AlphaComposite.Clear);
+        int tabAreaHeight = calculateTabAreaHeight(tabPlacement, runCount, maxTabHeight);
+        int contentH = tabPane.getHeight() - tabAreaHeight;
+        g2.fillRect(0, 0, tabPane.getWidth(), contentH);
+        g2.dispose();
       }
 
       //
@@ -240,11 +303,11 @@ public class JukeANatorFrame extends JFrame {
       }
     });
 
-    tabs.setBackground(Color.BLACK);
     tabs.setForeground(Color.WHITE);
     tabs.setBorder(null);
-    tabs.setOpaque(true);
-
+    tabs.setOpaque(false);    
+    tabs.setBackground(new Color(0, 0, 0, 0));
+    
     homePanel = buildHomePanel();
     tabs.addTab("HOME", homePanel);
     
@@ -693,16 +756,16 @@ public class JukeANatorFrame extends JFrame {
   private JPanel buildTopPanel() {
 
     JPanel panel = new JPanel(new BorderLayout());
-    panel.setBackground(BG_PANEL);
+    panel.setOpaque(false);
     panel.setBorder(new EmptyBorder(10, 20, 10, 20));
 
     //
     // LEFT : CREDITS
     //
     JPanel creditsPanel = new JPanel(new BorderLayout(10, 0));
-    creditsPanel.setBackground(Color.BLACK);
     creditsPanel.setOpaque(true);
-    creditsPanel.setBorder(null);
+    creditsPanel.setBackground(Color.BLACK);
+    creditsPanel.setBorder(BorderFactory.createMatteBorder(2, 1, 1, 1, Color.WHITE));
     creditsPanel.setPreferredSize(new Dimension(350, 100));
 
     //
@@ -760,7 +823,7 @@ public class JukeANatorFrame extends JFrame {
     // CENTER : BANNER
     //
     JPanel bannerPanel = new JPanel(new GridBagLayout());
-    bannerPanel.setBackground(Color.BLACK);
+    bannerPanel.setOpaque(false);
 
     JLabel bannerLabel = new JLabel("");
     bannerLabel.setForeground(TEXT_SECONDARY);
@@ -796,10 +859,9 @@ public class JukeANatorFrame extends JFrame {
   private JPanel buildNowPlayingPanel() {
 
     JPanel panel = new JPanel(new BorderLayout(10, 0));
-
-    panel.setBackground(Color.BLACK);
     panel.setOpaque(true);
-    panel.setBorder(null);
+    panel.setBackground(Color.BLACK);    
+    panel.setBorder(BorderFactory.createMatteBorder(2, 1, 1, 1, Color.WHITE));
 
     //
     // LEFT : PLAY STATUS
