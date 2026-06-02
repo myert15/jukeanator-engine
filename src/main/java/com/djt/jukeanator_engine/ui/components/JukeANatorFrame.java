@@ -820,16 +820,21 @@ public class JukeANatorFrame extends JFrame {
     creditsPanel.add(creditsTextPanel, BorderLayout.CENTER);
 
     //
-    // CENTER : BANNER
+    // CENTER : BANNER WITH LOGO
     //
     JPanel bannerPanel = new JPanel(new GridBagLayout());
     bannerPanel.setOpaque(false);
 
-    JLabel bannerLabel = new JLabel("");
-    bannerLabel.setForeground(TEXT_SECONDARY);
-    bannerLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
-    bannerPanel.add(bannerLabel);
+    JLabel bannerLabel = new JLabel();
+    bannerLabel.setOpaque(false);
+    bannerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+    bannerLabel.setVerticalAlignment(SwingConstants.CENTER);
 
+    // Loaded at scaled dimensions to fit perfectly within the 100px banner row height constraints
+    ImageIcon logo = imageLoader.loadClasspathImage("JukeANatorLogo.png", 320, 96, 0);
+    bannerLabel.setIcon(logo);
+    bannerPanel.add(bannerLabel);
+    
     //
     // RIGHT : NOW PLAYING
     //
@@ -848,19 +853,16 @@ public class JukeANatorFrame extends JFrame {
     int fiveDollarCredits = (5 * creditsPer) + fiveBonusCredits;
     int tenDollarCredits = (10 * creditsPer) + tenBonusCredits;
 
-    return String.format(
-        "1$=%dcr | 5$=%dcr | 10$=%dcr",
-        oneDollarCredits,
-        fiveDollarCredits,
+    return String.format("1$=%dcr | 5$=%dcr | 10$=%dcr", oneDollarCredits, fiveDollarCredits,
         tenDollarCredits);
   }
-  
+
   // NOW PLAYING PANEL
   private JPanel buildNowPlayingPanel() {
 
     JPanel panel = new JPanel(new BorderLayout(10, 0));
     panel.setOpaque(true);
-    panel.setBackground(Color.BLACK);    
+    panel.setBackground(Color.BLACK);
     panel.setBorder(BorderFactory.createMatteBorder(2, 1, 1, 1, Color.WHITE));
 
     //
@@ -911,7 +913,6 @@ public class JukeANatorFrame extends JFrame {
 
     return panel;
   }
-
   
   
   
