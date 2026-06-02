@@ -7,7 +7,14 @@ import java.awt.Cursor;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.image.FilteredImageSource;
+import java.awt.image.ImageProducer;
+import java.awt.image.RGBImageFilter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,15 +31,11 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 
-/**
- * The "GENRES" tab panel.
- */
 public class GenrePanel extends JPanel implements TabNavigator {
 
   private static final long serialVersionUID = 1L;
 
   // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color BG_DARK = new Color(10, 10, 10);
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
 
   // ── Grid layout ───────────────────────────────────────────────────────────
@@ -109,21 +112,20 @@ public class GenrePanel extends JPanel implements TabNavigator {
     this.artH = artH;
 
     setLayout(new BorderLayout());
-    setBackground(BG_DARK);
+    setOpaque(false);
 
     // ── Inner: genre grid ↔ genre album list ──────────────────────────────
-    genresGridPanel.setBackground(BG_DARK);
-    genreAlbumsSlot.setBackground(BG_DARK);
-    innerRoot.setBackground(BG_DARK);
+    genresGridPanel.setOpaque(false);
+    genreAlbumsSlot.setOpaque(false);
+    innerRoot.setOpaque(false);
 
     innerRoot.add(buildGenreGridCard(), INNER_GRID);
     innerRoot.add(genreAlbumsSlot, INNER_ALBUMS);
     innerCardLayout.show(innerRoot, INNER_GRID);
 
     // ── Outer: full genres view ↔ album detail ─────────────────────────────
-    outerRoot.setBackground(BG_DARK);
+    outerRoot.setOpaque(false);
 
-    // FIX: Set string names explicitly matching CARD_GENRES and CARD_DETAIL constraints
     innerRoot.setName(CARD_GENRES);
     JPanel initialPlaceholder = placeholder();
     initialPlaceholder.setName(CARD_DETAIL);
@@ -180,8 +182,8 @@ public class GenrePanel extends JPanel implements TabNavigator {
 
   private JPanel buildGenreGridCard() {
     JPanel pageWrapper = new JPanel(new BorderLayout());
-    pageWrapper.setBackground(BG_DARK);
-    pageWrapper.setBorder(new EmptyBorder(30, 40, 20, 40));
+    pageWrapper.setOpaque(false);
+    pageWrapper.setBorder(new EmptyBorder(30, 60, 20, 60)); 
     pageWrapper.add(genresGridPanel, BorderLayout.CENTER);
 
     JPanel bottomPanel = new JPanel(new BorderLayout());
@@ -189,7 +191,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
     bottomPanel.add(genresPaginationPanel, BorderLayout.CENTER);
 
     JPanel card = new JPanel(new BorderLayout());
-    card.setBackground(BG_DARK);
+    card.setOpaque(false);
     card.add(pageWrapper, BorderLayout.CENTER);
     card.add(bottomPanel, BorderLayout.SOUTH);
     return card;
@@ -210,6 +212,12 @@ public class GenrePanel extends JPanel implements TabNavigator {
       genresGridPanel.add(buildGenreTile(genresListModel.get(i)));
     }
 
+    for (int i = end; i < start + GENRES_PER_PAGE; i++) {
+      JPanel emptyPlaceholder = new JPanel();
+      emptyPlaceholder.setOpaque(false);
+      genresGridPanel.add(emptyPlaceholder);
+    }
+
     genresGridPanel.revalidate();
     genresGridPanel.repaint();
   }
@@ -221,7 +229,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
 
     int pageCount = Math.max(1, (int) Math.ceil(genresListModel.size() / (double) GENRES_PER_PAGE));
 
-    JButton prev = navButton("<");
+    JButton prev = navButton(true);
     prev.addActionListener(e -> {
       if (currentGenresPage > 0) {
         currentGenresPage--;
@@ -230,7 +238,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
     });
     prev.setVisible(currentGenresPage > 0);
 
-    JButton next = navButton(">");
+    JButton next = navButton(false);
     next.addActionListener(e -> {
       if (currentGenresPage < pageCount - 1) {
         currentGenresPage++;
@@ -244,7 +252,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
     for (int i = 0; i < pageCount; i++) {
       JButton dot = new JButton("●");
       dot.setForeground(i == currentGenresPage ? ACCENT_BLUE : Color.WHITE);
-      dot.setBackground(BG_DARK);
+      dot.setOpaque(false);
       dot.setBorderPainted(false);
       dot.setFocusPainted(false);
       dot.setContentAreaFilled(false);
@@ -272,20 +280,146 @@ public class GenrePanel extends JPanel implements TabNavigator {
     genresPaginationPanel.repaint();
   }
 
-  private JButton navButton(String text) {
-    JButton b = new JButton(text);
+  private JButton navButton(final boolean isLeftDirection) {
+    JButton b = new JButton() {
+      private static final long serialVersionUID = 1L;
+
+      @Override
+      protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+        int w = getWidth();
+        int h = getHeight();
+
+        if (isEnabled() && getBackground() != null && getBackground().getAlpha() > 0) {
+          g2.setColor(getBackground());
+          g2.fillRoundRect(0, 0, w, h, 8, 8);
+        }
+
+        if (isEnabled()) {
+          g2.setColor(getForeground());
+        } else {
+          g2.setColor(new Color(255, 255, 255, 40));
+        }
+
+        g2.setStroke(new java.awt.BasicStroke(3.0f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+
+        int paddingX = Math.round(w * 0.38f);
+        int paddingY = Math.round(h * 0.28f);
+
+        int topY = paddingY;
+        int bottomY = h - paddingY;
+        int centerY = h / 2;
+
+        if (isLeftDirection) {
+          int leftX = paddingX;
+          int rightX = w - paddingX;
+          g2.drawLine(rightX, topY, leftX, centerY);
+          g2.drawLine(leftX, centerY, rightX, bottomY);
+        } else {
+          int leftX = paddingX;
+          int rightX = w - paddingX;
+          g2.drawLine(leftX, topY, rightX, centerY);
+          g2.drawLine(rightX, centerY, leftX, bottomY);
+        }
+
+        g2.dispose();
+      }
+    };
+
     b.setPreferredSize(new java.awt.Dimension(120, 60));
-    b.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36));
     b.setForeground(Color.WHITE);
-    b.setBackground(Color.BLACK);
+    b.setBackground(new Color(255, 255, 255, 0));
+    b.setOpaque(false);
+    b.setContentAreaFilled(false);
+    b.setBorderPainted(false);
     b.setFocusPainted(false);
+    b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+    b.addMouseListener(new java.awt.event.MouseAdapter() {
+      @Override
+      public void mouseEntered(java.awt.event.MouseEvent e) {
+        if (b.isEnabled()) {
+          b.setBackground(ACCENT_BLUE);
+          b.setForeground(Color.BLACK);
+          b.repaint();
+        }
+      }
+
+      @Override
+      public void mouseExited(java.awt.event.MouseEvent e) {
+        b.setBackground(new Color(255, 255, 255, 0));
+        b.setForeground(Color.WHITE);
+        b.repaint();
+      }
+    });
+
     return b;
   }
 
+  // ── FIXED ENHANCEMENT: CHROME GLASS POP-OUT DESIGN ────────────────────────
   private JPanel buildGenreTile(GenreDto genre) {
-    JPanel panel = new JPanel(new BorderLayout());
-    panel.setBackground(genresGridPanel.getBackground());
-    panel.setOpaque(true);
+    // Structural layout wrapper featuring internal interaction tracking state variables
+    JPanel panel = new JPanel(new BorderLayout()) {
+      private static final long serialVersionUID = 1L;
+      private boolean isHovered = false;
+
+      {
+        // Attach lighting focus adapter properties locally
+        addMouseListener(new java.awt.event.MouseAdapter() {
+          @Override
+          public void mouseEntered(java.awt.event.MouseEvent e) {
+            isHovered = true;
+            repaint();
+          }
+          @Override
+          public void mouseExited(java.awt.event.MouseEvent e) {
+            isHovered = false;
+            repaint();
+          }
+          @Override
+          public void mouseClicked(java.awt.event.MouseEvent e) {
+            showGenreAlbums(genre);
+          }
+        });
+      }
+
+      @Override
+      protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        int w = getWidth();
+        int h = getHeight();
+
+        // Match SearchPanel Hero: Frosted glass backing plate translucent metrics
+        if (isHovered) {
+          g2.setColor(new Color(255, 255, 255, 30)); // Brightened backdrop glow
+        } else {
+          g2.setColor(new Color(255, 255, 255, 15)); // Soft resting backdrop mesh
+        }
+        g2.fillRoundRect(0, 0, w, h, 16, 16);
+
+        // Match SearchPanel Hero: Perimeter highlight rings
+        if (isHovered) {
+          g2.setColor(ACCENT_BLUE);
+          g2.setStroke(new java.awt.BasicStroke(2.0f));
+          g2.drawRoundRect(1, 1, w - 2, h - 2, 16, 16);
+        } else {
+          g2.setColor(new Color(255, 255, 255, 35));
+          g2.setStroke(new java.awt.BasicStroke(1.0f));
+          g2.drawRoundRect(0, 0, w - 1, h - 1, 16, 16);
+        }
+
+        g2.dispose();
+        super.paintComponent(g);
+      }
+    };
+
+    panel.setOpaque(false); 
+    panel.setBorder(new EmptyBorder(16, 16, 16, 16)); // Internal component buffer clearance padding
     panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
     JLabel imageLabel = new JLabel();
@@ -301,6 +435,10 @@ public class GenrePanel extends JPanel implements TabNavigator {
         String resource = name + ".png";
         if (getClass().getResource(resource) != null) {
           ImageIcon icon = imageLoader.loadImage(resource, 240, 240);
+          if (icon != null) {
+            Image transparentStrippedImage = createTransparentImage(icon.getImage());
+            icon = new ImageIcon(transparentStrippedImage);
+          }
           genreIconCache.put(name, icon);
           imageLabel.setIcon(icon);
         } else {
@@ -319,14 +457,27 @@ public class GenrePanel extends JPanel implements TabNavigator {
 
     panel.add(imageLabel, BorderLayout.CENTER);
     panel.add(textLabel, BorderLayout.SOUTH);
-    panel.addMouseListener(new java.awt.event.MouseAdapter() {
-      @Override
-      public void mouseClicked(java.awt.event.MouseEvent e) {
-        showGenreAlbums(genre);
-      }
-    });
 
     return panel;
+  }
+
+  private static Image createTransparentImage(Image srcImage) {
+    RGBImageFilter whiteStripperFilter = new RGBImageFilter() {
+      @Override
+      public final int filterRGB(int x, int y, int rgb) {
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+
+        if (r >= 245 && g >= 245 && b >= 245) {
+          return 0x00FFFFFF & rgb; 
+        }
+        return rgb;
+      }
+    };
+
+    ImageProducer ip = new FilteredImageSource(srcImage.getSource(), whiteStripperFilter);
+    return java.awt.Toolkit.getDefaultToolkit().createImage(ip);
   }
 
   private void showGenreAlbums(GenreDto genre) {
@@ -361,7 +512,6 @@ public class GenrePanel extends JPanel implements TabNavigator {
     }
   }
 
-  // FIX: Added string mismatch checks and defensive null verification
   private void replaceOuterCard(String name, JPanel newPanel) {
     for (int i = outerRoot.getComponentCount() - 1; i >= 0; i--) {
       java.awt.Component comp = outerRoot.getComponent(i);
@@ -378,7 +528,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
 
   private JPanel placeholder() {
     JPanel p = new JPanel();
-    p.setBackground(BG_DARK);
+    p.setOpaque(false);
     return p;
   }
 }

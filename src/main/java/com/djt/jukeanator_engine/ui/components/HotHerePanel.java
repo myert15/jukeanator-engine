@@ -2,7 +2,6 @@ package com.djt.jukeanator_engine.ui.components;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Color;
 import java.awt.Frame;
 import java.awt.GridLayout;
 import java.util.List;
@@ -16,27 +15,9 @@ import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 
-/**
- * The "HOT HERE" tab panel.
- *
- * <p>
- * Card layout:
- * <ol>
- * <li><b>CONTENT</b> — three-column popularity chart (artists / albums / songs).</li>
- * <li><b>ARTIST</b> — {@link ArtistDetailPanel} pushed when an artist row is tapped.</li>
- * <li><b>DETAIL</b> — {@link AlbumDetailCard} pushed when an album tile/row is tapped.</li>
- * </ol>
- *
- * <p>
- * Implements {@link TabNavigator} so {@link AlbumDetailCard} can pop itself back to CONTENT without
- * knowing which tab it lives in.
- */
 public class HotHerePanel extends JPanel implements TabNavigator {
 
   private static final long serialVersionUID = 1L;
-
-  // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color BG_DARK = new Color(10, 10, 10);
 
   // ── Preview row count ─────────────────────────────────────────────────────
   private static final int PREVIEW_COUNT = 10;
@@ -109,10 +90,10 @@ public class HotHerePanel extends JPanel implements TabNavigator {
     this.results = loaded;
 
     setLayout(new BorderLayout());
-    setBackground(BG_DARK);
+    setOpaque(false);
 
-    contentPanel.setBackground(BG_DARK);
-    rootPanel.setBackground(BG_DARK);
+    contentPanel.setOpaque(false);
+    rootPanel.setOpaque(false);
     add(rootPanel, BorderLayout.CENTER);
 
     rootPanel.add(contentPanel, CARD_CONTENT);
@@ -168,7 +149,7 @@ public class HotHerePanel extends JPanel implements TabNavigator {
     List<SongDto> songs = safeList(results.getSongs());
 
     JPanel columns = new JPanel(new GridLayout(1, 3, 2, 0));
-    columns.setBackground(Color.BLACK);
+    columns.setOpaque(false);
 
     columns.add(ResultsColumnPanel.build("ARTISTS", artists, artistsOffset, PREVIEW_COUNT,
         imageLoader, () -> {
@@ -279,7 +260,7 @@ public class HotHerePanel extends JPanel implements TabNavigator {
 
   private JPanel placeholder() {
     JPanel p = new JPanel();
-    p.setBackground(BG_DARK);
+    p.setOpaque(false);
     return p;
   }
 }
