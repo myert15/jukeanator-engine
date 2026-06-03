@@ -84,40 +84,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
   public SearchResultDto getMusicByPopularity() {
   
     return getMusicByPopularity(null);
-  }
-  
-  @Override
-  public SearchResultDto getMusicByPopularity(String genreName) {
-
-    if (!isInitialized) {
-      throw new SongLibraryException("SongLibraryService has not been initialized yet!");
-    }
-
-    Comparator<NumPlaysComparable> byNumPlaysDescending = Comparator
-        .comparing(NumPlaysComparable::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
-        .reversed();
-
-    // When browsing by genre, show everything sorted by popularity.
-    // When browsing globally (no genre), restrict to items that have actually been played.
-    java.util.function.Predicate<NumPlaysComparable> hasPlays = genreName != null ? item -> true
-        : item -> item.getNumPlays() != null && item.getNumPlays() > 0;
-
-    java.util.function.Predicate<GenreDescendant> inGenre =
-        item -> genreName == null || genreName.equalsIgnoreCase(item.getParentGenre().getName());
-
-    List<SongFileEntity> popularSongs = root.getSongs().stream().filter(hasPlays).filter(inGenre)
-        .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
-
-    List<ArtistFolderEntity> popularArtists = root.getArtists().stream().filter(hasPlays)
-        .filter(inGenre).sorted(byNumPlaysDescending).limit(searchResultSize).toList();
-
-    List<AlbumFolderEntity> popularAlbums = root.getAlbums().stream().filter(hasPlays)
-        .filter(inGenre).sorted(byNumPlaysDescending).limit(searchResultSize).toList();
-
-    return new SearchResultDto(SongLibraryMapper.toSongDtoList(popularSongs),
-        SongLibraryMapper.toArtistDtoList(popularArtists),
-        SongLibraryMapper.toAlbumDtoList(popularAlbums));
-  }
+  }  
   
   @Override
   public SearchResultDto getMusicBySearch(String searchFor) {
@@ -169,7 +136,45 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
         SongLibraryMapper.toArtistDtoList(matchingArtists),
         SongLibraryMapper.toAlbumDtoList(matchingAlbums));
   }
+  
+  @Override
+  public SearchResultDto getGenreMusicByPopularity(String genreName) {
+    
+    return getMusicByPopularity(genreName);
+  }
 
+  private SearchResultDto getMusicByPopularity(String genreName) {
+
+    if (!isInitialized) {
+      throw new SongLibraryException("SongLibraryService has not been initialized yet!");
+    }
+
+    Comparator<NumPlaysComparable> byNumPlaysDescending = Comparator
+        .comparing(NumPlaysComparable::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
+        .reversed();
+
+    // When browsing by genre, show everything sorted by popularity.
+    // When browsing globally (no genre), restrict to items that have actually been played.
+    java.util.function.Predicate<NumPlaysComparable> hasPlays = genreName != null ? item -> true
+        : item -> item.getNumPlays() != null && item.getNumPlays() > 0;
+
+    java.util.function.Predicate<GenreDescendant> inGenre =
+        item -> genreName == null || genreName.equalsIgnoreCase(item.getParentGenre().getName());
+
+    List<SongFileEntity> popularSongs = root.getSongs().stream().filter(hasPlays).filter(inGenre)
+        .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
+
+    List<ArtistFolderEntity> popularArtists = root.getArtists().stream().filter(hasPlays)
+        .filter(inGenre).sorted(byNumPlaysDescending).limit(searchResultSize).toList();
+
+    List<AlbumFolderEntity> popularAlbums = root.getAlbums().stream().filter(hasPlays)
+        .filter(inGenre).sorted(byNumPlaysDescending).limit(searchResultSize).toList();
+
+    return new SearchResultDto(SongLibraryMapper.toSongDtoList(popularSongs),
+        SongLibraryMapper.toArtistDtoList(popularArtists),
+        SongLibraryMapper.toAlbumDtoList(popularAlbums));
+  }
+  
   private int calculateSearchResultWeight(String value, String normalizedSearch) {
 
     if (value == null) {

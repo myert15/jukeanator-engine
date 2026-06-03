@@ -469,7 +469,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
 
     SearchResultDto results;
     try {
-      results = songLibraryService.getMusicByPopularity(genre.getGenreName());
+      results = songLibraryService.getGenreMusicByPopularity(genre.getGenreName());
     } catch (Exception e) {
       results = new SearchResultDto();
     }

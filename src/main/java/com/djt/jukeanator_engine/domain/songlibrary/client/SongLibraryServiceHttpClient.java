@@ -33,18 +33,6 @@ public class SongLibraryServiceHttpClient implements SongLibraryService {
         .retrieve()
         .body(SearchResultDto.class);
   }
-
-  @Override
-  public SearchResultDto getMusicByPopularity(String genreName) {
-
-    return restClient.get()
-        .uri(uriBuilder -> uriBuilder
-            .path("/api/song-library/popular/genre")
-            .queryParam("genreName", genreName)
-            .build())
-        .retrieve()
-        .body(SearchResultDto.class);
-  }
   
   @Override
   public SearchResultDto getMusicBySearch(String searchFor) {
@@ -66,6 +54,18 @@ public class SongLibraryServiceHttpClient implements SongLibraryService {
         .body(new ParameterizedTypeReference<>() {});
   }
 
+  @Override
+  public SearchResultDto getGenreMusicByPopularity(String genreName) {
+
+    return restClient.get()
+        .uri(uriBuilder -> uriBuilder
+            .path("/api/song-library/genres/popular")
+            .queryParam("genreName", genreName)
+            .build())
+        .retrieve()
+        .body(SearchResultDto.class);
+  }
+  
   @Override
   public List<ArtistDto> getArtists() {
     

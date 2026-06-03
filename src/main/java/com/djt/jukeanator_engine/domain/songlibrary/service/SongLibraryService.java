@@ -19,12 +19,6 @@ public interface SongLibraryService {
    * @return
    */
   SearchResultDto getMusicByPopularity();
-
-  /**
-   * @param genreName
-   * @return
-   */
-  SearchResultDto getMusicByPopularity(String genreName);
   
   /**
    * @param searchFor
@@ -38,6 +32,12 @@ public interface SongLibraryService {
    */
   List<GenreDto> getGenres();
 
+  /**
+   * @param genreName
+   * @return
+   */
+  SearchResultDto getGenreMusicByPopularity(String genreName);
+  
   /**
    * 
    * @return

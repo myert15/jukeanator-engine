@@ -39,12 +39,6 @@ public class SongLibraryController implements SongLibraryService {
   public SearchResultDto getMusicByPopularity() {
     return songLibraryService.getMusicByPopularity();
   }
-
-  @Override
-  @GetMapping("/popular/genre")
-  public SearchResultDto getMusicByPopularity(@RequestParam String genreName) {
-    return songLibraryService.getMusicByPopularity(genreName);
-  }
   
   @Override
   @GetMapping("/search")
@@ -58,6 +52,12 @@ public class SongLibraryController implements SongLibraryService {
     return songLibraryService.getGenres();
   }
 
+  @Override
+  @GetMapping("/genres/popular")
+  public SearchResultDto getGenreMusicByPopularity(@RequestParam String genreName) {
+    return songLibraryService.getGenreMusicByPopularity(genreName);
+  }
+  
   @Override
   @GetMapping("/artists")
   public List<ArtistDto> getArtists() {
