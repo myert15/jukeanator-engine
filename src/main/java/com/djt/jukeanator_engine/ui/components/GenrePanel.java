@@ -160,8 +160,9 @@ public class GenrePanel extends JPanel implements TabNavigator {
       currentDetailCard.dismiss();
     }
 
-    currentDetailCard = new AlbumDetailCard(owner, full, imageLoader, songQueueService, normalPlayCost,
-        priorityCost, popularityT1, popularityT2, popularityT3, enableBigScrollBars, this);
+    currentDetailCard =
+        new AlbumDetailCard(owner, full, imageLoader, songQueueService, normalPlayCost,
+            priorityCost, popularityT1, popularityT2, popularityT3, enableBigScrollBars, this);
 
     replaceOuterCard(CARD_DETAIL, currentDetailCard);
     outerCardLayout.show(outerRoot, CARD_DETAIL);
@@ -476,7 +477,8 @@ public class GenrePanel extends JPanel implements TabNavigator {
         songQueueService, normalPlayCost, priorityCost, "← BACK", () -> {
           activeGenre = null;
           innerCardLayout.show(innerRoot, INNER_GRID);
-        }, album -> pushAlbumDetail(album), artist -> pushArtistFromGenre(artist));
+        }, album -> pushAlbumDetail(album), artist -> pushArtistFromGenre(artist),
+        songLibraryService);
 
     genreAlbumsSlot.removeAll();
     genreAlbumsSlot.add(detailPanel, BorderLayout.CENTER);
