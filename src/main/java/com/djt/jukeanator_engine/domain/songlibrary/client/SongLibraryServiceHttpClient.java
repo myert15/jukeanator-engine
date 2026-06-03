@@ -35,6 +35,18 @@ public class SongLibraryServiceHttpClient implements SongLibraryService {
   }
 
   @Override
+  public SearchResultDto getMusicByPopularity(String genreName) {
+
+    return restClient.get()
+        .uri(uriBuilder -> uriBuilder
+            .path("/api/song-library/popular/genre")
+            .queryParam("genreName", genreName)
+            .build())
+        .retrieve()
+        .body(SearchResultDto.class);
+  }
+  
+  @Override
   public SearchResultDto getMusicBySearch(String searchFor) {
 
     return restClient.get()

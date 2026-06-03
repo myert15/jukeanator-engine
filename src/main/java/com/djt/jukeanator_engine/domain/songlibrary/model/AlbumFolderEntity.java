@@ -7,7 +7,7 @@ import java.util.TreeSet;
 import com.djt.jukeanator_engine.domain.common.exception.EntityAlreadyExistsException;
 import com.djt.jukeanator_engine.domain.common.exception.EntityDoesNotExistException;
 
-public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparable {
+public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparable, GenreDescendant {
   private static final long serialVersionUID = 1L;
 
   public static final String METADATA_FILENAME = "metadata.txt";
@@ -33,7 +33,7 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
   }
 
   public Integer getNumPlays() {
-    
+
     int numPlays = 0;
     for (SongFileEntity childSong : childSongs) {
 
@@ -41,7 +41,7 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
     }
     return Integer.valueOf(numPlays);
   }
-  
+
   public boolean addChildSong(SongFileEntity childSong) throws EntityAlreadyExistsException {
     return addChild(childSongs, childSong, this);
   }
@@ -51,7 +51,7 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
     return childSongs.stream().sorted(Comparator.comparing(SongFileEntity::getTrackNumber,
         Comparator.nullsLast(Integer::compareTo))).toList();
   }
-  
+
   public SongFileEntity getChildSong(Integer persistentIdentity)
       throws EntityDoesNotExistException {
 
@@ -76,12 +76,12 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
   }
 
   public ArtistFolderEntity getParentArtist() {
-    
+
     FolderEntity parentFolder = this.getParentFolder();
     while (parentFolder instanceof RootFolderEntity == false) {
 
       if (parentFolder instanceof ArtistFolderEntity) {
-        return (ArtistFolderEntity)parentFolder;
+        return (ArtistFolderEntity) parentFolder;
       } else {
         parentFolder = parentFolder.getParentFolder();
       }
@@ -90,14 +90,14 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
     dummyArtist.setPersistentIdentity(999999);
     return dummyArtist;
   }
-  
+
   public GenreFolderEntity getParentGenre() {
-    
+
     FolderEntity parentFolder = this.getParentFolder();
     while (parentFolder instanceof RootFolderEntity == false) {
 
       if (parentFolder instanceof GenreFolderEntity) {
-        return (GenreFolderEntity)parentFolder;
+        return (GenreFolderEntity) parentFolder;
       } else {
         parentFolder = parentFolder.getParentFolder();
       }
@@ -106,7 +106,7 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
     dummyGenre.setPersistentIdentity(999999);
     return dummyGenre;
   }
-  
+
   public boolean hasValidCoverArt() {
     return this.coverArt.isValid();
   }
@@ -122,20 +122,20 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
   public void createMetadataEntity() {
     this.metaData = new AlbumMetaDataFileEntity(this, METADATA_FILENAME);
   }
-  
+
   public boolean hasExplicit() {
     return this.metaData.hasExplicit();
   }
-  
+
   public String getRecordLabel() {
     return this.metaData.getRecordLabel();
   }
-  
+
   public String getReleaseDate() {
     return this.metaData.getReleaseDate();
   }
-  
+
   public String getCoverArtPath() {
     return this.coverArt.getNaturalIdentity();
-  }  
+  }
 }

@@ -24,7 +24,9 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 
@@ -180,7 +182,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
   private JPanel buildGenreGridCard() {
     JPanel pageWrapper = new JPanel(new BorderLayout());
     pageWrapper.setOpaque(false);
-    pageWrapper.setBorder(new EmptyBorder(30, 60, 20, 60)); 
+    pageWrapper.setBorder(new EmptyBorder(30, 60, 20, 60));
     pageWrapper.add(genresGridPanel, BorderLayout.CENTER);
 
     JPanel bottomPanel = new JPanel(new BorderLayout());
@@ -301,7 +303,8 @@ public class GenrePanel extends JPanel implements TabNavigator {
           g2.setColor(new Color(255, 255, 255, 40));
         }
 
-        g2.setStroke(new java.awt.BasicStroke(3.0f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+        g2.setStroke(new java.awt.BasicStroke(3.0f, java.awt.BasicStroke.CAP_ROUND,
+            java.awt.BasicStroke.JOIN_ROUND));
 
         int paddingX = Math.round(w * 0.38f);
         int paddingY = Math.round(h * 0.28f);
@@ -371,11 +374,13 @@ public class GenrePanel extends JPanel implements TabNavigator {
             isHovered = true;
             repaint();
           }
+
           @Override
           public void mouseExited(java.awt.event.MouseEvent e) {
             isHovered = false;
             repaint();
           }
+
           @Override
           public void mouseClicked(java.awt.event.MouseEvent e) {
             showGenreAlbums(genre);
@@ -415,7 +420,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
       }
     };
 
-    panel.setOpaque(false); 
+    panel.setOpaque(false);
     panel.setBorder(new EmptyBorder(16, 16, 16, 16)); // Internal component buffer clearance padding
     panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
@@ -433,7 +438,8 @@ public class GenrePanel extends JPanel implements TabNavigator {
         if (getClass().getResource(resource) != null) {
           ImageIcon icon = imageLoader.loadImage(resource, 240, 240);
           if (icon != null) {
-            Image transparentStrippedImage = ImageLoader.createTransparentImage(icon.getImage(), true, 245);
+            Image transparentStrippedImage =
+                ImageLoader.createTransparentImage(icon.getImage(), true, 245);
             icon = new ImageIcon(transparentStrippedImage);
           }
           genreIconCache.put(name, icon);
@@ -461,18 +467,18 @@ public class GenrePanel extends JPanel implements TabNavigator {
   private void showGenreAlbums(GenreDto genre) {
     activeGenre = genre;
 
-    List<AlbumDto> albums;
+    SearchResultDto results;
     try {
-      albums = songLibraryService.getAlbumsForGenre(genre.getGenreId());
+      results = songLibraryService.getMusicByPopularity(genre.getGenreName());
     } catch (Exception e) {
-      albums = List.of();
+      results = new SearchResultDto();
     }
 
-    GenreDetailPanel detailPanel = new GenreDetailPanel(genre, albums, imageLoader, gridCols,
-        gridRows, artW, artH, "← BACK", () -> {
+    GenreDetailPanel detailPanel = new GenreDetailPanel(genre, results, imageLoader,
+        songQueueService, normalPlayCost, priorityCost, "← BACK", () -> {
           activeGenre = null;
           innerCardLayout.show(innerRoot, INNER_GRID);
-        }, album -> pushAlbumDetail(album));
+        }, album -> pushAlbumDetail(album), artist -> pushArtistFromGenre(artist));
 
     genreAlbumsSlot.removeAll();
     genreAlbumsSlot.add(detailPanel, BorderLayout.CENTER);
@@ -480,6 +486,27 @@ public class GenrePanel extends JPanel implements TabNavigator {
     genreAlbumsSlot.repaint();
 
     innerCardLayout.show(innerRoot, INNER_ALBUMS);
+  }
+
+  /**
+   * Navigates to an artist detail view launched from within the genre detail page. The outer DETAIL
+   * card slot is reused so the back button on AlbumDetailCard routes correctly back through
+   * popToRoot → INNER_ALBUMS.
+   */
+  private void pushArtistFromGenre(ArtistDto artist) {
+    ArtistDto full;
+    try {
+      full = songLibraryService.getArtistById(artist.getArtistId());
+    } catch (Exception e) {
+      return;
+    }
+
+    ArtistDetailPanel panel =
+        new ArtistDetailPanel(full, imageLoader, gridCols, gridRows, artW, artH, "← BACK",
+            () -> outerCardLayout.show(outerRoot, CARD_GENRES), album -> pushAlbumDetail(album));
+
+    replaceOuterCard(CARD_DETAIL, panel);
+    outerCardLayout.show(outerRoot, CARD_DETAIL);
   }
 
   private AlbumDto fetchFull(AlbumDto album) {

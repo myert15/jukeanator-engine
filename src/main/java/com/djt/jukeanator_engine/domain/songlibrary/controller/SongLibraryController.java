@@ -41,6 +41,12 @@ public class SongLibraryController implements SongLibraryService {
   }
 
   @Override
+  @GetMapping("/popular/genre")
+  public SearchResultDto getMusicByPopularity(@RequestParam String genreName) {
+    return songLibraryService.getMusicByPopularity(genreName);
+  }
+  
+  @Override
   @GetMapping("/search")
   public SearchResultDto getMusicBySearch(@RequestParam String searchFor) {
     return songLibraryService.getMusicBySearch(searchFor);

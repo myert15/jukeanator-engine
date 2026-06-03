@@ -3,116 +3,131 @@ package com.djt.jukeanator_engine.domain.songlibrary.model;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SongFileEntity extends AbstractFileEntity implements NumPlaysComparable {
-	private static final long serialVersionUID = 1L;
+public class SongFileEntity extends AbstractFileEntity implements NumPlaysComparable, GenreDescendant {
+  private static final long serialVersionUID = 1L;
 
-	private Integer numPlays = Integer.valueOf(0);
-	private String artistName;
-	private String songName;
-	private Integer trackNumber;
+  private Integer numPlays = Integer.valueOf(0);
+  private String artistName;
+  private String songName;
+  private Integer trackNumber;
 
-	public SongFileEntity() {
-	}
+  public SongFileEntity() {}
 
-	public SongFileEntity(AlbumFolderEntity parentAlbum, String name) {
-		super(parentAlbum, name);
-	}
+  public SongFileEntity(AlbumFolderEntity parentAlbum, String name) {
+    super(parentAlbum, name);
+  }
 
-	public Integer getNumPlays() {
-		return numPlays;
-	}
+  public Integer getNumPlays() {
+    return numPlays;
+  }
 
-	public void setNumPlays(Integer numPlays) {
-		this.numPlays = numPlays;
-	}
-	
-	public Integer incrementNumPlays() {
-	  this.numPlays = Integer.valueOf(this.numPlays.intValue() + 1);
-	  return this.numPlays;
-	}
-	
-	public AlbumFolderEntity getAlbum() {
-	  return (AlbumFolderEntity)this.getParentFolder();
-	}
+  public void setNumPlays(Integer numPlays) {
+    this.numPlays = numPlays;
+  }
 
-	public String getArtistName() {
+  public Integer incrementNumPlays() {
+    this.numPlays = Integer.valueOf(this.numPlays.intValue() + 1);
+    return this.numPlays;
+  }
 
-		if (this.artistName != null) {
-			return this.artistName;
-		} else if (this.artistName == null) {
-			this.artistName = extractArtistName(getName());
-		}
-		if (this.artistName != null) {
-			return this.artistName;
-		}		
-		return getParentFolder().getName();
-	}
+  public AlbumFolderEntity getAlbum() {
+    return (AlbumFolderEntity) this.getParentFolder();
+  }
 
-	public void setArtistName(String artistName) {
-		this.artistName = artistName;
-	}
+  public GenreFolderEntity getParentGenre() {
 
-	public String getSongName() {
+    FolderEntity parentFolder = this.getParentFolder();
+    while (parentFolder instanceof RootFolderEntity == false) {
 
-		if (this.songName != null) {
-			return this.songName;
-		} else if (this.songName == null) {
-			this.songName = extractSongName(getName());
-		}
-		if (this.songName != null) {
-			return this.songName;
-		}		
-		return getName();
-	}
-
-	public void setSongName(String songName) {
-		this.songName = songName;
-	}
-
-	public void setTrackNumber(Integer trackNumber) {
-		this.trackNumber = trackNumber;
-	}
-
-    public Integer getTrackNumber() {
-      return this.trackNumber;
+      if (parentFolder instanceof GenreFolderEntity) {
+        return (GenreFolderEntity) parentFolder;
+      } else {
+        parentFolder = parentFolder.getParentFolder();
+      }
     }
-	
-	public static String extractArtistName(String filename) {
+    GenreFolderEntity dummyGenre = new GenreFolderEntity(parentFolder, "None");
+    dummyGenre.setPersistentIdentity(999999);
+    return dummyGenre;
+  }
 
-		String artist = "";
-		
-		Pattern pattern = Pattern.compile("^(.*?)\\s*-\\s*(\\d{2})\\s*-\\s*(.*?)\\.mp3$");
-        Matcher m = pattern.matcher(filename);
-        if (m.matches()) {
-        	
-            artist = m.group(1);
-        }
-        
-        return artist;
-	}
+  public String getArtistName() {
 
-	public static String extractSongName(String filename) {
+    if (this.artistName != null) {
+      return this.artistName;
+    } else if (this.artistName == null) {
+      this.artistName = extractArtistName(getName());
+    }
+    if (this.artistName != null) {
+      return this.artistName;
+    }
+    return getParentFolder().getName();
+  }
 
-		String song = "";
-		
-		Pattern pattern = Pattern.compile("^(.*?)\\s*-\\s*(\\d{2})\\s*-\\s*(.*?)\\.mp3$");
-        Matcher m = pattern.matcher(filename);
-        if (m.matches()) {
-        	
-            song = m.group(3);
-        }
-        
-        return song;
-	}
-	
-	public static Integer extractTrackNumber(String filename) {
+  public void setArtistName(String artistName) {
+    this.artistName = artistName;
+  }
 
-		Pattern pattern = Pattern.compile("^[^-]+-(\\d{2})-.*\\.mp3$");
-		Matcher matcher = pattern.matcher(filename);
+  public String getSongName() {
 
-		if (matcher.matches()) {
-			return Integer.parseInt(matcher.group(1));
-		}
-		return null;
-	}
+    if (this.songName != null) {
+      return this.songName;
+    } else if (this.songName == null) {
+      this.songName = extractSongName(getName());
+    }
+    if (this.songName != null) {
+      return this.songName;
+    }
+    return getName();
+  }
+
+  public void setSongName(String songName) {
+    this.songName = songName;
+  }
+
+  public void setTrackNumber(Integer trackNumber) {
+    this.trackNumber = trackNumber;
+  }
+
+  public Integer getTrackNumber() {
+    return this.trackNumber;
+  }
+
+  public static String extractArtistName(String filename) {
+
+    String artist = "";
+
+    Pattern pattern = Pattern.compile("^(.*?)\\s*-\\s*(\\d{2})\\s*-\\s*(.*?)\\.mp3$");
+    Matcher m = pattern.matcher(filename);
+    if (m.matches()) {
+
+      artist = m.group(1);
+    }
+
+    return artist;
+  }
+
+  public static String extractSongName(String filename) {
+
+    String song = "";
+
+    Pattern pattern = Pattern.compile("^(.*?)\\s*-\\s*(\\d{2})\\s*-\\s*(.*?)\\.mp3$");
+    Matcher m = pattern.matcher(filename);
+    if (m.matches()) {
+
+      song = m.group(3);
+    }
+
+    return song;
+  }
+
+  public static Integer extractTrackNumber(String filename) {
+
+    Pattern pattern = Pattern.compile("^[^-]+-(\\d{2})-.*\\.mp3$");
+    Matcher matcher = pattern.matcher(filename);
+
+    if (matcher.matches()) {
+      return Integer.parseInt(matcher.group(1));
+    }
+    return null;
+  }
 }

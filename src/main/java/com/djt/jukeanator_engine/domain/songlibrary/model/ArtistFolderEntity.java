@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class ArtistFolderEntity extends FolderEntity implements NumPlaysComparable {
+public class ArtistFolderEntity extends FolderEntity implements NumPlaysComparable, GenreDescendant {
   private static final long serialVersionUID = 1L;
-  
+
   private transient List<AlbumFolderEntity> albums;
 
   public ArtistFolderEntity() {}
@@ -14,37 +14,54 @@ public class ArtistFolderEntity extends FolderEntity implements NumPlaysComparab
   public ArtistFolderEntity(FolderEntity parentFolder, String name) {
     this(parentFolder, name, null);
   }
-  
-  public ArtistFolderEntity(FolderEntity parentFolder, String name, Set<FolderEntity> childFolders) {
+
+  public ArtistFolderEntity(FolderEntity parentFolder, String name,
+      Set<FolderEntity> childFolders) {
     super(parentFolder, name, childFolders);
   }
-  
+
+  public GenreFolderEntity getParentGenre() {
+
+    FolderEntity parentFolder = this.getParentFolder();
+    while (parentFolder instanceof RootFolderEntity == false) {
+
+      if (parentFolder instanceof GenreFolderEntity) {
+        return (GenreFolderEntity) parentFolder;
+      } else {
+        parentFolder = parentFolder.getParentFolder();
+      }
+    }
+    GenreFolderEntity dummyGenre = new GenreFolderEntity(parentFolder, "None");
+    dummyGenre.setPersistentIdentity(999999);
+    return dummyGenre;
+  }
+
   public List<AlbumFolderEntity> getAlbums() {
-    
+
     if (albums == null) {
-      
+
       albums = new ArrayList<>();
       for (FolderEntity childFolder : getChildFolders()) {
-        
+
         if (childFolder instanceof AlbumFolderEntity) {
-          albums.add((AlbumFolderEntity)childFolder);
+          albums.add((AlbumFolderEntity) childFolder);
         }
       }
     }
     return albums;
   }
-  
+
   public Integer getNumPlays() {
-    
+
     if (albums == null) {
       getAlbums();
     }
-    
+
     int numPlays = 0;
     for (AlbumFolderEntity album : albums) {
 
       numPlays = numPlays + album.getNumPlays();
     }
     return Integer.valueOf(numPlays);
-  }  
+  }
 }

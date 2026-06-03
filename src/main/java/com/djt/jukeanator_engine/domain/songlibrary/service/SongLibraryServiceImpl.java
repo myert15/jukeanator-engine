@@ -29,6 +29,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.exception.SongScanFailedExce
 import com.djt.jukeanator_engine.domain.songlibrary.mapper.SongLibraryMapper;
 import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.ArtistFolderEntity;
+import com.djt.jukeanator_engine.domain.songlibrary.model.GenreDescendant;
 import com.djt.jukeanator_engine.domain.songlibrary.model.GenreFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.NumPlaysComparable;
 import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
@@ -81,6 +82,12 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
   // Service methods
   @Override
   public SearchResultDto getMusicByPopularity() {
+  
+    return getMusicByPopularity(null);
+  }
+  
+  @Override
+  public SearchResultDto getMusicByPopularity(String genreName) {
 
     if (!isInitialized) {
       throw new SongLibraryException("SongLibraryService has not been initialized yet!");
@@ -94,20 +101,24 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
     java.util.function.Predicate<NumPlaysComparable> hasPlays =
         item -> item.getNumPlays() != null && item.getNumPlays() > 0;
 
-    List<SongFileEntity> popularSongs = root.getSongs().stream().filter(hasPlays)
+    // Generic genre filter — works for any entity that is a GenreDescendant
+    java.util.function.Predicate<GenreDescendant> inGenre =
+        item -> genreName == null || genreName.equalsIgnoreCase(item.getParentGenre().getName());
+
+    List<SongFileEntity> popularSongs = root.getSongs().stream().filter(hasPlays).filter(inGenre)
         .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
     List<ArtistFolderEntity> popularArtists = root.getArtists().stream().filter(hasPlays)
-        .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
+        .filter(inGenre).sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
     List<AlbumFolderEntity> popularAlbums = root.getAlbums().stream().filter(hasPlays)
-        .sorted(byNumPlaysDescending).limit(searchResultSize).toList();
+        .filter(inGenre).sorted(byNumPlaysDescending).limit(searchResultSize).toList();
 
     return new SearchResultDto(SongLibraryMapper.toSongDtoList(popularSongs),
         SongLibraryMapper.toArtistDtoList(popularArtists),
         SongLibraryMapper.toAlbumDtoList(popularAlbums));
   }
-
+  
   @Override
   public SearchResultDto getMusicBySearch(String searchFor) {
 
