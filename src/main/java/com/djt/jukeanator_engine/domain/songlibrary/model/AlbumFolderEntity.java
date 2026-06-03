@@ -1,5 +1,6 @@
 package com.djt.jukeanator_engine.domain.songlibrary.model;
 
+import java.time.Year;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -7,7 +8,7 @@ import java.util.TreeSet;
 import com.djt.jukeanator_engine.domain.common.exception.EntityAlreadyExistsException;
 import com.djt.jukeanator_engine.domain.common.exception.EntityDoesNotExistException;
 
-public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparable, GenreDescendant {
+public class AlbumFolderEntity extends FolderEntity implements LibraryItem {
   private static final long serialVersionUID = 1L;
 
   public static final String METADATA_FILENAME = "metadata.txt";
@@ -17,6 +18,9 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
   private AlbumCoverArtFileEntity coverArt;
   private AlbumMetaDataFileEntity metaData;
   private Set<SongFileEntity> childSongs = new TreeSet<SongFileEntity>();
+  
+  private transient GenreFolderEntity parentGenre;
+  private transient Year releaseDate;
 
   public AlbumFolderEntity() {}
 
@@ -32,6 +36,7 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
     return this.metaData;
   }
 
+  @Override
   public Integer getNumPlays() {
 
     int numPlays = 0;
@@ -91,20 +96,26 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
     return dummyArtist;
   }
 
+  @Override
   public GenreFolderEntity getParentGenre() {
 
-    FolderEntity parentFolder = this.getParentFolder();
-    while (parentFolder instanceof RootFolderEntity == false) {
+    if (parentGenre == null) {
 
-      if (parentFolder instanceof GenreFolderEntity) {
-        return (GenreFolderEntity) parentFolder;
-      } else {
-        parentFolder = parentFolder.getParentFolder();
+      FolderEntity parentFolder = this.getParentFolder();
+      while (parentFolder instanceof RootFolderEntity == false) {
+
+        if (parentFolder instanceof GenreFolderEntity) {
+          parentGenre = (GenreFolderEntity) parentFolder;
+          break;
+        } else {
+          parentFolder = parentFolder.getParentFolder();
+        }
+      }
+      if (parentGenre == null) {
+        parentGenre = new GenreFolderEntity(parentFolder, "None");  
       }
     }
-    GenreFolderEntity dummyGenre = new GenreFolderEntity(parentFolder, "None");
-    dummyGenre.setPersistentIdentity(999999);
-    return dummyGenre;
+    return parentGenre;
   }
 
   public boolean hasValidCoverArt() {
@@ -131,8 +142,30 @@ public class AlbumFolderEntity extends FolderEntity implements NumPlaysComparabl
     return this.metaData.getRecordLabel();
   }
 
-  public String getReleaseDate() {
-    return this.metaData.getReleaseDate();
+  @Override
+  public Year getReleaseDate() {
+
+    if (releaseDate == null) {
+
+      String strReleaseDate = this.metaData.getReleaseDate();
+      if (strReleaseDate == null || strReleaseDate.isEmpty()) {
+        releaseDate = Year.parse("1985");
+      } else {
+        try {
+          releaseDate = Year.parse(strReleaseDate);
+        } catch (Exception e) {
+          System.err.println(
+              "Could not parse release date: " + strReleaseDate + " into Year: " + e.getMessage());
+          releaseDate = Year.parse("1985");
+        }
+      }
+    }
+    return releaseDate;
+  }
+  
+  @Override
+  public String getTitle() {
+    return this.getName();
   }
 
   public String getCoverArtPath() {

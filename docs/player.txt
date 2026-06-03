@@ -1,3 +1,224 @@
+The key clue is this message:
+
+```text
+[src/libmpg123/frame.c:INT123_frame_outbuffer():196]
+error: have external buffer of size 2824, need 4240
+```
+
+This is **not a Java buffer problem** and usually not something you can directly configure through VLCJ.
+
+The error originates from **libmpg123**, which VLC uses internally for MP3 decoding. It indicates that the decoder encountered a frame requiring a larger output buffer than the one currently allocated. This often occurs when VLC thinks it is decoding a valid MP3 stream but the stream is actually:
+
+* Corrupted
+* Truncated
+* Misidentified
+* Contains garbage bytes
+* Contains abrupt MPEG parameter changes (sample rate, layer, bitrate, channels)
+
+The preceding messages strongly support this:
+
+```text
+Illegal Audio-MPEG-Header ...
+not attempting to resync...
+
+Big change (MPEG version, layer, rate).
+Frankenstein stream?
+```
+
+"Frankenstein stream" is mpg123's way of saying:
+
+> "This file appears to contain incompatible MPEG frames stitched together."
+
+---
+
+## First thing to check
+
+Run ffprobe on the file:
+
+```bash
+ffprobe yourfile.mp3
+```
+
+or
+
+```bash
+ffmpeg -v error -i yourfile.mp3 -f null -
+```
+
+You'll often discover:
+
+* Invalid frames
+* Corrupt tags
+* Partial downloads
+* Mixed MPEG versions
+
+---
+
+## VLCJ does not expose this buffer
+
+VLCJ is essentially a Java wrapper around:
+
+```text
+Java
+  ↓
+VLCJ
+  ↓
+libvlc
+  ↓
+ffmpeg/mpg123
+```
+
+The "external buffer" mentioned is allocated inside mpg123, not inside Java.
+
+There is no VLCJ API like:
+
+```java
+player.setMp3BufferSize(...)
+```
+
+nor a LibVLC option that directly maps to that mpg123 buffer.
+
+---
+
+## If you're using audio callbacks
+
+One exception:
+
+If you're using VLCJ's audio callback API:
+
+```java
+AudioCallback
+```
+
+or
+
+```java
+AudioCallbackAdapter
+```
+
+and supplying your own native buffer, then the message may indicate that *your callback buffer is too small*.
+
+For example:
+
+```java
+ByteBuffer audioBuffer =
+    ByteBuffer.allocateDirect(2824);
+```
+
+when VLC suddenly requires:
+
+```text
+4240 bytes
+```
+
+In that case allocate significantly larger buffers:
+
+```java
+ByteBuffer audioBuffer =
+    ByteBuffer.allocateDirect(16384);
+```
+
+or dynamically resize.
+
+---
+
+## If you're simply playing media
+
+For normal playback:
+
+```java
+mediaPlayer.media().play(file);
+```
+
+there is usually nothing to tune.
+
+Instead investigate the media itself.
+
+---
+
+## VLC options worth trying
+
+Although they don't directly change the mpg123 output buffer, these can help with problematic streams:
+
+```java
+mediaPlayer.media().play(
+    path,
+    ":file-caching=3000",
+    ":network-caching=3000"
+);
+```
+
+or
+
+```java
+":demux=any"
+```
+
+or
+
+```java
+":codec=avcodec"
+```
+
+if VLC is choosing an unexpected decoder.
+
+---
+
+## I'd specifically suspect corruption
+
+The sequence:
+
+```text
+Illegal Audio-MPEG-Header
+Big change (MPEG version, layer, rate)
+Frankenstein stream
+```
+
+is almost always seen when:
+
+1. The MP3 file is damaged.
+2. An MP3 was improperly concatenated.
+3. A non-MP3 file was renamed `.mp3`.
+4. The file contains malformed ID3/tag data.
+5. The file is only partially downloaded or partially copied.
+
+---
+
+## How to verify quickly
+
+Try:
+
+```bash
+ffmpeg -i bad.mp3 -c:a mp3 fixed.mp3
+```
+
+If FFmpeg can repair/re-encode it and VLC then plays `fixed.mp3` without errors, the problem is the source media rather than VLCJ or Java.
+
+If you can share:
+
+* the VLCJ version,
+* VLC/libVLC version,
+* whether you're using normal playback or audio callbacks,
+* and the code that creates the media player,
+
+I can narrow down whether this is a decoder issue, a callback buffer issue, or a genuinely corrupt MP3 stream.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 PROMPT:
 To have a thread running in an endless loop, that is unless, the application is to be shut down, that monitors songQueueRoot for any entries.  
 Naturally, we will need to get the status of the player, such as Playing/Paused/Stopped, the total length of the song in seconds, 

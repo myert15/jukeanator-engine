@@ -75,7 +75,7 @@ public final class SongLibraryMapper {
         albumEntity.getName(), 
         albumEntity.hasExplicit(),
         albumEntity.getRecordLabel(), 
-        albumEntity.getReleaseDate(), 
+        albumEntity.getReleaseDate().toString(), 
         albumEntity.getCoverArtPath(),
         SongLibraryMapper.toSongDtoList(
             artist, 

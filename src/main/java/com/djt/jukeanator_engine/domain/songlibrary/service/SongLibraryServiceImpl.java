@@ -29,9 +29,8 @@ import com.djt.jukeanator_engine.domain.songlibrary.exception.SongScanFailedExce
 import com.djt.jukeanator_engine.domain.songlibrary.mapper.SongLibraryMapper;
 import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.ArtistFolderEntity;
-import com.djt.jukeanator_engine.domain.songlibrary.model.GenreDescendant;
 import com.djt.jukeanator_engine.domain.songlibrary.model.GenreFolderEntity;
-import com.djt.jukeanator_engine.domain.songlibrary.model.NumPlaysComparable;
+import com.djt.jukeanator_engine.domain.songlibrary.model.LibraryItem;
 import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.SongFileEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.repository.SongLibraryRepository;
@@ -101,8 +100,8 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
       return new SearchResultDto(List.of(), List.of(), List.of());
     }
 
-    Comparator<NumPlaysComparable> bySearchWeightThenPopularityDescending =
-        Comparator.comparingInt((NumPlaysComparable npc) -> {
+    Comparator<LibraryItem> bySearchWeightThenPopularityDescending =
+        Comparator.comparingInt((LibraryItem npc) -> {
 
           if (npc instanceof SongFileEntity song) {
             return calculateSearchResultWeight(song.getSongName(), normalizedSearch);
@@ -117,7 +116,7 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
           }
 
           return Integer.valueOf(0);
-        }).thenComparing(NumPlaysComparable::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
+        }).thenComparing(LibraryItem::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
             .reversed();
 
     List<SongFileEntity> matchingSongs = root.getSongs().stream()
@@ -163,16 +162,16 @@ public final class SongLibraryServiceImpl implements SongLibraryService, Aggrega
       throw new SongLibraryException("SongLibraryService has not been initialized yet!");
     }
 
-    Comparator<NumPlaysComparable> byNumPlaysDescending = Comparator
-        .comparing(NumPlaysComparable::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
+    Comparator<LibraryItem> byNumPlaysDescending = Comparator
+        .comparing(LibraryItem::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
         .reversed();
 
     // When browsing by genre, show everything sorted by popularity.
     // When browsing globally (no genre), restrict to items that have actually been played.
-    java.util.function.Predicate<NumPlaysComparable> hasPlays = genreName != null ? item -> true
+    java.util.function.Predicate<LibraryItem> hasPlays = genreName != null ? item -> true
         : item -> item.getNumPlays() != null && item.getNumPlays() > 0;
 
-    java.util.function.Predicate<GenreDescendant> inGenre =
+    java.util.function.Predicate<LibraryItem> inGenre =
         item -> genreName == null || genreName.equalsIgnoreCase(item.getParentGenre().getName());
 
     List<SongFileEntity> popularSongs = root.getSongs().stream().filter(hasPlays).filter(inGenre)

@@ -1,15 +1,19 @@
 package com.djt.jukeanator_engine.domain.songlibrary.model;
 
+import java.time.Year;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SongFileEntity extends AbstractFileEntity implements NumPlaysComparable, GenreDescendant {
+public class SongFileEntity extends AbstractFileEntity implements LibraryItem {
   private static final long serialVersionUID = 1L;
 
   private Integer numPlays = Integer.valueOf(0);
   private String artistName;
   private String songName;
   private Integer trackNumber;
+  
+  private transient GenreFolderEntity parentGenre;
+  private transient Year releaseDate;
 
   public SongFileEntity() {}
 
@@ -17,8 +21,45 @@ public class SongFileEntity extends AbstractFileEntity implements NumPlaysCompar
     super(parentAlbum, name);
   }
 
+  @Override
   public Integer getNumPlays() {
     return numPlays;
+  }
+  
+  @Override
+  public GenreFolderEntity getParentGenre() {
+
+    if (parentGenre == null) {
+      
+      FolderEntity parentFolder = this.getParentFolder();
+      while (parentFolder instanceof RootFolderEntity == false) {
+
+        if (parentFolder instanceof GenreFolderEntity) {
+          parentGenre = (GenreFolderEntity) parentFolder;
+          break;
+        } else {
+          parentFolder = parentFolder.getParentFolder();
+        }
+      }
+      if (parentGenre == null) {
+        parentGenre = new GenreFolderEntity(parentFolder, "None");  
+      }
+    }
+    return parentGenre;
+  }
+  
+  @Override
+  public String getTitle() {
+    return getSongName();
+  }
+  
+  @Override
+  public Year getReleaseDate() {
+    
+    if (releaseDate == null) {
+      releaseDate = ((AlbumFolderEntity) this.getParentFolder()).getReleaseDate();  
+    }
+    return releaseDate;    
   }
 
   public void setNumPlays(Integer numPlays) {
@@ -32,22 +73,6 @@ public class SongFileEntity extends AbstractFileEntity implements NumPlaysCompar
 
   public AlbumFolderEntity getAlbum() {
     return (AlbumFolderEntity) this.getParentFolder();
-  }
-
-  public GenreFolderEntity getParentGenre() {
-
-    FolderEntity parentFolder = this.getParentFolder();
-    while (parentFolder instanceof RootFolderEntity == false) {
-
-      if (parentFolder instanceof GenreFolderEntity) {
-        return (GenreFolderEntity) parentFolder;
-      } else {
-        parentFolder = parentFolder.getParentFolder();
-      }
-    }
-    GenreFolderEntity dummyGenre = new GenreFolderEntity(parentFolder, "None");
-    dummyGenre.setPersistentIdentity(999999);
-    return dummyGenre;
   }
 
   public String getArtistName() {
