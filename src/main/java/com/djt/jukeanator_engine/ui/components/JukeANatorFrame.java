@@ -62,6 +62,9 @@ public class JukeANatorFrame extends JFrame {
   private static final Color TEXT_PRIMARY = Color.WHITE;
   private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
   
+  // TOP PANEL
+  private JPanel nowPlayingPanel;
+  
   // HOME TAB
   private static final int HOME_GRID_COLS = 4;
   private static final int HOME_GRID_ROWS = 3;
@@ -766,8 +769,11 @@ public class JukeANatorFrame extends JFrame {
     creditsPanel.setOpaque(true);
     creditsPanel.setBackground(Color.BLACK);
     creditsPanel.setBorder(BorderFactory.createMatteBorder(2, 1, 1, 1, Color.WHITE));
-    creditsPanel.setPreferredSize(new Dimension(350, 100));
-
+    Dimension sidePanelSize = new Dimension(485, 100);
+    creditsPanel.setPreferredSize(sidePanelSize);
+    creditsPanel.setMinimumSize(sidePanelSize);
+    creditsPanel.setMaximumSize(sidePanelSize);
+    
     //
     // LOCATION LOGO (96x96 — same size as Now Playing cover art)
     //
@@ -840,11 +846,18 @@ public class JukeANatorFrame extends JFrame {
     //
     // RIGHT : NOW PLAYING
     //
-    JPanel nowPlayingPanel = buildNowPlayingPanel();
+    nowPlayingPanel = buildNowPlayingPanel();
+    JPanel nowPlayingWrapper = new JPanel(new BorderLayout());
+    nowPlayingWrapper.setOpaque(false);
+    Dimension wrapperSize = new Dimension(485, 100);
+    nowPlayingWrapper.setPreferredSize(wrapperSize);
+    nowPlayingWrapper.setMinimumSize(wrapperSize);
+    nowPlayingWrapper.setMaximumSize(wrapperSize);
+    nowPlayingWrapper.add(nowPlayingPanel, BorderLayout.CENTER);
 
     panel.add(creditsPanel, BorderLayout.WEST);
     panel.add(bannerPanel, BorderLayout.CENTER);
-    panel.add(nowPlayingPanel, BorderLayout.EAST);
+    panel.add(nowPlayingWrapper, BorderLayout.EAST);
 
     return panel;
   }
@@ -867,8 +880,15 @@ public class JukeANatorFrame extends JFrame {
     panel.setBackground(Color.BLACK);
     panel.setBorder(BorderFactory.createMatteBorder(2, 1, 1, 1, Color.WHITE));
 
+    // Fixed size — always the same whether a song is playing or not.
+    // Sized to match the "song playing" state so the center logo never shifts.
+    Dimension fixedSize = new Dimension(450, 100);
+    panel.setPreferredSize(fixedSize);
+    panel.setMinimumSize(fixedSize);
+    panel.setMaximumSize(fixedSize);
+
     //
-    // LEFT : PLAY STATUS
+    // LEFT : PLAY STATUS (animated GIF / paused icon)
     //
     playStatus.setPreferredSize(new Dimension(96, 96));
     playStatus.setHorizontalAlignment(SwingConstants.CENTER);
@@ -876,16 +896,14 @@ public class JukeANatorFrame extends JFrame {
 
     //
     // CENTER : TEXT PANEL
+    // "NOW PLAYING:" label removed — gives the three song info lines room to breathe.
     //
     JPanel textPanel = new JPanel();
-
     textPanel.setOpaque(false);
     textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
 
-    JLabel nowPlayingTitle = new JLabel("NOW PLAYING:");
-
-    nowPlayingTitle.setForeground(Color.YELLOW);
-    nowPlayingTitle.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
+    // Add a little top padding so the text sits centred vertically
+    textPanel.setBorder(new EmptyBorder(8, 0, 8, 0));
 
     songLabel.setForeground(Color.CYAN);
     songLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
@@ -896,11 +914,13 @@ public class JukeANatorFrame extends JFrame {
     albumLabel.setForeground(TEXT_SECONDARY);
     albumLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
 
-    textPanel.add(nowPlayingTitle);
-    textPanel.add(Box.createVerticalStrut(4));
+    textPanel.add(Box.createVerticalGlue());
     textPanel.add(songLabel);
+    textPanel.add(Box.createVerticalStrut(4));
     textPanel.add(artistLabel);
+    textPanel.add(Box.createVerticalStrut(4));
     textPanel.add(albumLabel);
+    textPanel.add(Box.createVerticalGlue());
 
     //
     // RIGHT : COVER ART
@@ -912,17 +932,20 @@ public class JukeANatorFrame extends JFrame {
     panel.add(playStatus, BorderLayout.WEST);
     panel.add(textPanel, BorderLayout.CENTER);
     panel.add(albumArtLabel, BorderLayout.EAST);
+    
+    panel.setVisible(false); // hidden until a song starts
 
     return panel;
   }
   
   
   
-  
-  
-  
-  
 
+
+  
+  
+  
+  
   
   // ============================================================
   // PLACEHOLDER
@@ -980,11 +1003,8 @@ public class JukeANatorFrame extends JFrame {
   
   // NOW PLAYING
   public void setNowPlaying(SongDto songDto) {
-
     SwingUtilities.invokeLater(() -> {
-
       if (songDto == null) {
-
         clearNowPlaying();
         return;
       }
@@ -996,17 +1016,22 @@ public class JukeANatorFrame extends JFrame {
 
       musicPaused = false;
       playStatus.setIcon(imageLoader.loadClasspathImage("music_playing.gif", 96, 96, Image.SCALE_DEFAULT));
+
+      // Make the panel visible now that there's something to show.
+      nowPlayingPanel.setVisible(true);
     });
   }
 
   private void clearNowPlaying() {
-
     songLabel.setText("");
     artistLabel.setText("");
     albumLabel.setText("");
     albumArtLabel.setIcon(null);
     playStatus.setIcon(null);
-    musicPaused = false;    
+    musicPaused = false;
+
+    // Hide the entire panel — but keep its space so the logo stays centred.
+    nowPlayingPanel.setVisible(false);
   }
 
   // TOGGLE MUSIC PLAY STATE ICON
