@@ -6,6 +6,7 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Frame;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
@@ -246,28 +247,7 @@ public class AddAlbumToQueueDialog extends JDialog {
     }));
 
     // ── Cancel button ─────────────────────────────────────────────────────
-    JButton cancel = new JButton("CANCEL");
-    cancel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
-    cancel.setForeground(TEXT_PRIMARY);
-    cancel.setBackground(new Color(60, 60, 75));
-    cancel.setFocusPainted(false);
-    cancel.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 120), 1));
-    cancel.setPreferredSize(new Dimension(200, 48));
-    cancel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-    cancel.addActionListener(e -> dismiss());
-
-    // Hover
-    cancel.addMouseListener(new java.awt.event.MouseAdapter() {
-      @Override
-      public void mouseEntered(java.awt.event.MouseEvent e) {
-        cancel.setBackground(new Color(90, 90, 110));
-      }
-
-      @Override
-      public void mouseExited(java.awt.event.MouseEvent e) {
-        cancel.setBackground(new Color(60, 60, 75));
-      }
-    });
+    JButton cancel = createCancelButton("CANCEL");
 
     JPanel cancelRow = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 0, 0));
     cancelRow.setOpaque(false);
@@ -394,6 +374,70 @@ public class AddAlbumToQueueDialog extends JDialog {
     SwingUtilities.invokeLater(this::dispose);
   }
 
+  private JButton createCancelButton(String text) {
+
+    // Idle and hover fill colours mirror the sort button's active gradient
+    final Color GRAD_TOP = new Color(0, 160, 210);
+    final Color GRAD_BOTTOM = new Color(0, 80, 130);
+    final Color HOVER_TOP = new Color(0, 190, 240);
+    final Color HOVER_BOTTOM = new Color(0, 100, 160);
+
+    JButton button = new JButton(text) {
+
+      private static final long serialVersionUID = 1L;
+      private boolean hovered = false;
+
+      {
+        addMouseListener(new java.awt.event.MouseAdapter() {
+          @Override
+          public void mouseEntered(java.awt.event.MouseEvent e) {
+            hovered = true;
+            repaint();
+          }
+
+          @Override
+          public void mouseExited(java.awt.event.MouseEvent e) {
+            hovered = false;
+            repaint();
+          }
+        });
+      }
+
+      @Override
+      protected void paintComponent(Graphics g) {
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Gradient fill — brighter on hover
+        Color top = hovered ? HOVER_TOP : GRAD_TOP;
+        Color bottom = hovered ? HOVER_BOTTOM : GRAD_BOTTOM;
+        g2.setPaint(new GradientPaint(0, 0, top, 0, getHeight(), bottom));
+        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+
+        // Accent border
+        g2.setColor(ACCENT_BLUE);
+        g2.setStroke(new java.awt.BasicStroke(1.5f));
+        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+
+        g2.dispose();
+        super.paintComponent(g);
+      }
+    };
+
+    button.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
+    button.setForeground(Color.WHITE);
+    button.setContentAreaFilled(false);
+    button.setBorderPainted(false);
+    button.setFocusPainted(false);
+    button.setOpaque(false);
+    button.setPreferredSize(new Dimension(140, 52));
+    button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    button.addActionListener(e -> dismiss());
+
+    return button;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // STATIC FACTORY — convenience method for call sites
   // ─────────────────────────────────────────────────────────────────────────
@@ -413,8 +457,8 @@ public class AddAlbumToQueueDialog extends JDialog {
   public static void show(Frame owner, AlbumDto album, ImageLoader imageLoader, int normalPlayCost,
       int priorityCost, PlayAction onNormalPlay, PlayAction onPriorityPlay) {
 
-    AddAlbumToQueueDialog dialog = new AddAlbumToQueueDialog(owner, album, imageLoader, normalPlayCost,
-        priorityCost, onNormalPlay, onPriorityPlay);
+    AddAlbumToQueueDialog dialog = new AddAlbumToQueueDialog(owner, album, imageLoader,
+        normalPlayCost, priorityCost, onNormalPlay, onPriorityPlay);
 
     dialog.setVisible(true); // blocks here (modal)
   }
