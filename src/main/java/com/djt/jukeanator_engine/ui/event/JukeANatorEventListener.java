@@ -2,8 +2,8 @@ package com.djt.jukeanator_engine.ui.event;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import com.djt.jukeanator_engine.domain.songlibrary.event.ResetSongStatisticsEvent;
 import com.djt.jukeanator_engine.domain.songlibrary.event.ScanFileSystemForSongsEvent;
+import com.djt.jukeanator_engine.domain.songlibrary.event.SongStatisticsChangedEvent;
 import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
 import com.djt.jukeanator_engine.domain.songplayer.event.AllSongsDonePlayingEvent;
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackPausedEvent;
@@ -11,7 +11,6 @@ import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackStartedEven
 import com.djt.jukeanator_engine.domain.songplayer.event.SongPlaybackStoppedEvent;
 import com.djt.jukeanator_engine.domain.songplayer.service.SongPlayerService;
 import com.djt.jukeanator_engine.domain.songqueue.event.MultipleSongsAddedToQueueEvent;
-import com.djt.jukeanator_engine.domain.songqueue.event.SongAddedToQueueEvent;
 import com.djt.jukeanator_engine.domain.songqueue.event.SongQueueChangedEvent;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 import com.djt.jukeanator_engine.ui.components.JukeANatorFrame;
@@ -41,7 +40,7 @@ public class JukeANatorEventListener {
   }
 
   @EventListener
-  public void handleSongAddedToQueueEvent(SongAddedToQueueEvent event) {
+  public void handleSongAddedToQueueEvent(SongStatisticsChangedEvent event) {
 
     if (frame == null) return;
     
@@ -102,14 +101,6 @@ public class JukeANatorEventListener {
     if (frame == null) return;
     
     initializeUi();
-  }
-
-  @EventListener
-  public void handleResetSongStatisticsEvent(ResetSongStatisticsEvent event) {
-
-    if (frame == null) return;
-    
-    frame.refreshMusicByPopularityResults();
   }
   
   private void initializeUi() {

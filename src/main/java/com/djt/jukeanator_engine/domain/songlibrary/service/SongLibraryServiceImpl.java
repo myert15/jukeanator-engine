@@ -22,8 +22,8 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
-import com.djt.jukeanator_engine.domain.songlibrary.event.ResetSongStatisticsEvent;
 import com.djt.jukeanator_engine.domain.songlibrary.event.ScanFileSystemForSongsEvent;
+import com.djt.jukeanator_engine.domain.songlibrary.event.SongStatisticsChangedEvent;
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongLibraryException;
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongScanFailedException;
 import com.djt.jukeanator_engine.domain.songlibrary.mapper.SongLibraryMapper;
@@ -383,7 +383,7 @@ public final class SongLibraryServiceImpl
       initializeSongLibrary();
 
       // Publish the event
-      eventPublisher.publishEvent(new ResetSongStatisticsEvent());
+      eventPublisher.publishEvent(new SongStatisticsChangedEvent());
 
       return Integer.valueOf(root.getAlbums().size());
 
@@ -457,6 +457,9 @@ public final class SongLibraryServiceImpl
       SongFileEntity song = this.root.getSongById(event.queueEntry().getSong().getAlbumId(), event.queueEntry().getSong().getSongId());
       song.incrementNumPlays();
       
+      // Publish the event
+      eventPublisher.publishEvent(new SongStatisticsChangedEvent());
+      
       this.songLibraryRepository.storeSongLibraryAsync();
 
     } catch (EntityDoesNotExistException ednee) {
@@ -476,6 +479,9 @@ public final class SongLibraryServiceImpl
         SongFileEntity song = this.root.getSongById(queueEntry.getSong().getAlbumId(), queueEntry.getSong().getSongId());
         song.incrementNumPlays();
       }
+
+      // Publish the event
+      eventPublisher.publishEvent(new SongStatisticsChangedEvent());
       
       this.songLibraryRepository.storeSongLibraryAsync();
 
