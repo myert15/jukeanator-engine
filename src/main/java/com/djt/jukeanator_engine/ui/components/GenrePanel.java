@@ -5,7 +5,6 @@ import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.GradientPaint;
@@ -63,7 +62,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
   private final JPanel genreAlbumsSlot = new JPanel(new BorderLayout());
 
   // ── Pagination ────────────────────────────────────────────────────────────
-  private final JPanel genresPaginationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+  private final JPanel genresPaginationPanel = new JPanel(new BorderLayout(8, 0));
   private int currentPage = 0;
 
   // ── Genre data ────────────────────────────────────────────────────────────
@@ -179,19 +178,19 @@ public class GenrePanel extends JPanel implements TabNavigator {
   }
 
   private JPanel buildGenreGridCard() {
+
     JPanel pageWrapper = new JPanel(new BorderLayout());
     pageWrapper.setOpaque(false);
     pageWrapper.setBorder(new EmptyBorder(30, 60, 20, 60));
     pageWrapper.add(genresGridPanel, BorderLayout.CENTER);
 
-    JPanel bottomPanel = new JPanel(new BorderLayout());
-    bottomPanel.setOpaque(false);
-    bottomPanel.add(genresPaginationPanel, BorderLayout.CENTER);
+    genresPaginationPanel.setBorder(new EmptyBorder(4, 16, 4, 16));
+    genresPaginationPanel.setOpaque(false);
 
     JPanel card = new JPanel(new BorderLayout());
     card.setOpaque(false);
     card.add(pageWrapper, BorderLayout.CENTER);
-    card.add(bottomPanel, BorderLayout.SOUTH);
+    card.add(genresPaginationPanel, BorderLayout.SOUTH);
     return card;
   }
 
@@ -221,9 +220,8 @@ public class GenrePanel extends JPanel implements TabNavigator {
   }
 
   private void rebuildPagination() {
+
     genresPaginationPanel.removeAll();
-    genresPaginationPanel.setLayout(new BorderLayout());
-    genresPaginationPanel.setOpaque(false);
 
     int totalPages =
         Math.max(1, (int) Math.ceil(genresListModel.size() / (double) GENRES_PER_PAGE));
@@ -254,12 +252,12 @@ public class GenrePanel extends JPanel implements TabNavigator {
     // centred even when only one navigation button is visible.
     JPanel prevWrapper = new JPanel(new BorderLayout());
     prevWrapper.setOpaque(false);
-    prevWrapper.setPreferredSize(new Dimension(140, 52)); // same as button preferred size
+    prevWrapper.setPreferredSize(new Dimension(140, 36)); // same as button preferred size
     prevWrapper.add(prevBtn, BorderLayout.CENTER);
 
     JPanel nextWrapper = new JPanel(new BorderLayout());
     nextWrapper.setOpaque(false);
-    nextWrapper.setPreferredSize(new Dimension(140, 52));
+    nextWrapper.setPreferredSize(new Dimension(140, 36));
     nextWrapper.add(nextBtn, BorderLayout.CENTER);
 
     genresPaginationPanel.add(prevWrapper, BorderLayout.WEST);
@@ -330,7 +328,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
     button.setBorderPainted(false);
     button.setFocusPainted(false);
     button.setOpaque(false);
-    button.setPreferredSize(new Dimension(140, 52));
+    button.setPreferredSize(new Dimension(140, 36));
     button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
     return button;

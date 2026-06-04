@@ -76,7 +76,7 @@ public class AlbumGridPanel extends JPanel {
     setOpaque(false);
 
     gridPanel.setOpaque(false);
-    navPanel.setBorder(new EmptyBorder(8, 16, 8, 16));
+    navPanel.setBorder(new EmptyBorder(4, 16, 4, 16));
     navPanel.setOpaque(false);
 
     add(gridPanel, BorderLayout.CENTER);
@@ -108,7 +108,7 @@ public class AlbumGridPanel extends JPanel {
     // ── Grid ──────────────────────────────────────────────────────────────
     gridPanel.removeAll();
     gridPanel.setLayout(new GridLayout(rows, cols, 10, 10));
-    gridPanel.setBorder(new EmptyBorder(12, 12, 4, 12));
+    gridPanel.setBorder(new EmptyBorder(8, 12, 4, 12));
 
     for (int i = start; i < end; i++) {
       gridPanel.add(buildTile(albums.get(i)));
@@ -147,12 +147,12 @@ public class AlbumGridPanel extends JPanel {
     // centred even when only one navigation button is visible.
     JPanel prevWrapper = new JPanel(new BorderLayout());
     prevWrapper.setOpaque(false);
-    prevWrapper.setPreferredSize(new Dimension(140, 52)); // same as button preferred size
+    prevWrapper.setPreferredSize(new Dimension(140, 36)); // same as button preferred size
     prevWrapper.add(prevBtn, BorderLayout.CENTER);
 
     JPanel nextWrapper = new JPanel(new BorderLayout());
     nextWrapper.setOpaque(false);
-    nextWrapper.setPreferredSize(new Dimension(140, 52));
+    nextWrapper.setPreferredSize(new Dimension(140, 36));
     nextWrapper.add(nextBtn, BorderLayout.CENTER);
 
     navPanel.add(prevWrapper, BorderLayout.WEST);
@@ -232,17 +232,17 @@ public class AlbumGridPanel extends JPanel {
     tile.setBorder(new EmptyBorder(1, 1, 1, 1)); // breathing room inside border
 
     // ── Cover art ─────────────────────────────────────────────────────────
-    // Wrap in a panel so the image is centred both horizontally and vertically
-    // within whatever space the tile's CENTER region allocates.
+    // GridBagLayout centres the label both horizontally and vertically inside
+    // whatever space the tile's CENTER region provides. We do NOT set a fixed
+    // preferredSize on artLabel — the icon's own pixel dimensions drive the
+    // label size, so any surplus tile height becomes equal top/bottom padding.
     JPanel artWrapper = new JPanel(new java.awt.GridBagLayout());
     artWrapper.setOpaque(false);
 
     JLabel artLabel = new JLabel();
-    artLabel.setPreferredSize(new Dimension(artW, artH));
     artLabel.setHorizontalAlignment(SwingConstants.CENTER);
     artLabel.setVerticalAlignment(SwingConstants.CENTER);
     artLabel.setOpaque(false);
-    artLabel.setBackground(new Color(30, 30, 42));
 
     if (album.getCoverArtPath() != null) {
       try {
@@ -254,9 +254,11 @@ public class AlbumGridPanel extends JPanel {
     }
 
     if (artLabel.getIcon() == null) {
+      // Fallback: fix a size so the musical note placeholder occupies the right space
       artLabel.setText("♫");
       artLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, artH / 3));
       artLabel.setForeground(new Color(80, 80, 100));
+      artLabel.setPreferredSize(new Dimension(artW, artH));
     }
 
     artWrapper.add(artLabel);
@@ -356,7 +358,7 @@ public class AlbumGridPanel extends JPanel {
     button.setBorderPainted(false);
     button.setFocusPainted(false);
     button.setOpaque(false);
-    button.setPreferredSize(new Dimension(140, 52));
+    button.setPreferredSize(new Dimension(140, 36));
     button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
     return button;

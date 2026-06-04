@@ -178,12 +178,15 @@ public class HomePanel extends JPanel implements TabNavigator {
       allAlbums = List.of();
     }
 
-    ImageIcon allAlbumsIcon = imageLoader.loadImage("AllAlbumsLogo.png", 72, 72);
+    // Use a smaller icon (48×48 instead of 72×72) so the header occupies less
+    // vertical space and gives the album grid more room.
+    ImageIcon allAlbumsIcon = imageLoader.loadImage("AllAlbumsLogo.png", 48, 48);
     DetailHeaderPanel header = new DetailHeaderPanel(null, null, allAlbumsIcon, "♫", "ALL ALBUMS",
         allAlbums.size() + " albums");
     header.setOpaque(false);
-    // Match the 12px left/right padding used by AlbumGridPanel's gridPanel border
-    header.setBorder(new javax.swing.border.EmptyBorder(0, 12, 0, 12));
+    // Match the 12px left/right padding used by AlbumGridPanel's gridPanel border.
+    // Top/bottom padding is kept tight to minimise the header's height.
+    header.setBorder(new javax.swing.border.EmptyBorder(4, 12, 4, 12));
 
     if (allAlbums.isEmpty()) {
       JLabel empty = new JLabel("No albums found.", SwingConstants.CENTER);
