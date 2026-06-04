@@ -1,7 +1,6 @@
 package com.djt.jukeanator_engine.ui.components;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.util.List;
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
@@ -11,9 +10,6 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 public class ArtistDetailPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
-
-  // ── Palette (shared with AlbumGridPanel statics) ──────────────────────────
-  private static final Color BG_MAIN = AlbumGridPanel.BG_MAIN;
 
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
@@ -35,7 +31,7 @@ public class ArtistDetailPanel extends JPanel {
       AlbumGridPanel.AlbumClickListener onAlbumClicked) {
 
     setLayout(new BorderLayout(0, 0));
-    setBackground(BG_MAIN);
+    setOpaque(false);
 
     List<AlbumDto> albums = artist.getAlbums() != null ? artist.getAlbums() : List.of();
 

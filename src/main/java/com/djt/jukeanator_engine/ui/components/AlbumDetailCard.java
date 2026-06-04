@@ -27,8 +27,8 @@ public class AlbumDetailCard extends JPanel {
   private static final int TIMEOUT_SECONDS = 120;
 
   private static final Color ACCENT_BLUE    = new Color(0, 210, 255);
-  private static final Color BG_DARK        = new Color(10, 10, 10);
-  private static final Color BG_FOOTER      = new Color(18, 18, 26);
+  //private static final Color BG_DARK        = new Color(10, 10, 10);
+  //private static final Color BG_FOOTER      = new Color(18, 18, 26);
   private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
   
   private int secondsRemaining = TIMEOUT_SECONDS;
@@ -41,7 +41,7 @@ public class AlbumDetailCard extends JPanel {
       int threshold2, int threshold3, boolean enableBigScrollBars, TabNavigator navigator) {
 
     setLayout(new BorderLayout());
-    setBackground(BG_DARK);
+    setOpaque(false);
 
     AlbumViewPanel.SongClickListener songClick = song -> {
       secondsRemaining = TIMEOUT_SECONDS;
@@ -90,7 +90,7 @@ public class AlbumDetailCard extends JPanel {
   private JPanel buildFooter(TabNavigator navigator) {
 
     JPanel footer = new JPanel(new BorderLayout(12, 0));
-    footer.setBackground(BG_FOOTER);
+    footer.setOpaque(false);
 
     //
     // LEFT SIDE BUTTONS
@@ -109,7 +109,7 @@ public class AlbumDetailCard extends JPanel {
 
     timeoutBar.setValue(TIMEOUT_SECONDS);
     timeoutBar.setForeground(new Color(0, 210, 255));
-    timeoutBar.setBackground(new Color(40, 40, 55));
+    timeoutBar.setOpaque(false);
     timeoutBar.setBorderPainted(false);
     timeoutBar.setStringPainted(false);
 

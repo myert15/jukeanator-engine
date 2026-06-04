@@ -23,7 +23,6 @@ public class DetailHeaderPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
-  private static final Color BG_HEADER = new Color(18, 18, 28);
   private static final Color ACCENT_BLUE = AlbumGridPanel.ACCENT_BLUE;
   private static final Color TEXT_PRIMARY = AlbumGridPanel.TEXT_PRIMARY;
   private static final Color TEXT_SECONDARY = AlbumGridPanel.TEXT_SECONDARY;
@@ -38,7 +37,7 @@ public class DetailHeaderPanel extends JPanel {
       String title, String subtitle, JPanel eastPanel) {
 
     setLayout(new BorderLayout(16, 0));
-    setBackground(BG_HEADER);
+    setOpaque(false);
 
     setBorder(BorderFactory.createCompoundBorder(
         BorderFactory.createMatteBorder(0, 0, 1, 0, COLOR_BORDER),

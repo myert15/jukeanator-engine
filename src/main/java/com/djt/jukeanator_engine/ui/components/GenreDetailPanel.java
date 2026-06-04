@@ -66,9 +66,6 @@ public class GenreDetailPanel extends JPanel {
   // ── Preview row count (matches HotHerePanel) ──────────────────────────────
   private static final int PREVIEW_COUNT = 10;
 
-  // ── Palette (shared with AlbumGridPanel statics) ──────────────────────────
-  private static final Color BG_MAIN = AlbumGridPanel.BG_MAIN;
-
   // ── Offset state per column ───────────────────────────────────────────────
   private int artistsOffset = 0;
   private int albumsOffset = 0;
@@ -125,7 +122,7 @@ public class GenreDetailPanel extends JPanel {
       ArtistClickListener onArtistClicked, SongLibraryService songLibraryService) {
 
     setLayout(new BorderLayout(0, 0));
-    setBackground(BG_MAIN);
+    setOpaque(false);
 
     this.genre = genre;
     this.imageLoader = imageLoader;
@@ -155,6 +152,7 @@ public class GenreDetailPanel extends JPanel {
 
     headerPanel = new DetailHeaderPanel(backLabel, onBack, genreImage, "♪", genre.getGenreName(),
         subtitle, buildSortButtonPanel());
+    headerPanel.setOpaque(false);
     add(headerPanel, BorderLayout.NORTH);
 
     // ── Columns ───────────────────────────────────────────────────────────

@@ -2,10 +2,10 @@ package com.djt.jukeanator_engine.ui.components;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.Frame;
 import java.util.List;
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -24,9 +24,6 @@ public class HomePanel extends JPanel implements TabNavigator {
   public static final int DEFAULT_ROWS = 3;
   public static final int DEFAULT_ART_W = 190;
   public static final int DEFAULT_ART_H = 190;
-
-  // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color BG_DARK = new Color(10, 10, 10);
 
   // ── Card names ────────────────────────────────────────────────────────────
   private static final String CARD_GRID = "GRID";
@@ -94,9 +91,9 @@ public class HomePanel extends JPanel implements TabNavigator {
     this.artH = artH;
 
     setLayout(new BorderLayout());
-    setBackground(BG_DARK);
+    setOpaque(false);
 
-    rootPanel.setBackground(BG_DARK);
+    rootPanel.setOpaque(false);
     add(rootPanel, BorderLayout.CENTER);
 
     // Seed the three cards. ARTIST and DETAIL start as empty placeholders;
@@ -176,7 +173,7 @@ public class HomePanel extends JPanel implements TabNavigator {
   private JPanel buildGridCard() {
 
     JPanel card = new JPanel(new BorderLayout());
-    card.setBackground(BG_DARK);
+    card.setOpaque(false);
 
     List<AlbumDto> allAlbums;
     try {
@@ -185,8 +182,10 @@ public class HomePanel extends JPanel implements TabNavigator {
       allAlbums = List.of();
     }
 
+    ImageIcon allAlbumsIcon = imageLoader.loadImage("AllAlbumsLogo.png", 72, 72);
     DetailHeaderPanel header =
-        new DetailHeaderPanel(null, null, null, "♫", "ALL ALBUMS", allAlbums.size() + " albums");
+        new DetailHeaderPanel(null, null, allAlbumsIcon, "♫", "ALL ALBUMS", allAlbums.size() + " albums");
+    header.setOpaque(false);
 
     if (allAlbums.isEmpty()) {
       JLabel empty = new JLabel("No albums found.", SwingConstants.CENTER);
@@ -246,7 +245,7 @@ public class HomePanel extends JPanel implements TabNavigator {
   /** Minimal opaque placeholder used to seed card slots before real content arrives. */
   private JPanel placeholder() {
     JPanel p = new JPanel();
-    p.setBackground(BG_DARK);
+    p.setOpaque(false);
     return p;
   }
 }

@@ -31,8 +31,6 @@ public class AlbumViewPanel extends JPanel {
   private static final int COVER_SIZE = 320;
   
   // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color BG_MAIN = new Color(15, 15, 20);
-  private static final Color BG_SIDEBAR = new Color(22, 22, 30);
   private static final Color BG_ROW = new Color(20, 20, 28);
   private static final Color BG_ROW_HOVER = new Color(35, 35, 50);
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
@@ -66,7 +64,7 @@ public class AlbumViewPanel extends JPanel {
       AlbumClickListener albumClickListener) {
 
     setLayout(new BorderLayout(0, 0));
-    setBackground(BG_MAIN);
+    setOpaque(false);
 
     add(buildSidebar(album, imageLoader, albumClickListener), BorderLayout.WEST);
     add(buildTrackList(album, threshold1, threshold2, threshold3, enableBigScrollBars,
@@ -80,7 +78,7 @@ public class AlbumViewPanel extends JPanel {
       AlbumClickListener albumClickListener) {
 
     JPanel sidebar = new JPanel(new BorderLayout(0, 0));
-    sidebar.setBackground(BG_SIDEBAR);
+    sidebar.setOpaque(false);
     sidebar.setPreferredSize(new Dimension(LEFT_PANEL_WIDTH, 0));
     sidebar.setMinimumSize(new Dimension(LEFT_PANEL_WIDTH, 0));
     sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, SEPARATOR));
@@ -90,8 +88,7 @@ public class AlbumViewPanel extends JPanel {
     cover.setPreferredSize(new Dimension(COVER_SIZE, COVER_SIZE));
     cover.setHorizontalAlignment(SwingConstants.CENTER);
     cover.setVerticalAlignment(SwingConstants.CENTER);
-    cover.setOpaque(true);
-    cover.setBackground(new Color(30, 30, 40));
+    cover.setOpaque(false);
 
     if (album.getCoverArtPath() != null) {
       try {
@@ -187,11 +184,11 @@ public class AlbumViewPanel extends JPanel {
       SongClickListener listener) {
 
     JPanel wrapper = new JPanel(new BorderLayout());
-    wrapper.setBackground(BG_MAIN);
+    wrapper.setOpaque(false);
 
     // ── Column header ─────────────────────────────────────────────────────
     JPanel header = new JPanel(new BorderLayout());
-    header.setBackground(new Color(18, 18, 26));
+    header.setOpaque(false);
     header.setBorder(new EmptyBorder(8, 16, 8, 16));
 
     JLabel headerLabel = new JLabel("TRACKS");
@@ -201,7 +198,7 @@ public class AlbumViewPanel extends JPanel {
 
     // ── Rows ──────────────────────────────────────────────────────────────
     JPanel rows = new JPanel();
-    rows.setBackground(BG_MAIN);
+    rows.setOpaque(false);
     rows.setLayout(new BoxLayout(rows, BoxLayout.Y_AXIS));
 
     List<SongDto> songs = album.getSongs();
@@ -222,8 +219,8 @@ public class AlbumViewPanel extends JPanel {
     // ── Scroll pane ───────────────────────────────────────────────────────
     JScrollPane scroll = new JScrollPane(rows);
     scroll.setBorder(null);
-    scroll.setBackground(BG_MAIN);
-    scroll.getViewport().setBackground(BG_MAIN);
+    scroll.setOpaque(false);
+    scroll.getViewport().setOpaque(false);
     scroll.getVerticalScrollBar().setUnitIncrement(24);
     scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
@@ -373,7 +370,6 @@ public class AlbumViewPanel extends JPanel {
     JTextArea area = new JTextArea(text != null ? text : "");
     area.setFont(new Font(Font.SANS_SERIF, style, size));
     area.setForeground(color);
-    area.setBackground(new Color(0, 0, 0, 0)); // fully transparent
     area.setOpaque(false);
     area.setEditable(false);
     area.setFocusable(false);
