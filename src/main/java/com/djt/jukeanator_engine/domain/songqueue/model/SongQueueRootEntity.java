@@ -2,6 +2,7 @@ package com.djt.jukeanator_engine.domain.songqueue.model;
 
 import static java.util.Objects.requireNonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import com.djt.jukeanator_engine.domain.common.model.AbstractPersistentEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.SongFileEntity;
@@ -41,6 +42,12 @@ public class SongQueueRootEntity extends AbstractPersistentEntity {
     Integer numSongsFlushed = Integer.valueOf(this.songs.size());
     this.songs.clear();
     return numSongsFlushed;
+  }
+  
+  public Integer randomizeQueue() {
+
+    Collections.shuffle(songs);
+    return Integer.valueOf(this.songs.size());
   }
   
   public int addSongToQueue(SongFileEntity song, Integer priority) {

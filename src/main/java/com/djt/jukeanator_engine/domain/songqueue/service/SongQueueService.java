@@ -41,6 +41,11 @@ public interface SongQueueService {
    * @return
    */
   Integer flushQueue();
+
+  /**
+   * @return
+   */
+  Integer randomizeQueue();
   
   /**
    * 

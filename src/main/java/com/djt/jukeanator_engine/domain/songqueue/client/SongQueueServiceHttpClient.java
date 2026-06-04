@@ -72,6 +72,15 @@ public class SongQueueServiceHttpClient implements SongQueueService {
         .retrieve()
         .body(Integer.class);
   }
+
+  @Override
+  public Integer randomizeQueue() {
+
+    return restClient.post()
+        .uri("/api/song-queue/randomizeQueue")
+        .retrieve()
+        .body(Integer.class);
+  }
   
   @Override
   public SongQueueEntryDto dequeueNextSong() {

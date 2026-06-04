@@ -64,4 +64,10 @@ public class SongQueueController implements SongQueueService {
     
     return songQueueService.flushQueue();
   }
+  
+  @PostMapping("/randomizeQueue")  
+  public Integer randomizeQueue() {
+    
+    return songQueueService.randomizeQueue();
+  }  
 }
