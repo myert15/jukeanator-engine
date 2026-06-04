@@ -76,16 +76,7 @@ public class SongFileEntity extends AbstractFileEntity implements LibraryItem {
   }
 
   public String getArtistName() {
-
-    if (this.artistName != null) {
-      return this.artistName;
-    } else if (this.artistName == null) {
-      this.artistName = extractArtistName(getName());
-    }
-    if (this.artistName != null) {
-      return this.artistName;
-    }
-    return getParentFolder().getName();
+    return this.artistName;
   }
 
   public void setArtistName(String artistName) {
@@ -93,16 +84,7 @@ public class SongFileEntity extends AbstractFileEntity implements LibraryItem {
   }
 
   public String getSongName() {
-
-    if (this.songName != null) {
-      return this.songName;
-    } else if (this.songName == null) {
-      this.songName = extractSongName(getName());
-    }
-    if (this.songName != null) {
-      return this.songName;
-    }
-    return getName();
+    return this.songName;
   }
 
   public void setSongName(String songName) {

@@ -129,7 +129,7 @@ public final class SongLibraryMapper {
 
     return new SongDto(
         artist.getPersistentIdentity(),
-        (artist.getName().equals("Compilations")) ? songEntity.getArtistName() : artist.getName(),
+        songEntity.getArtistName(),
         album.getPersistentIdentity(),
         album.getName(),
         album.getCoverArtPath(),

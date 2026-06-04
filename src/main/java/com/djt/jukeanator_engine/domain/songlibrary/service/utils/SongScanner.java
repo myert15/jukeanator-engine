@@ -164,20 +164,21 @@ public final class SongScanner {
 
         SongFileEntity song = songList.get(j);
         
-        String songFile = song.getNaturalIdentity();
+        String songPathname = song.getNaturalIdentity();
+        String songFilename = song.getName();
         song.setPersistentIdentity(j);
         
-        String songArtistName = SongFileEntity.extractArtistName(songFile);
+        String songArtistName = SongFileEntity.extractArtistName(songFilename);
         if (songArtistName != null && !songArtistName.trim().isBlank()) {
           song.setArtistName(stripNonPrintableCharacters(songArtistName));
         }
         
-        String songName = SongFileEntity.extractSongName(songFile);
+        String songName = SongFileEntity.extractSongName(songFilename);
         if (songName != null && !songName.trim().isBlank()) {
           song.setSongName(stripNonPrintableCharacters(songName));
         }
         
-        Integer trackNumber = SongFileEntity.extractTrackNumber(songFile);
+        Integer trackNumber = SongFileEntity.extractTrackNumber(songFilename);
         if (trackNumber != null && trackNumber.intValue() > 0) {
           song.setTrackNumber(trackNumber);
         } else {
@@ -186,13 +187,13 @@ public final class SongScanner {
         
         if (!hasValidCoverArt) {
 
-          this.jAudioTaggerClient.extractCoverArt(coverArtPath, songFile);
+          this.jAudioTaggerClient.extractCoverArt(coverArtPath, songPathname);
           hasValidCoverArt = album.hasValidCoverArt();
         }
 
         if (requiresMetadata && !hasValidMetadata) {
 
-          Map<String, String> tags = this.jAudioTaggerClient.getTags(songFile);
+          Map<String, String> tags = this.jAudioTaggerClient.getTags(songPathname);
           if (tags != null && !tags.isEmpty()) {
 
             String recordLabel = tags.get(JAudioTaggerClient.RECORD_LABEL);
