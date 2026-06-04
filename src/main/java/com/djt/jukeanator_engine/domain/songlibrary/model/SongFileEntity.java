@@ -154,13 +154,14 @@ public class SongFileEntity extends AbstractFileEntity implements LibraryItem {
   }
 
   public static Integer extractTrackNumber(String filename) {
-
-    Pattern pattern = Pattern.compile("^[^-]+-(\\d{2})-.*\\.mp3$");
+    
+    Pattern pattern = Pattern.compile("^[^-]+-(\\d{1,3})-.*\\.mp3$");
     Matcher matcher = pattern.matcher(filename);
 
     if (matcher.matches()) {
       return Integer.parseInt(matcher.group(1));
     }
-    return null;
+    return Integer.valueOf(0);
   }
 }
+

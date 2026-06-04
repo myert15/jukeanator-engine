@@ -166,7 +166,17 @@ public final class SongScanner {
         
         String songFile = song.getNaturalIdentity();
         song.setPersistentIdentity(j);
-
+        
+        String songArtistName = SongFileEntity.extractArtistName(songFile);
+        if (songArtistName != null && !songArtistName.trim().isBlank()) {
+          song.setArtistName(stripNonPrintableCharacters(songArtistName));
+        }
+        
+        String songName = SongFileEntity.extractSongName(songFile);
+        if (songName != null && !songName.trim().isBlank()) {
+          song.setSongName(stripNonPrintableCharacters(songName));
+        }
+        
         Integer trackNumber = SongFileEntity.extractTrackNumber(songFile);
         if (trackNumber != null && trackNumber.intValue() > 0) {
           song.setTrackNumber(trackNumber);
@@ -203,24 +213,14 @@ public final class SongScanner {
               hasValidMetadata = album.hasValidMetadata();
             }
 
-            String artistName = tags.get(JAudioTaggerClient.ARTIST_NAME);
-            if (artistName != null && !artistName.trim().isBlank()) {
-              song.setArtistName(stripNonPrintableCharacters(artistName));
-            } else {
-              artistName = SongFileEntity.extractArtistName(songFile);
-              if (artistName != null && !artistName.trim().isBlank()) {
-                song.setArtistName(stripNonPrintableCharacters(artistName));
-              }
+            songArtistName = tags.get(JAudioTaggerClient.ARTIST_NAME);
+            if (songArtistName != null && !songArtistName.trim().isBlank()) {
+              song.setArtistName(stripNonPrintableCharacters(songArtistName));
             }
 
-            String songName = tags.get(JAudioTaggerClient.SONG_NAME);
+            songName = tags.get(JAudioTaggerClient.SONG_NAME);
             if (songName != null && !songName.trim().isBlank()) {
               song.setSongName(stripNonPrintableCharacters(songName));
-            } else {
-              songName = SongFileEntity.extractSongName(songFile);
-              if (songName != null && !songName.trim().isBlank()) {
-                song.setSongName(stripNonPrintableCharacters(songName));
-              }
             }
           }
         }
