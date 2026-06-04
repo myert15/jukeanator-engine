@@ -8,6 +8,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
+import com.djt.jukeanator_engine.domain.songlibrary.model.SongFileEntity;
 
 /**
  * @author tmyers
@@ -45,9 +46,18 @@ public class SongScannerTest {
 
     // STEP 3: ASSERT
     assertNotNull(root, "root was null");
-    
     List<AlbumFolderEntity> albums = root.getAllAlbums();
     assertNotNull(root, "albums was null");
-    assertFalse(albums.isEmpty(), "albums expected to be non-empty");    
+    assertFalse(albums.isEmpty(), "albums expected to be non-empty");
+
+    for (AlbumFolderEntity album : albums) {
+      for (SongFileEntity song : album.getChildSongs()) {
+        
+        System.out.println("artistName: " + song.getArtistName() + ", songName: " + song.getSongName() + ", trackNumber: " + song.getTrackNumber());
+        assertFalse(song.getArtistName().isEmpty(), "song artist name expected to be non-empty");
+        assertFalse(song.getSongName().isEmpty(), "song name expected to be non-empty");
+        assertFalse(song.getTrackNumber().equals(Integer.valueOf(0)), "track number expected to be non-zero");
+      }
+    }
   }
 }

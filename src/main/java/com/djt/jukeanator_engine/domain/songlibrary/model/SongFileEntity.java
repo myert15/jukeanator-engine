@@ -121,11 +121,15 @@ public class SongFileEntity extends AbstractFileEntity implements LibraryItem {
 
     String artist = "";
 
-    Pattern pattern = Pattern.compile("^(.*?)\\s*-\\s*(\\d{2})\\s*-\\s*(.*?)\\.mp3$");
+    Pattern pattern = Pattern.compile("^(.*?)\\s*-\\s*(\\d+)\\s*-\\s*(.*?)\\.mp3$");
     Matcher m = pattern.matcher(filename);
     if (m.matches()) {
 
       artist = m.group(1);
+    }
+    
+    if (artist.equals("")) {
+      artist = "Unknown";
     }
 
     return artist;
@@ -135,13 +139,17 @@ public class SongFileEntity extends AbstractFileEntity implements LibraryItem {
 
     String song = "";
 
-    Pattern pattern = Pattern.compile("^(.*?)\\s*-\\s*(\\d{2})\\s*-\\s*(.*?)\\.mp3$");
+    Pattern pattern = Pattern.compile("^(.*?)\\s*-\\s*(\\d+)\\s*-\\s*(.*?)\\.mp3$");
     Matcher m = pattern.matcher(filename);
     if (m.matches()) {
 
       song = m.group(3);
     }
 
+    if (song.equals("")) {
+      song = "Unknown";
+    }
+    
     return song;
   }
 

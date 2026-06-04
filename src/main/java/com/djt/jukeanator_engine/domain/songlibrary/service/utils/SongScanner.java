@@ -205,21 +205,21 @@ public final class SongScanner {
 
             String artistName = tags.get(JAudioTaggerClient.ARTIST_NAME);
             if (artistName != null && !artistName.trim().isBlank()) {
-              song.setArtistName(artistName);
+              song.setArtistName(stripNonPrintableCharacters(artistName));
             } else {
               artistName = SongFileEntity.extractArtistName(songFile);
               if (artistName != null && !artistName.trim().isBlank()) {
-                song.setArtistName(artistName);
+                song.setArtistName(stripNonPrintableCharacters(artistName));
               }
             }
 
             String songName = tags.get(JAudioTaggerClient.SONG_NAME);
             if (songName != null && !songName.trim().isBlank()) {
-              song.setSongName(songName);
+              song.setSongName(stripNonPrintableCharacters(songName));
             } else {
               songName = SongFileEntity.extractSongName(songFile);
               if (songName != null && !songName.trim().isBlank()) {
-                song.setSongName(songName);
+                song.setSongName(stripNonPrintableCharacters(songName));
               }
             }
           }
@@ -335,5 +335,11 @@ public final class SongScanner {
       extension = filename.substring(index);
     }
     return extension;
+  }
+
+  private String stripNonPrintableCharacters(String input) {
+
+    // Retain only printable characters and horizontal whitespace
+    return input.replaceAll("[^\\p{Print}]", "");
   }
 }
