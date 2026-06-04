@@ -5,6 +5,8 @@ import java.util.Objects;
 
 public class AlbumDto {
 
+  private Integer genreId;
+  private String genreName;
   private Integer artistId;
   private String artistName;  
   private Integer albumId;
@@ -16,6 +18,8 @@ public class AlbumDto {
   private List<SongDto> songs;
 
   public AlbumDto(
+      Integer genreId,
+      String genreName,      
       Integer artistId,
       String artistName,
       Integer albumId, 
@@ -26,6 +30,8 @@ public class AlbumDto {
       String coverArtPath, 
       List<SongDto> songs) {
     super();
+    this.genreId = genreId;
+    this.genreName = genreName;    
     this.artistId = artistId;
     this.albumId = albumId;
     this.albumName = albumName;    
@@ -37,6 +43,14 @@ public class AlbumDto {
     this.songs = songs;
   }
 
+  public Integer getGenreId() {
+    return genreId;
+  }
+  
+  public String getGenreName() {
+    return genreName;
+  }
+  
   public Integer getArtistId() {
     return artistId;
   }
