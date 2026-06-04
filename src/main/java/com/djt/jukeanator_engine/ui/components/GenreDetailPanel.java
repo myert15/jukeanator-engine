@@ -311,29 +311,20 @@ public class GenreDetailPanel extends JPanel {
     columnsPanel.removeAll();
 
     columnsPanel.add(ResultsColumnPanel.build("ARTISTS", artists, artistsOffset, PREVIEW_COUNT,
-        imageLoader, () -> {
-          artistsOffset = Math.max(0, artistsOffset - 1);
-          rebuildColumns();
-        }, () -> {
-          artistsOffset++;
+        imageLoader, newOffset -> {
+          artistsOffset = newOffset;
           rebuildColumns();
         }, item -> handleRowClick("ARTISTS", item)));
 
-    columnsPanel.add(
-        ResultsColumnPanel.build("ALBUMS", albums, albumsOffset, PREVIEW_COUNT, imageLoader, () -> {
-          albumsOffset = Math.max(0, albumsOffset - 1);
-          rebuildColumns();
-        }, () -> {
-          albumsOffset++;
+    columnsPanel.add(ResultsColumnPanel.build("ALBUMS", albums, albumsOffset, PREVIEW_COUNT,
+        imageLoader, newOffset -> {
+          albumsOffset = newOffset;
           rebuildColumns();
         }, item -> handleRowClick("ALBUMS", item)));
 
-    columnsPanel.add(
-        ResultsColumnPanel.build("SONGS", songs, songsOffset, PREVIEW_COUNT, imageLoader, () -> {
-          songsOffset = Math.max(0, songsOffset - 1);
-          rebuildColumns();
-        }, () -> {
-          songsOffset++;
+    columnsPanel.add(ResultsColumnPanel.build("SONGS", songs, songsOffset, PREVIEW_COUNT,
+        imageLoader, newOffset -> {
+          songsOffset = newOffset;
           rebuildColumns();
         }, item -> handleRowClick("SONGS", item)));
 

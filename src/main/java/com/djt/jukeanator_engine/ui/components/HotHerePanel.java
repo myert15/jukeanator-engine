@@ -147,29 +147,20 @@ public class HotHerePanel extends JPanel implements TabNavigator {
     columns.setOpaque(false);
 
     columns.add(ResultsColumnPanel.build("ARTISTS", artists, artistsOffset, PREVIEW_COUNT,
-        imageLoader, () -> {
-          artistsOffset = Math.max(0, artistsOffset - 1);
-          rebuildColumnsPanel();
-        }, () -> {
-          artistsOffset++;
+        imageLoader, newOffset -> {
+          artistsOffset = newOffset;
           rebuildColumnsPanel();
         }, (item) -> handleRowClick("ARTISTS", item)));
 
-    columns.add(
-        ResultsColumnPanel.build("ALBUMS", albums, albumsOffset, PREVIEW_COUNT, imageLoader, () -> {
-          albumsOffset = Math.max(0, albumsOffset - 1);
-          rebuildColumnsPanel();
-        }, () -> {
-          albumsOffset++;
+    columns.add(ResultsColumnPanel.build("ALBUMS", albums, albumsOffset, PREVIEW_COUNT, imageLoader,
+        newOffset -> {
+          albumsOffset = newOffset;
           rebuildColumnsPanel();
         }, (item) -> handleRowClick("ALBUMS", item)));
 
-    columns.add(
-        ResultsColumnPanel.build("SONGS", songs, songsOffset, PREVIEW_COUNT, imageLoader, () -> {
-          songsOffset = Math.max(0, songsOffset - 1);
-          rebuildColumnsPanel();
-        }, () -> {
-          songsOffset++;
+    columns.add(ResultsColumnPanel.build("SONGS", songs, songsOffset, PREVIEW_COUNT, imageLoader,
+        newOffset -> {
+          songsOffset = newOffset;
           rebuildColumnsPanel();
         }, (item) -> handleRowClick("SONGS", item)));
 

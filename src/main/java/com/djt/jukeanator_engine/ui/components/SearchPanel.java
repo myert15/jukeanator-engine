@@ -166,7 +166,7 @@ public class SearchPanel extends JPanel implements TabNavigator {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // FIXED ITEM #3: HERO PANEL WITH ENHANCED LIGHTENING GLASS OVERLAY
+  // HERO PANEL WITH ENHANCED LIGHTENING GLASS OVERLAY
   // ─────────────────────────────────────────────────────────────────────────
 
   private JPanel buildEntryCard() {
@@ -219,7 +219,7 @@ public class SearchPanel extends JPanel implements TabNavigator {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // FIXED ITEM #1 & #2: SEARCH BAR LAYOUT AND RE-ALIGNED BORDER
+  // SEARCH BAR LAYOUT AND RE-ALIGNED BORDER
   // ─────────────────────────────────────────────────────────────────────────
 
   private JPanel buildSearchBarPanel(boolean forResults) {
@@ -572,7 +572,7 @@ public class SearchPanel extends JPanel implements TabNavigator {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // FIXED ITEM #1: EXACT SCREEN BOUNDARY MARGIN COLUMN ALIGNMENT
+  // EXACT SCREEN BOUNDARY MARGIN COLUMN ALIGNMENT
   // ─────────────────────────────────────────────────────────────────────────
 
   private void rebuildResultsCard() {
@@ -586,38 +586,26 @@ public class SearchPanel extends JPanel implements TabNavigator {
     columnsLayoutContainer.setOpaque(false);
 
     // MATHEMATICAL FIX: By subtracting COLUMN_INTERNAL_EDGE_GAP (10px) from
-    // SCREEN_PADDING_HORIZONTAL (60px),
-    // the outer edges of the content layout expand exactly 10px outwards. This completely
-    // counteracts the inner column body's
-    // internal border padding, aligning the columns perfectly with the search entry field border.
+    // SCREEN_PADDING_HORIZONTAL (60px), the outer edges expand to line up cleanly.
     int unifiedPaddingCalculation = SCREEN_PADDING_HORIZONTAL - COLUMN_INTERNAL_EDGE_GAP;
     columnsLayoutContainer
         .setBorder(new EmptyBorder(10, unifiedPaddingCalculation, 10, unifiedPaddingCalculation));
 
     columnsLayoutContainer.add(ResultsColumnPanel.build("ARTISTS", artists, artistsOffset,
-        SEARCH_PREVIEW_COUNT, imageLoader, () -> {
-          artistsOffset = Math.max(0, artistsOffset - 1);
-          rebuildResultsCard();
-        }, () -> {
-          artistsOffset++;
+        SEARCH_PREVIEW_COUNT, imageLoader, newOffset -> {
+          artistsOffset = newOffset;
           rebuildResultsCard();
         }, item -> handleRowClick("ARTISTS", item)));
 
     columnsLayoutContainer.add(ResultsColumnPanel.build("ALBUMS", albums, albumsOffset,
-        SEARCH_PREVIEW_COUNT, imageLoader, () -> {
-          albumsOffset = Math.max(0, albumsOffset - 1);
-          rebuildResultsCard();
-        }, () -> {
-          albumsOffset++;
+        SEARCH_PREVIEW_COUNT, imageLoader, newOffset -> {
+          albumsOffset = newOffset;
           rebuildResultsCard();
         }, item -> handleRowClick("ALBUMS", item)));
 
     columnsLayoutContainer.add(ResultsColumnPanel.build("SONGS", songs, songsOffset,
-        SEARCH_PREVIEW_COUNT, imageLoader, () -> {
-          songsOffset = Math.max(0, songsOffset - 1);
-          rebuildResultsCard();
-        }, () -> {
-          songsOffset++;
+        SEARCH_PREVIEW_COUNT, imageLoader, newOffset -> {
+          songsOffset = newOffset;
           rebuildResultsCard();
         }, item -> handleRowClick("SONGS", item)));
 

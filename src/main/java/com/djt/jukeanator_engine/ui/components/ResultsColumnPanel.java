@@ -46,8 +46,12 @@ public final class ResultsColumnPanel {
   // FACTORY METHOD
   // ─────────────────────────────────────────────────────────────────────────
 
+  /**
+   * Builds a paginated column view panel. * @param onOffsetChanged Callback accepting the newly
+   * calculated integer offset when navigating pages.
+   */
   public static <T> JPanel build(String header, List<T> items, int offset, int previewCount,
-      ImageLoader imageLoader, Runnable onUp, Runnable onDown, Consumer<T> onItemClick) {
+      ImageLoader imageLoader, Consumer<Integer> onOffsetChanged, Consumer<T> onItemClick) {
 
     JPanel outerColumn = new JPanel(new BorderLayout());
     outerColumn.setOpaque(false);
@@ -110,11 +114,21 @@ public final class ResultsColumnPanel {
 
     JButton upBtn = navButton(true);
     upBtn.setEnabled(offset > 0);
-    upBtn.addActionListener(e -> onUp.run());
+    upBtn.addActionListener(e -> {
+      if (onOffsetChanged != null) {
+        int newOffset = Math.max(0, offset - previewCount);
+        onOffsetChanged.accept(newOffset);
+      }
+    });
 
     JButton downBtn = navButton(false);
     downBtn.setEnabled(offset + previewCount < total);
-    downBtn.addActionListener(e -> onDown.run());
+    downBtn.addActionListener(e -> {
+      if (onOffsetChanged != null) {
+        int newOffset = offset + previewCount;
+        onOffsetChanged.accept(newOffset);
+      }
+    });
 
     navPanel.add(upBtn, BorderLayout.WEST);
     navPanel.add(downBtn, BorderLayout.EAST);
@@ -242,10 +256,6 @@ public final class ResultsColumnPanel {
   // FIXED NAV BUTTON: ISOSCELES GEOMETRY VECTOR ENGINE & GLASS OVERLAY
   // ─────────────────────────────────────────────────────────────────────────
 
-  /**
-   * Generates custom navigation button components designed to cleanly reveal the column gradient
-   * below, rendering un-squished wide isosceles triangle carets.
-   */
   private static JButton navButton(final boolean isUpDirection) {
     JButton btn = new JButton() {
       private static final long serialVersionUID = 1L;
@@ -259,23 +269,20 @@ public final class ResultsColumnPanel {
         int w = getWidth();
         int h = getHeight();
 
-        // 1. Draw Hover State Overlay Background (Clear by default when not interactive)
         if (isEnabled() && getBackground() != null && getBackground().getAlpha() > 0) {
           g2.setColor(getBackground());
           g2.fillRoundRect(0, 0, w, h, 8, 8);
         }
 
-        // 2. Vector-map the Isosceles Triangle path geometry
         if (isEnabled()) {
           g2.setColor(getForeground());
         } else {
-          g2.setColor(new Color(255, 255, 255, 40)); // Clean semi-transparent disabled tint
+          g2.setColor(new Color(255, 255, 255, 40));
         }
 
         g2.setStroke(new java.awt.BasicStroke(3.0f, java.awt.BasicStroke.CAP_ROUND,
             java.awt.BasicStroke.JOIN_ROUND));
 
-        // Geometric boundary padding setups to match the AMI open caret shape
         int paddingX = Math.round(w * 0.32f);
         int paddingY = Math.round(h * 0.34f);
 
@@ -286,13 +293,11 @@ public final class ResultsColumnPanel {
         if (isUpDirection) {
           int topY = paddingY;
           int bottomY = h - paddingY;
-          // Render wide isosceles pointing upwards
           g2.drawLine(leftX, bottomY, centerX, topY);
           g2.drawLine(centerX, topY, rightX, bottomY);
         } else {
           int topY = paddingY;
           int bottomY = h - paddingY;
-          // Render wide isosceles pointing downwards
           g2.drawLine(leftX, topY, centerX, bottomY);
           g2.drawLine(centerX, bottomY, rightX, topY);
         }
@@ -301,7 +306,6 @@ public final class ResultsColumnPanel {
       }
     };
 
-    // Initialize with a completely transparent alpha background color context to pass visual checks
     btn.setOpaque(false);
     btn.setContentAreaFilled(false);
     btn.setBorderPainted(false);
@@ -310,15 +314,13 @@ public final class ResultsColumnPanel {
     btn.setPreferredSize(new Dimension(75, 45));
     btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-    // Default visual color rules
     btn.setForeground(Color.WHITE);
-    btn.setBackground(new Color(255, 255, 255, 0)); // Pure transparent default pass-through state
+    btn.setBackground(new Color(255, 255, 255, 0));
 
     btn.addMouseListener(new java.awt.event.MouseAdapter() {
       @Override
       public void mouseEntered(java.awt.event.MouseEvent e) {
         if (btn.isEnabled()) {
-          // Glow custom corporate accent color block only when active hover tracking triggers
           btn.setBackground(ACCENT_BLUE);
           btn.setForeground(Color.BLACK);
           btn.repaint();
@@ -327,7 +329,6 @@ public final class ResultsColumnPanel {
 
       @Override
       public void mouseExited(java.awt.event.MouseEvent e) {
-        // Return instantly back to clear pass-through background environment tracking
         btn.setBackground(new Color(255, 255, 255, 0));
         btn.setForeground(Color.WHITE);
         btn.repaint();
