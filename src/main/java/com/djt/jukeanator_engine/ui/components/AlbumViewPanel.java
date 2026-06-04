@@ -15,9 +15,9 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
@@ -31,6 +31,8 @@ public class AlbumViewPanel extends JPanel {
 
   private static final int LEFT_PANEL_WIDTH = 320;
   private static final int COVER_SIZE = 320;
+  // Number of track rows shown per page in the nav-paginated track listing.
+  private static final int TRACKS_PER_PAGE = 12;
 
   // ── Palette ───────────────────────────────────────────────────────────────
   private static final Color BG_ROW_HOVER = new Color(255, 255, 255, 25);
@@ -46,6 +48,18 @@ public class AlbumViewPanel extends JPanel {
   private static final int BAR_GAP = 3;
   private static final int BAR_MAX_H = 18;
   private static final int[] BAR_HEIGHTS = {8, 13, 18};
+
+  // ── Track list pagination state ───────────────────────────────────────────
+  private int trackOffset = 0;
+  private List<SongDto> trackSongs;
+  private AlbumDto trackAlbum;
+  private int trackT1;
+  private int trackT2;
+  private int trackT3;
+  private SongClickListener trackListener;
+  private JPanel trackRowsPanel;
+  private JButton trackPrevBtn;
+  private JButton trackNextBtn;
 
   // ── Song-click callback ───────────────────────────────────────────────────
   public interface SongClickListener {
@@ -66,6 +80,9 @@ public class AlbumViewPanel extends JPanel {
 
     setLayout(new BorderLayout(0, 0));
     setOpaque(false);
+    // Outer left/right padding matches the ResultsColumnPanel column gutter (10px each side),
+    // giving the same screen margins as the genre details view.
+    setBorder(new EmptyBorder(0, 10, 0, 10));
 
     add(buildSidebar(album, imageLoader, albumClickListener), BorderLayout.WEST);
     add(buildTrackList(album, threshold1, threshold2, threshold3, enableBigScrollBars,
@@ -82,10 +99,11 @@ public class AlbumViewPanel extends JPanel {
     sidebar.setOpaque(false);
     sidebar.setPreferredSize(new Dimension(LEFT_PANEL_WIDTH, 0));
     sidebar.setMinimumSize(new Dimension(LEFT_PANEL_WIDTH, 0));
-    // Left padding matches the ResultsColumnPanel outer column gutter (10px); right border is the
-    // separator line between the sidebar and the track list.
+    // Top padding matches the TRACKS header top inset (8px) so cover art aligns with the first row.
+    // Left padding matches the ResultsColumnPanel outer column gutter (10px).
+    // Right border is the separator line between the sidebar and the track list.
     sidebar.setBorder(BorderFactory.createCompoundBorder(
-        BorderFactory.createMatteBorder(0, 0, 0, 1, SEPARATOR), new EmptyBorder(0, 10, 0, 0)));
+        BorderFactory.createMatteBorder(0, 0, 0, 1, SEPARATOR), new EmptyBorder(8, 10, 0, 0)));
 
     // ── Cover art ─────────────────────────────────────────────────────────
     JLabel cover = new JLabel();
@@ -183,10 +201,18 @@ public class AlbumViewPanel extends JPanel {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // RIGHT PANEL — scrollable track list
+  // RIGHT PANEL — paginated track list with footer nav (mirrors ResultsColumnPanel)
   // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildTrackList(AlbumDto album, int t1, int t2, int t3, boolean enableBigScrollBars,
-      SongClickListener listener) {
+  private JPanel buildTrackList(AlbumDto album, int t1, int t2, int t3,
+      @SuppressWarnings("unused") boolean enableBigScrollBars, SongClickListener listener) {
+
+    // Stash state needed for page rebuilds.
+    this.trackAlbum = album;
+    this.trackSongs = album.getSongs() != null ? album.getSongs() : List.of();
+    this.trackT1 = t1;
+    this.trackT2 = t2;
+    this.trackT3 = t3;
+    this.trackListener = listener;
 
     JPanel wrapper = new JPanel(new BorderLayout());
     wrapper.setOpaque(false);
@@ -203,11 +229,10 @@ public class AlbumViewPanel extends JPanel {
     headerLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
     header.add(headerLabel, BorderLayout.WEST);
 
-    // ── Rows — blue gradient background matching ResultsColumnPanel ───────────
-    // The gradient panel is placed in NORTH of a transparent scroll-content wrapper so it
-    // sizes to its rows only; the scroll viewport expands below it without stretching the
-    // gradient rectangle down into empty space.
-    JPanel rows = new JPanel() {
+    // ── Blue gradient body — rows + footer nav ────────────────────────────
+    // Mirrors ResultsColumnPanel.innerColumnBody: gradient fills the body panel;
+    // rowsPanel lives in CENTER and the navPanel lives in SOUTH.
+    JPanel body = new JPanel(new BorderLayout()) {
       private static final long serialVersionUID = 1L;
 
       @Override
@@ -224,47 +249,172 @@ public class AlbumViewPanel extends JPanel {
         super.paintComponent(g);
       }
     };
-    rows.setOpaque(false);
-    rows.setLayout(new BoxLayout(rows, BoxLayout.Y_AXIS));
+    body.setOpaque(false);
 
-    List<SongDto> songs = album.getSongs();
-    if (songs != null) {
-      for (int i = 0; i < songs.size(); i++) {
-        SongDto song = songs.get(i);
-        rows.add(buildTrackRow(album, song, t1, t2, t3, listener));
-        if (i < songs.size() - 1) {
-          JSeparator sep = new JSeparator();
-          sep.setForeground(SEPARATOR);
-          sep.setBackground(SEPARATOR);
-          sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-          rows.add(sep);
-        }
+    // ── Rows panel ────────────────────────────────────────────────────────
+    trackRowsPanel = new JPanel();
+    trackRowsPanel.setOpaque(false);
+    trackRowsPanel.setLayout(new BoxLayout(trackRowsPanel, BoxLayout.Y_AXIS));
+    trackRowsPanel.setBorder(new EmptyBorder(4, 0, 4, 0));
+
+    // ── Footer nav panel (mirrors ResultsColumnPanel navPanel) ────────────
+    JPanel navPanel = new JPanel(new BorderLayout(8, 0));
+    navPanel.setOpaque(false);
+    navPanel.setBorder(new EmptyBorder(8, 12, 12, 12));
+
+    trackPrevBtn = trackNavButton(true);
+    trackPrevBtn.addActionListener(e -> {
+      trackOffset = Math.max(0, trackOffset - TRACKS_PER_PAGE);
+      rebuildTrackRows();
+    });
+
+    trackNextBtn = trackNavButton(false);
+    trackNextBtn.addActionListener(e -> {
+      trackOffset += TRACKS_PER_PAGE;
+      rebuildTrackRows();
+    });
+
+    navPanel.add(trackPrevBtn, BorderLayout.WEST);
+    navPanel.add(trackNextBtn, BorderLayout.EAST);
+
+    body.add(trackRowsPanel, BorderLayout.CENTER);
+    body.add(navPanel, BorderLayout.SOUTH);
+
+    wrapper.add(header, BorderLayout.NORTH);
+    wrapper.add(body, BorderLayout.CENTER);
+
+    // Initial population.
+    rebuildTrackRows();
+
+    return wrapper;
+  }
+
+  /**
+   * Repopulates {@link #trackRowsPanel} for the current {@link #trackOffset} and updates the
+   * enabled state of the prev/next nav buttons.
+   */
+  private void rebuildTrackRows() {
+
+    trackRowsPanel.removeAll();
+
+    int total = trackSongs.size();
+    int end = Math.min(trackOffset + TRACKS_PER_PAGE, total);
+
+    for (int i = trackOffset; i < end; i++) {
+      trackRowsPanel.add(
+          buildTrackRow(trackAlbum, trackSongs.get(i), trackT1, trackT2, trackT3, trackListener));
+      if (i < end - 1) {
+        JSeparator sep = new JSeparator();
+        sep.setForeground(SEPARATOR);
+        sep.setBackground(SEPARATOR);
+        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        trackRowsPanel.add(sep);
       }
     }
 
-    // Anchor rows to the top of the scroll viewport so the gradient block never
-    // stretches down to fill empty space below the last track.
-    JPanel scrollContent = new JPanel(new BorderLayout());
-    scrollContent.setOpaque(false);
-    scrollContent.add(rows, BorderLayout.NORTH);
+    trackPrevBtn.setEnabled(trackOffset > 0);
+    trackNextBtn.setEnabled(trackOffset + TRACKS_PER_PAGE < total);
 
-    // ── Scroll pane ───────────────────────────────────────────────────────
-    JScrollPane scroll = new JScrollPane(scrollContent);
-    scroll.setBorder(null);
-    scroll.setOpaque(false);
-    scroll.getViewport().setOpaque(false);
-    scroll.getVerticalScrollBar().setUnitIncrement(24);
-    scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+    trackRowsPanel.revalidate();
+    trackRowsPanel.repaint();
+  }
 
-    if (enableBigScrollBars) {
-      scroll.getVerticalScrollBar().setUI(new TouchScrollBarUI());
-      scroll.getVerticalScrollBar().setPreferredSize(new Dimension(TouchScrollBarUI.BAR_WIDTH, 0));
-    }
+  /**
+   * Creates a nav caret button for the track list footer, using the same vector-geometry rendering
+   * as {@code ResultsColumnPanel.navButton}.
+   *
+   * @param isUpDirection {@code true} for the "previous / up" caret, {@code false} for "next /
+   *        down".
+   */
+  private static JButton trackNavButton(final boolean isUpDirection) {
+    JButton btn = new JButton() {
+      private static final long serialVersionUID = 1L;
 
-    wrapper.add(header, BorderLayout.NORTH);
-    wrapper.add(scroll, BorderLayout.CENTER);
+      @Override
+      protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
-    return wrapper;
+        int w = getWidth();
+        int h = getHeight();
+
+        // 1. Draw Hover State Overlay Background (Clear by default when not interactive)
+        if (isEnabled() && getBackground() != null && getBackground().getAlpha() > 0) {
+          g2.setColor(getBackground());
+          g2.fillRoundRect(0, 0, w, h, 8, 8);
+        }
+
+        // 2. Vector-map the Isosceles Triangle path geometry
+        if (isEnabled()) {
+          g2.setColor(getForeground());
+        } else {
+          g2.setColor(new Color(255, 255, 255, 40)); // Clean semi-transparent disabled tint
+        }
+
+        g2.setStroke(new java.awt.BasicStroke(3.0f, java.awt.BasicStroke.CAP_ROUND,
+            java.awt.BasicStroke.JOIN_ROUND));
+
+        // Geometric boundary padding setups to match the AMI open caret shape
+        int paddingX = Math.round(w * 0.32f);
+        int paddingY = Math.round(h * 0.34f);
+
+        int leftX = paddingX;
+        int rightX = w - paddingX;
+        int centerX = w / 2;
+
+        if (isUpDirection) {
+          int topY = paddingY;
+          int bottomY = h - paddingY;
+          // Render wide isosceles pointing upwards
+          g2.drawLine(leftX, bottomY, centerX, topY);
+          g2.drawLine(centerX, topY, rightX, bottomY);
+        } else {
+          int topY = paddingY;
+          int bottomY = h - paddingY;
+          // Render wide isosceles pointing downwards
+          g2.drawLine(leftX, topY, centerX, bottomY);
+          g2.drawLine(centerX, bottomY, rightX, topY);
+        }
+
+        g2.dispose();
+      }
+    };
+
+    // Initialize with a completely transparent alpha background color context to pass visual checks
+    btn.setOpaque(false);
+    btn.setContentAreaFilled(false);
+    btn.setBorderPainted(false);
+    btn.setFocusPainted(false);
+
+    btn.setPreferredSize(new Dimension(75, 45));
+    btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+    // Default visual color rules
+    btn.setForeground(Color.WHITE);
+    btn.setBackground(new Color(255, 255, 255, 0)); // Pure transparent default pass-through state
+
+    btn.addMouseListener(new java.awt.event.MouseAdapter() {
+      @Override
+      public void mouseEntered(java.awt.event.MouseEvent e) {
+        if (btn.isEnabled()) {
+          // Glow custom corporate accent color block only when active hover tracking triggers
+          btn.setBackground(ACCENT_BLUE);
+          btn.setForeground(Color.BLACK);
+          btn.repaint();
+        }
+      }
+
+      @Override
+      public void mouseExited(java.awt.event.MouseEvent e) {
+        // Return instantly back to clear pass-through background environment tracking
+        btn.setBackground(new Color(255, 255, 255, 0));
+        btn.setForeground(Color.WHITE);
+        btn.repaint();
+      }
+    });
+
+    return btn;
   }
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -248,11 +248,13 @@ public class AlbumGridPanel extends JPanel {
     textPanel.setOpaque(false);
     textPanel.setBorder(new EmptyBorder(6, 8, 6, 8));
 
-    JLabel albumLabel = new JLabel(truncate(album.getAlbumName(), 24), SwingConstants.CENTER);
+    JLabel albumLabel =
+        new JLabel(album.getAlbumName() != null ? album.getAlbumName() : "", SwingConstants.CENTER);
     albumLabel.setForeground(TEXT_PRIMARY);
     albumLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
 
-    JLabel artistLabel = new JLabel(truncate(album.getArtistName(), 24), SwingConstants.CENTER);
+    JLabel artistLabel = new JLabel(album.getArtistName() != null ? album.getArtistName() : "",
+        SwingConstants.CENTER);
     artistLabel.setForeground(TEXT_SECONDARY);
     artistLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
 
@@ -341,11 +343,4 @@ public class AlbumGridPanel extends JPanel {
     return button;
   }
 
-  private static String truncate(String s, int maxChars) {
-    if (s == null)
-      return "";
-    if (s.length() <= maxChars)
-      return s;
-    return s.substring(0, maxChars - 1) + "…";
-  }
 }
