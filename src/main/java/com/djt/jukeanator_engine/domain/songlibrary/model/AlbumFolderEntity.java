@@ -149,18 +149,26 @@ public class AlbumFolderEntity extends FolderEntity implements LibraryItem {
 
       String strReleaseDate = this.metaData.getReleaseDate();
       if (strReleaseDate == null || strReleaseDate.isEmpty()) {
-        releaseDate = Year.parse("1985");
+        releaseDate = Year.parse("1950");
       } else {
         try {
           releaseDate = Year.parse(strReleaseDate);
         } catch (Exception e) {
           System.err.println(
               "Could not parse release date: " + strReleaseDate + " into Year: " + e.getMessage());
-          releaseDate = Year.parse("1985");
+          releaseDate = Year.parse("1950");
         }
       }
     }
     return releaseDate;
+  }
+  
+  public void setReleaseDate(Year year) {
+    
+    if (year != null) {
+      this.metaData.setReleaseDate(year.toString());
+      this.getMetaData().writeMetadataToFileSystem();
+    }
   }
   
   @Override

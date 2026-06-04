@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.TreeMap;
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongLibraryException;
 
 public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Serializable {
@@ -25,6 +26,38 @@ public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Seria
   private String recordLabel = "";
   private String releaseDate = "";
   private boolean hasExplicit = false;
+
+  public boolean getHasExplicit() {
+    return hasExplicit;
+  }
+
+  public void setHasExplicit(boolean hasExplicit) {
+    this.hasExplicit = hasExplicit;
+  }
+
+  public boolean isLoaded() {
+    return isLoaded;
+  }
+
+  public void setLoaded(boolean isLoaded) {
+    this.isLoaded = isLoaded;
+  }
+
+  public void setGenre(String genre) {
+    this.genre = genre;
+  }
+
+  public void setCoverArtUrl(String coverArtUrl) {
+    this.coverArtUrl = coverArtUrl;
+  }
+
+  public void setRecordLabel(String recordLabel) {
+    this.recordLabel = recordLabel;
+  }
+
+  public void setReleaseDate(String releaseDate) {
+    this.releaseDate = releaseDate;
+  }
 
   private transient boolean isLoaded = false;
 
@@ -102,6 +135,18 @@ public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Seria
 
     isLoaded = true;
   }
+  
+  public void writeMetadataToFileSystem() {
+    
+    Map<String, String> metadata = new TreeMap<>();
+    metadata.put(Genre, this.genre);
+    metadata.put(CoverArtURL, this.coverArtUrl);
+    metadata.put(RecordLabel, this.recordLabel);
+    metadata.put(ReleaseDate, this.releaseDate);
+    metadata.put(HasExplicit, Boolean.toString(this.hasExplicit));
+    
+    writeMetadataToFileSystem(metadata);
+  }
 
   public void writeMetadataToFileSystem(Map<String, String> metadata) {
 
@@ -109,7 +154,7 @@ public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Seria
 	this.genre = safe(metadata.getOrDefault(Genre, ""));
     this.coverArtUrl = safe(metadata.getOrDefault(CoverArtURL, ""));
     this.recordLabel = safe(metadata.getOrDefault(RecordLabel, "Unknown"));
-    this.releaseDate = safe(metadata.getOrDefault(ReleaseDate, ""));
+    this.releaseDate = safe(metadata.getOrDefault(ReleaseDate, "1950"));
     this.hasExplicit = Boolean.parseBoolean(metadata.getOrDefault(HasExplicit, "false"));
 
     Path path = Path.of(getNaturalIdentity());
