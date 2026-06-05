@@ -105,7 +105,7 @@ public class JukeANatorFrame extends JFrame {
 
   // SONG CREDITS
   private final char incrementCreditsKey;
-  private int numCredits = 6;
+  private int numCredits = 0;
   private final int priorityCostMultiplier;
   private final int creditsPerDollar;
   private final int fiveDollarBonusCredits;
