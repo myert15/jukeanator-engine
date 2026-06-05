@@ -8,7 +8,8 @@ public class CreditManager {
   private final int tenDollarBonus;
   private final java.util.List<Runnable> listeners = new java.util.ArrayList<>();
 
-  public CreditManager(int numCredits, int creditsPerDollar, int fiveDollarBonus, int tenDollarBonus) {
+  public CreditManager(int numCredits, int creditsPerDollar, int fiveDollarBonus,
+      int tenDollarBonus) {
     this.numCredits = numCredits;
     this.creditsPerDollar = creditsPerDollar;
     this.fiveDollarBonus = fiveDollarBonus;
@@ -28,13 +29,27 @@ public class CreditManager {
       numCredits += fiveDollarBonus;
     } else if (totalDollarsInserted == 10) {
       numCredits += tenDollarBonus;
+      if (numCredits > creditsPerDollar * 10) {
+        numCredits = (creditsPerDollar * 10) + tenDollarBonus;
+      }
+    } else if (totalDollarsInserted == 15) {
+      numCredits += fiveDollarBonus;
+    } else if (totalDollarsInserted == 20) {
+      numCredits += tenDollarBonus;
+      if (numCredits > (creditsPerDollar * 20) + (2 * tenDollarBonus)) {
+        numCredits = (creditsPerDollar * 20) + (2 * tenDollarBonus);
+      }
     }
+
     notifyListeners();
   }
 
   public synchronized boolean deductCredits(int amount) {
     if (numCredits >= amount && amount >= 0) {
       numCredits -= amount;
+      if (numCredits == 0) {
+        totalDollarsInserted = 0;
+      }
       notifyListeners();
       return true;
     }
