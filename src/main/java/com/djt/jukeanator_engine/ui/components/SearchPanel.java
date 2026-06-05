@@ -27,7 +27,6 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
-import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 
 public class SearchPanel extends JPanel implements TabNavigator {
@@ -629,15 +628,8 @@ public class SearchPanel extends JPanel implements TabNavigator {
       case "SONGS" -> {
         if (item instanceof SongDto song) {
           Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
-
-          int highestPriority = songQueueService.getHighestPriority();
-          int priorityCost = highestPriority * priorityCostMultiplier;
-
-          AddSongToQueueDialog.show(owner, song, imageLoader, priorityCost,
-              () -> songQueueService.addSongToQueue(
-                  new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 0)),
-              () -> songQueueService.addSongToQueue(
-                  new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)));
+          AddSongToQueueDialog.show(owner, song, imageLoader, priorityCostMultiplier,
+              songQueueService);
         }
       }
     }

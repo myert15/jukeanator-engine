@@ -10,15 +10,12 @@ import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.util.concurrent.CompletableFuture;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.Timer;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
-import com.djt.jukeanator_engine.domain.songqueue.dto.AddAlbumToQueueRequest;
-import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 
 public class AlbumDetailCard extends JPanel {
@@ -26,10 +23,7 @@ public class AlbumDetailCard extends JPanel {
   private static final long serialVersionUID = 1L;
 
   private static final int TIMEOUT_SECONDS = 120;
-
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
-  // private static final Color BG_DARK = new Color(10, 10, 10);
-  // private static final Color BG_FOOTER = new Color(18, 18, 26);
   private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
 
   private int secondsRemaining = TIMEOUT_SECONDS;
@@ -44,36 +38,19 @@ public class AlbumDetailCard extends JPanel {
     setLayout(new BorderLayout());
     setOpaque(false);
 
-    int highestPriority = songQueueService.getHighestPriority();
-    int priorityCost = highestPriority * priorityCostMultiplier;
-
     AlbumViewPanel.SongClickListener songClick = song -> {
       secondsRemaining = TIMEOUT_SECONDS;
       updateTimeout();
-      AddSongToQueueDialog.show(owner, song, imageLoader, priorityCost,
-          () -> songQueueService
-              .addSongToQueue(new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)),
-          () -> songQueueService.addSongToQueue(
-              new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), highestPriority)));
+      AddSongToQueueDialog.show(owner, song, imageLoader, priorityCostMultiplier, songQueueService);
     };
-
-    int numSongs = album.getSongs().size();
-    int albumNormalPlayCost = numSongs;
-    int albumPriorityCost = priorityCost * numSongs;
 
     AlbumViewPanel.AlbumClickListener albumClick = clicked -> {
 
       secondsRemaining = TIMEOUT_SECONDS;
       updateTimeout();
 
-      AddAlbumToQueueDialog.show(owner, clicked, imageLoader, albumNormalPlayCost,
-          albumPriorityCost,
-
-          () -> CompletableFuture.runAsync(() -> songQueueService
-              .addAlbumToQueue(new AddAlbumToQueueRequest(clicked.getAlbumId(), 0))),
-
-          () -> CompletableFuture.runAsync(() -> songQueueService
-              .addAlbumToQueue(new AddAlbumToQueueRequest(clicked.getAlbumId(), 1))));
+      AddAlbumToQueueDialog.show(owner, clicked, imageLoader, priorityCostMultiplier,
+          songQueueService);
     };
 
     AlbumViewPanel albumView = new AlbumViewPanel(album, imageLoader, threshold1, threshold2,

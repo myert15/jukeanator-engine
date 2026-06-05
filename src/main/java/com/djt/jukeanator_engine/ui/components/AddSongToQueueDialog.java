@@ -27,6 +27,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
+import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
+import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 
 public class AddSongToQueueDialog extends JDialog {
 
@@ -45,33 +47,25 @@ public class AddSongToQueueDialog extends JDialog {
   // ── Timeout ───────────────────────────────────────────────────────────────
   private static final int TIMEOUT_SECONDS = 120;
 
+  private final ImageLoader imageLoader;
+  private final SongDto song;
+  private final int priorityCostMultiplier;
+  private final SongQueueService songQueueService;
+
   private final Timer countdownTimer;
   private int secondsRemaining = TIMEOUT_SECONDS;
   private final JLabel timeoutLabel = new JLabel();
   private final JProgressBar timeoutBar = new JProgressBar(0, TIMEOUT_SECONDS);
 
-  // ── Callbacks ─────────────────────────────────────────────────────────────
-  /** Called when the user confirms normal play. */
-  public interface PlayAction {
-    void execute();
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // CONSTRUCTOR
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * @param owner The parent Frame (pass JukeANatorFrame).
-   * @param song The song to display.
-   * @param imageLoader Shared ImageLoader instance.
-   * @param priorityCost Credits required for a priority play.
-   * @param onNormalPlay Action to execute on "Play Song".
-   * @param onPriorityPlay Action to execute on "Priority Play".
-   */
-  public AddSongToQueueDialog(Frame owner, SongDto song, ImageLoader imageLoader, int priorityCost,
-      PlayAction onNormalPlay, PlayAction onPriorityPlay) {
+  public AddSongToQueueDialog(Frame owner, SongDto song, ImageLoader imageLoader,
+      int priorityCostMultiplier, SongQueueService songQueueService) {
 
     super(owner, "Add Song to Queue", true /* modal */);
+
+    this.imageLoader = imageLoader;
+    this.song = song;
+    this.priorityCostMultiplier = priorityCostMultiplier;
+    this.songQueueService = songQueueService;
 
     setUndecorated(true);
     setBackground(BG_DARK);
@@ -89,8 +83,7 @@ public class AddSongToQueueDialog extends JDialog {
 
     getContentPane().setBackground(BG_DARK);
     getContentPane().setLayout(new BorderLayout());
-    getContentPane()
-        .add(buildBorderPanel(song, imageLoader, 1, priorityCost, onNormalPlay, onPriorityPlay));
+    getContentPane().add(buildBorderPanel());
 
     // ── Countdown timer ───────────────────────────────────────────────────
     countdownTimer = new Timer(1000, e -> {
@@ -106,8 +99,7 @@ public class AddSongToQueueDialog extends JDialog {
   // ─────────────────────────────────────────────────────────────────────────
   // ROOT PANEL WITH ACCENT BORDER
   // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildBorderPanel(SongDto song, ImageLoader imageLoader, int normalPlayCost,
-      int priorityCost, PlayAction onNormalPlay, PlayAction onPriorityPlay) {
+  private JPanel buildBorderPanel() {
 
     // Outer glowing border panel
     JPanel border = new JPanel(new BorderLayout()) {
@@ -125,16 +117,14 @@ public class AddSongToQueueDialog extends JDialog {
     };
     border.setBackground(BG_DARK);
     border.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-    border.add(buildMainPanel(song, imageLoader, normalPlayCost, priorityCost, onNormalPlay,
-        onPriorityPlay));
+    border.add(buildMainPanel());
     return border;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // MAIN CONTENT PANEL
   // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildMainPanel(SongDto song, ImageLoader imageLoader, int normalPlayCost,
-      int priorityCost, PlayAction onNormalPlay, PlayAction onPriorityPlay) {
+  private JPanel buildMainPanel() {
 
     JPanel main = new JPanel(new BorderLayout(0, 0));
     main.setBackground(BG_PANEL);
@@ -142,8 +132,7 @@ public class AddSongToQueueDialog extends JDialog {
 
     main.add(buildInfoRow(song, imageLoader), BorderLayout.NORTH);
     main.add(buildDivider(), BorderLayout.CENTER);
-    main.add(buildBottomSection(normalPlayCost, priorityCost, onNormalPlay, onPriorityPlay),
-        BorderLayout.SOUTH);
+    main.add(buildBottomSection(), BorderLayout.SOUTH);
 
     return main;
   }
@@ -230,8 +219,7 @@ public class AddSongToQueueDialog extends JDialog {
   // ─────────────────────────────────────────────────────────────────────────
   // BOTTOM SECTION (action buttons + cancel + timeout)
   // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildBottomSection(int normalPlayCost, int priorityCost, PlayAction onNormalPlay,
-      PlayAction onPriorityPlay) {
+  private JPanel buildBottomSection() {
 
     JPanel bottom = new JPanel(new BorderLayout(0, 12));
     bottom.setOpaque(false);
@@ -241,14 +229,20 @@ public class AddSongToQueueDialog extends JDialog {
     JPanel buttons = new JPanel(new GridLayout(1, 2, 16, 0));
     buttons.setOpaque(false);
 
+    int normalPlayCost = 1;
+    int highestPriority = songQueueService.getHighestPriority();
+    int priorityCost = highestPriority * priorityCostMultiplier;
+
     buttons.add(buildActionButton("Play Song", normalPlayCost + "cr", ACCENT_BLUE, () -> {
       dismiss();
-      onNormalPlay.execute();
+      songQueueService
+          .addSongToQueue(new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1));
     }));
 
     buttons.add(buildActionButton("Priority Song Play", priorityCost + "cr", ACCENT_GOLD, () -> {
       dismiss();
-      onPriorityPlay.execute();
+      songQueueService.addSongToQueue(
+          new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), highestPriority));
     }));
 
     // ── Cancel button ─────────────────────────────────────────────────────
@@ -443,26 +437,11 @@ public class AddSongToQueueDialog extends JDialog {
     return button;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // STATIC FACTORY — convenience method for call sites
-  // ─────────────────────────────────────────────────────────────────────────
+  public static void show(Frame owner, SongDto song, ImageLoader imageLoader,
+      int priorityCostMultiplier, SongQueueService songQueueService) {
 
-  /**
-   * Builds and shows the dialog. Blocks until the user dismisses it (modal) or the 2-minute timeout
-   * elapses.
-   *
-   * @param owner Parent frame.
-   * @param song Song to display.
-   * @param imageLoader Shared loader.
-   * @param priorityCost Credits for a priority play.
-   * @param onNormalPlay Callback for normal play.
-   * @param onPriorityPlay Callback for priority play.
-   */
-  public static void show(Frame owner, SongDto song, ImageLoader imageLoader, int priorityCost,
-      PlayAction onNormalPlay, PlayAction onPriorityPlay) {
-
-    AddSongToQueueDialog dialog = new AddSongToQueueDialog(owner, song, imageLoader, priorityCost,
-        onNormalPlay, onPriorityPlay);
+    AddSongToQueueDialog dialog = new AddSongToQueueDialog(owner, song, imageLoader,
+        priorityCostMultiplier, songQueueService);
 
     dialog.setVisible(true); // blocks here (modal)
   }
