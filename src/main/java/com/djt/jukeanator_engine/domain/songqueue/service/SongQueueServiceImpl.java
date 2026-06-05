@@ -37,160 +37,180 @@ import com.djt.jukeanator_engine.domain.songqueue.repository.SongQueueRepository
 /**
  * @author tmyers
  */
-public final class SongQueueServiceImpl implements SongQueueService, AggregateRootService<SongQueueRootEntity> {
+public final class SongQueueServiceImpl
+    implements SongQueueService, AggregateRootService<SongQueueRootEntity> {
 
   private static final Logger log = LoggerFactory.getLogger(SongQueueServiceImpl.class);
-  
+
   private final ApplicationEventPublisher eventPublisher;
-  
+
   private String rootPath;
   private SongLibraryRepository songLibraryRepository;
   private RootFolderEntity songLibraryRoot;
-  
+
   private SongQueueRepository songQueueRepository;
   private SongQueueRootEntity songQueueRoot;
-  
-  public SongQueueServiceImpl(
-      String rootPath,
-      SongLibraryRepository songLibraryRepository, 
-      SongQueueRepository songQueueRepository,
-      ApplicationEventPublisher eventPublisher) {
 
-      requireNonNull(rootPath, "rootPath cannot be null");
-      requireNonNull(songLibraryRepository, "songLibraryRepository cannot be null");
-      requireNonNull(songQueueRepository, "songQueueRepository cannot be null");
-      requireNonNull(eventPublisher, "eventPublisher cannot be null");
-      
-      this.rootPath = rootPath;
-      this.songLibraryRepository = songLibraryRepository;      
-      this.songQueueRepository = songQueueRepository;
-      this.eventPublisher = eventPublisher;
+  public SongQueueServiceImpl(String rootPath, SongLibraryRepository songLibraryRepository,
+      SongQueueRepository songQueueRepository, ApplicationEventPublisher eventPublisher) {
 
-      // Initialize the song library root and song queue
-      initialize();
-      
-      log.info("Using song library root: " + this.songLibraryRoot);
+    requireNonNull(rootPath, "rootPath cannot be null");
+    requireNonNull(songLibraryRepository, "songLibraryRepository cannot be null");
+    requireNonNull(songQueueRepository, "songQueueRepository cannot be null");
+    requireNonNull(eventPublisher, "eventPublisher cannot be null");
+
+    this.rootPath = rootPath;
+    this.songLibraryRepository = songLibraryRepository;
+    this.songQueueRepository = songQueueRepository;
+    this.eventPublisher = eventPublisher;
+
+    // Initialize the song library root and song queue
+    initialize();
+
+    log.info("Using song library root: " + this.songLibraryRoot);
   }
-  
+
   // Service methods
   @Override
+  public Integer getHighestPriority() {
+
+    // Return one higher than the current maximum priority in the queue.
+    // The queue is maintained in descending priority order, so the first entry always
+    // holds the highest priority — no need to scan the whole list.
+    // Base value of 2 is returned when the queue is empty (priority 0 is reserved for
+    // randomly selected songs, priority 1 for normal user-selected songs).
+    List<SongQueueEntryEntity> songs = songQueueRoot.getSongs();
+    if (songs.isEmpty()) {
+      return Integer.valueOf(2);
+    }
+    return Integer.valueOf(songs.getFirst().getPriority().intValue() + 1);
+  }
+
+  @Override
   public List<SongQueueEntryDto> getQueuedSongs() {
-    
+
     return SongQueueMapper.toDto(songQueueRoot.getSongs());
   }
-  
+
   @Override
   public SongQueueEntryDto addSongToQueue(AddSongToQueueRequest addSongToQueueRequest) {
-    
+
     Integer albumId = addSongToQueueRequest.getAlbumId();
     Integer songId = addSongToQueueRequest.getSongId();
     Integer priority = addSongToQueueRequest.getPriority();
 
     SongQueueEntryDto queueEntryDto = addSongToQueue(albumId, songId, priority);
-    
+
     // Publish the event
     eventPublisher.publishEvent(new SongAddedToQueueEvent(queueEntryDto)); // to increment num plays
-    eventPublisher.publishEvent(new SongQueueChangedEvent(getQueuedSongs())); // On UI, to update queue view
-    
-    return queueEntryDto;          
+    eventPublisher.publishEvent(new SongQueueChangedEvent(getQueuedSongs())); // On UI, to update
+                                                                              // queue view
+
+    return queueEntryDto;
   }
-  
+
   @Override
   public List<SongQueueEntryDto> addAlbumToQueue(AddAlbumToQueueRequest addAlbumToQueueRequest) {
-    
+
     if (addAlbumToQueueRequest == null) {
       return List.of();
     }
-    
+
     Integer albumId = addAlbumToQueueRequest.getAlbumId();
     Integer priority = addAlbumToQueueRequest.getPriority();
-    
+
     List<SongIdentifier> songIdentifiers = new ArrayList<>();
     try {
       AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
       if (album != null) {
-        for (SongFileEntity song: album.getChildSongs()) {
-          
+        for (SongFileEntity song : album.getChildSongs()) {
+
           songIdentifiers.add(new SongIdentifier(albumId, song.getPersistentIdentity()));
         }
-      }         
-    } catch (EntityDoesNotExistException e) { 
-      throw new SongQueueException("Could not add album to queue, albumId: " + albumId + ", priority: " + priority);
+      }
+    } catch (EntityDoesNotExistException e) {
+      throw new SongQueueException(
+          "Could not add album to queue, albumId: " + albumId + ", priority: " + priority);
     }
-    
+
     return addMultipleSongsToQueue(new AddMultipleSongsToQueueRequest(songIdentifiers, priority));
   }
-  
+
   @Override
-  public List<SongQueueEntryDto> addMultipleSongsToQueue(AddMultipleSongsToQueueRequest addMultipleSongsToQueueRequest) {
-    
-    if (addMultipleSongsToQueueRequest == null || addMultipleSongsToQueueRequest.getSongIdentifiers().isEmpty()) {
+  public List<SongQueueEntryDto> addMultipleSongsToQueue(
+      AddMultipleSongsToQueueRequest addMultipleSongsToQueueRequest) {
+
+    if (addMultipleSongsToQueueRequest == null
+        || addMultipleSongsToQueueRequest.getSongIdentifiers().isEmpty()) {
       return List.of();
     }
-    
+
     List<SongQueueEntryDto> queueEntries = new ArrayList<>();
     Integer priority = addMultipleSongsToQueueRequest.getPriority();
-    for (SongIdentifier songIdentifier: addMultipleSongsToQueueRequest.getSongIdentifiers()) {
-    
-      queueEntries.add(addSongToQueue(songIdentifier.getAlbumId(), songIdentifier.getSongId(), priority));
+    for (SongIdentifier songIdentifier : addMultipleSongsToQueueRequest.getSongIdentifiers()) {
+
+      queueEntries
+          .add(addSongToQueue(songIdentifier.getAlbumId(), songIdentifier.getSongId(), priority));
     }
 
     // Publish the events
-    eventPublisher.publishEvent(new MultipleSongsAddedToQueueEvent(queueEntries)); // to increment num plays 
-    eventPublisher.publishEvent(new SongQueueChangedEvent(getQueuedSongs())); // On UI, to update queue view
-    
+    eventPublisher.publishEvent(new MultipleSongsAddedToQueueEvent(queueEntries)); // to increment
+                                                                                   // num plays
+    eventPublisher.publishEvent(new SongQueueChangedEvent(getQueuedSongs())); // On UI, to update
+                                                                              // queue view
+
     return queueEntries;
   }
-  
+
   @Override
   public Integer flushQueue() {
-    
+
     Integer numSongsFlushed = songQueueRoot.flushQueue();
-    
+
     songQueueRepository.storeAggregateRoot(songQueueRoot);
-    
-    eventPublisher.publishEvent(
-        new SongQueueChangedEvent(
-            SongQueueMapper.toDto(songQueueRoot.getSongs())));
-    
+
+    eventPublisher
+        .publishEvent(new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
+
     return numSongsFlushed;
   }
 
   @Override
   public Integer randomizeQueue() {
-    
+
     Integer numSongsRandomized = songQueueRoot.randomizeQueue();
-    
+
     songQueueRepository.storeAggregateRoot(songQueueRoot);
-    
-    eventPublisher.publishEvent(
-        new SongQueueChangedEvent(
-            SongQueueMapper.toDto(songQueueRoot.getSongs())));
-    
+
+    eventPublisher
+        .publishEvent(new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
+
     return numSongsRandomized;
   }
 
   private SongQueueEntryDto addSongToQueue(Integer albumId, Integer songId, Integer priority) {
-    
+
     try {
       AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
       if (album != null) {
-        
+
         SongFileEntity song = album.getChildSong(songId);
         if (song != null) {
-          
+
           SongQueueEntryEntity queueEntry = songQueueRoot.addSongToQueue(song, priority);
-          
+
           songQueueRepository.storeAggregateRoot(songQueueRoot);
-          
+
           return SongQueueMapper.toDto(queueEntry);
         }
-      }         
-    } catch (EntityDoesNotExistException e) { }
-    
-    throw new SongQueueException("Could not add song to queue, albumId: " + albumId + ", songId: " + songId + ", priority: " + priority);
+      }
+    } catch (EntityDoesNotExistException e) {
+    }
+
+    throw new SongQueueException("Could not add song to queue, albumId: " + albumId + ", songId: "
+        + songId + ", priority: " + priority);
   }
-  
+
   @Override
   public synchronized SongQueueEntryDto dequeueNextSong() {
 
@@ -206,9 +226,8 @@ public final class SongQueueServiceImpl implements SongQueueService, AggregateRo
 
     songQueueRepository.storeAggregateRoot(songQueueRoot);
 
-    eventPublisher.publishEvent(
-        new SongQueueChangedEvent(
-            SongQueueMapper.toDto(songQueueRoot.getSongs())));
+    eventPublisher
+        .publishEvent(new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
 
     return SongQueueMapper.toDto(nextSong);
   }
@@ -220,7 +239,7 @@ public final class SongQueueServiceImpl implements SongQueueService, AggregateRo
 
     return this.songQueueRepository.loadAggregateRoot(naturalIdentity);
   }
-  
+
   @Override
   public SongQueueRootEntity loadAggregateRoot(int persistentIdentity)
       throws EntityDoesNotExistException {
@@ -247,7 +266,7 @@ public final class SongQueueServiceImpl implements SongQueueService, AggregateRo
 
     throw new SongLibraryException("Not implemented yet!");
   }
-  
+
   @EventListener
   public void handleScanFileSystemForSongsEvent(ScanFileSystemForSongsEvent event) {
 
@@ -255,32 +274,34 @@ public final class SongQueueServiceImpl implements SongQueueService, AggregateRo
         Received ScanFileSystemForSongsEvent:
         scanPath={}
         albumCount={}
-        """,
-        event.scanPath(),
-        event.albumCount()
-    );
-    
+        """, event.scanPath(), event.albumCount());
+
     this.rootPath = event.scanPath();
 
     // Refresh song library state
     initialize();
-  }  
-  
+  }
+
   private void initialize() {
 
-    // If we cannot load the song library from disk at startup, then assume a new install and return an
-    // empty root folder. The application will automatically ask the user to scan for songs at startup.
+    // If we cannot load the song library from disk at startup, then assume a new install and return
+    // an
+    // empty root folder. The application will automatically ask the user to scan for songs at
+    // startup.
     try {
       this.songLibraryRoot = this.songLibraryRepository.loadAggregateRoot(rootPath);
     } catch (EntityDoesNotExistException ednee) {
-      log.error("Could not load song library from: " + rootPath + ", using empty song library root for now, error: " + ednee.getMessage());
+      log.error("Could not load song library from: " + rootPath
+          + ", using empty song library root for now, error: " + ednee.getMessage());
       this.songQueueRoot = new SongQueueRootEntity(rootPath);
     }
 
     try {
-      this.songQueueRoot = this.songQueueRepository.loadAggregateRoot(SongQueueRootEntity.SONG_QUEUE_FILENAME);
+      this.songQueueRoot =
+          this.songQueueRepository.loadAggregateRoot(SongQueueRootEntity.SONG_QUEUE_FILENAME);
     } catch (EntityDoesNotExistException ednee) {
-      log.error("Could not load song queue from: " + rootPath + ", using empty song library root for now, error: " + ednee.getMessage());
+      log.error("Could not load song queue from: " + rootPath
+          + ", using empty song library root for now, error: " + ednee.getMessage());
       this.songQueueRoot = new SongQueueRootEntity(SongQueueRootEntity.SONG_QUEUE_FILENAME);
     }
   }

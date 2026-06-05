@@ -29,6 +29,12 @@ public class SongQueueController implements SongQueueService {
     this.songQueueService = songQueueService;
   }
 
+  @PostMapping("/highestPriority")  
+  public Integer getHighestPriority() {
+    
+    return songQueueService.getHighestPriority();
+  }  
+
   @Override
   @GetMapping("/queuedSongs")
   public List<SongQueueEntryDto> getQueuedSongs() {

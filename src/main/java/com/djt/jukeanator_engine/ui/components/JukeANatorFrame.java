@@ -106,6 +106,7 @@ public class JukeANatorFrame extends JFrame {
   // SONG CREDITS
   private final char incrementCreditsKey;
   private int numCredits = 6;
+  private final int priorityCostMultiplier;
   private final int creditsPerDollar;
   private final int fiveDollarBonusCredits;
   private final int tenDollarBonusCredits;
@@ -122,9 +123,11 @@ public class JukeANatorFrame extends JFrame {
     this.songPlayerService = songPlayerService;
 
     this.incrementCreditsKey = jukeANatorUserInterfaceProperties.getIncrementCreditsKey();
-    this.numCredits = jukeANatorUserInterfaceProperties.getNumCredits();    
+    this.numCredits = jukeANatorUserInterfaceProperties.getNumCredits();
+    this.priorityCostMultiplier = jukeANatorUserInterfaceProperties.getPriorityCostMultiplier();
     this.creditsPerDollar = this.jukeANatorUserInterfaceProperties.getCreditsPerDollar();
-    this.fiveDollarBonusCredits = this.jukeANatorUserInterfaceProperties.getFiveDollarBonusCredits();
+    this.fiveDollarBonusCredits =
+        this.jukeANatorUserInterfaceProperties.getFiveDollarBonusCredits();
     this.tenDollarBonusCredits = this.jukeANatorUserInterfaceProperties.getTenDollarBonusCredits();
 
     this.enableTypeAheadSearch = this.jukeANatorUserInterfaceProperties.isEnableTypeAheadSearch();
@@ -398,8 +401,7 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private HomePanel buildHomePanel() {
 
-    return new HomePanel(songLibraryService, songQueueService, imageLoader, creditsPerDollar,
-        creditsPerDollar * 2, // priority cost placeholder
+    return new HomePanel(songLibraryService, songQueueService, imageLoader, priorityCostMultiplier,
         POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3, HOME_GRID_COLS,
         HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H);
   }
@@ -409,10 +411,10 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private SearchPanel buildSearchPanel() {
 
-    return new SearchPanel(songLibraryService, songQueueService, imageLoader, creditsPerDollar,
-        creditsPerDollar * 2, // priority cost placeholder
-        POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3,
-        enableTypeAheadSearch, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H);
+    return new SearchPanel(songLibraryService, songQueueService, imageLoader,
+        priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
+        POPULARITY_THRESHOLD_3, enableTypeAheadSearch, HOME_GRID_COLS, HOME_GRID_ROWS,
+        HOME_TILE_ART_W, HOME_TILE_ART_H);
   }
 
   // ============================================================
@@ -420,10 +422,9 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private HotHerePanel buildHotHerePanel() {
 
-    return new HotHerePanel(songLibraryService, songQueueService, imageLoader, creditsPerDollar,
-        creditsPerDollar * 2, // priority cost placeholder
-        POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3, HOME_GRID_COLS,
-        HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H);
+    return new HotHerePanel(songLibraryService, songQueueService, imageLoader,
+        priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
+        POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H);
   }
 
   // ============================================================
@@ -431,8 +432,7 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private GenrePanel buildGenresPanel() {
 
-    return new GenrePanel(songLibraryService, songQueueService, imageLoader, creditsPerDollar,
-        creditsPerDollar * 2, // priority cost placeholder
+    return new GenrePanel(songLibraryService, songQueueService, imageLoader, priorityCostMultiplier,
         POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3, HOME_GRID_COLS,
         HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H);
   }
@@ -898,10 +898,10 @@ public class JukeANatorFrame extends JFrame {
 
     gd.setFullScreenWindow(this);
   }
-  
+
   // HOT HERE
   public void refreshMusicByPopularityResults() {
-    
+
     hotHerePanel.refreshMusicByPopularityResults();
   }
 

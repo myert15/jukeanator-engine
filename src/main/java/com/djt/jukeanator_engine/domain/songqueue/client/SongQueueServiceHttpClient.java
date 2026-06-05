@@ -25,6 +25,15 @@ public class SongQueueServiceHttpClient implements SongQueueService {
   }
 
   @Override
+  public Integer getHighestPriority() {
+
+    return restClient.post()
+        .uri("/api/song-queue/highestPriority")
+        .retrieve()
+        .body(Integer.class);
+  }
+  
+  @Override
   public List<SongQueueEntryDto> getQueuedSongs() {
 
     return restClient.get()

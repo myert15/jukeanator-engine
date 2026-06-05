@@ -14,7 +14,8 @@ public class JukeANatorUserInterfaceProperties {
   // CREDIT CONFIGURATION
   //
   private char incrementCreditsKey = 'a';
-  private int numCredits = 6; 
+  private int numCredits = 6;
+  private int priorityCostMultiplier = 2;
   private int creditsPerDollar = 3;
   private int fiveDollarBonusCredits = 3;
   private int tenDollarBonusCredits = 10;
@@ -31,7 +32,7 @@ public class JukeANatorUserInterfaceProperties {
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
   }
-  
+
   public char getIncrementCreditsKey() {
     return incrementCreditsKey;
   }
@@ -46,6 +47,14 @@ public class JukeANatorUserInterfaceProperties {
 
   public void setNumCredits(int numCredits) {
     this.numCredits = numCredits;
+  }
+
+  public int getPriorityCostMultiplier() {
+    return priorityCostMultiplier;
+  }
+
+  public void setPriorityCostMultiplier(int priorityCostMultiplier) {
+    this.priorityCostMultiplier = priorityCostMultiplier;
   }
 
   public int getCreditsPerDollar() {

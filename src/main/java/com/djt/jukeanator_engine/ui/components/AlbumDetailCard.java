@@ -38,48 +38,44 @@ public class AlbumDetailCard extends JPanel {
   private final JProgressBar timeoutBar = new JProgressBar(0, TIMEOUT_SECONDS);
 
   public AlbumDetailCard(Frame owner, AlbumDto album, ImageLoader imageLoader,
-      SongQueueService songQueueService, int normalPlayCost, int priorityCost, int threshold1,
-      int threshold2, int threshold3, TabNavigator navigator) {
+      SongQueueService songQueueService, int priorityCostMultiplier, int threshold1, int threshold2,
+      int threshold3, TabNavigator navigator) {
 
     setLayout(new BorderLayout());
     setOpaque(false);
 
+    int highestPriority = songQueueService.getHighestPriority();
+    int priorityCost = highestPriority * priorityCostMultiplier;
+
     AlbumViewPanel.SongClickListener songClick = song -> {
       secondsRemaining = TIMEOUT_SECONDS;
       updateTimeout();
-      AddSongToQueueDialog.show(owner, song, imageLoader, normalPlayCost, priorityCost,
+      AddSongToQueueDialog.show(owner, song, imageLoader, priorityCost,
           () -> songQueueService
-              .addSongToQueue(new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 0)),
-          () -> songQueueService
-              .addSongToQueue(new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)));
+              .addSongToQueue(new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)),
+          () -> songQueueService.addSongToQueue(
+              new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), highestPriority)));
     };
 
     int numSongs = album.getSongs().size();
-    int albumNormalPlayCost = normalPlayCost * numSongs;
+    int albumNormalPlayCost = numSongs;
     int albumPriorityCost = priorityCost * numSongs;
-    
+
     AlbumViewPanel.AlbumClickListener albumClick = clicked -> {
 
       secondsRemaining = TIMEOUT_SECONDS;
       updateTimeout();
 
-      AddAlbumToQueueDialog.show(
-          owner,
-          clicked,
-          imageLoader,
-          albumNormalPlayCost,
+      AddAlbumToQueueDialog.show(owner, clicked, imageLoader, albumNormalPlayCost,
           albumPriorityCost,
 
-          () -> CompletableFuture.runAsync(() ->
-              songQueueService.addAlbumToQueue(
-                  new AddAlbumToQueueRequest(clicked.getAlbumId(), 0))),
+          () -> CompletableFuture.runAsync(() -> songQueueService
+              .addAlbumToQueue(new AddAlbumToQueueRequest(clicked.getAlbumId(), 0))),
 
-          () -> CompletableFuture.runAsync(() ->
-              songQueueService.addAlbumToQueue(
-                  new AddAlbumToQueueRequest(clicked.getAlbumId(), 1)))
-      );
-    };    
-    
+          () -> CompletableFuture.runAsync(() -> songQueueService
+              .addAlbumToQueue(new AddAlbumToQueueRequest(clicked.getAlbumId(), 1))));
+    };
+
     AlbumViewPanel albumView = new AlbumViewPanel(album, imageLoader, threshold1, threshold2,
         threshold3, songClick, albumClick);
 

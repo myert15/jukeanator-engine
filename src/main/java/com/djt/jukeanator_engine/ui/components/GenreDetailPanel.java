@@ -86,8 +86,7 @@ public class GenreDetailPanel extends JPanel {
   // ── Dependencies needed for row-click handling ────────────────────────────
   private final ImageLoader imageLoader;
   private final SongQueueService songQueueService;
-  private final int normalPlayCost;
-  private final int priorityCost;
+  private final int priorityCostMultiplier;
   private final AlbumGridPanel.AlbumClickListener onAlbumClicked;
   private final ArtistClickListener onArtistClicked;
   private final SongLibraryService songLibraryService;
@@ -109,7 +108,7 @@ public class GenreDetailPanel extends JPanel {
    * @param results Popularity/content data for this genre (artists, albums, songs).
    * @param imageLoader Shared loader.
    * @param songQueueService Service used to queue individual songs when a song row is tapped.
-   * @param normalPlayCost Credits for a normal-priority queue insertion.
+   * @param priorityCostMultiplier Value to multiply against current highest priority in song queue.
    * @param priorityCost Credits for a high-priority queue insertion.
    * @param backLabel Text on the back button, e.g. "← GENRES".
    * @param onBack Runnable executed when the back button is pressed.
@@ -117,7 +116,7 @@ public class GenreDetailPanel extends JPanel {
    * @param onArtistClicked Called when the user selects an artist row.
    */
   public GenreDetailPanel(GenreDto genre, SearchResultDto results, ImageLoader imageLoader,
-      SongQueueService songQueueService, int normalPlayCost, int priorityCost, String backLabel,
+      SongQueueService songQueueService, int priorityCostMultiplier, String backLabel,
       Runnable onBack, AlbumGridPanel.AlbumClickListener onAlbumClicked,
       ArtistClickListener onArtistClicked, SongLibraryService songLibraryService) {
 
@@ -127,8 +126,7 @@ public class GenreDetailPanel extends JPanel {
     this.genre = genre;
     this.imageLoader = imageLoader;
     this.songQueueService = songQueueService;
-    this.normalPlayCost = normalPlayCost;
-    this.priorityCost = priorityCost;
+    this.priorityCostMultiplier = priorityCostMultiplier;
     this.onAlbumClicked = onAlbumClicked;
     this.onArtistClicked = onArtistClicked;
     this.songLibraryService = songLibraryService;
@@ -348,7 +346,11 @@ public class GenreDetailPanel extends JPanel {
       case "SONGS" -> {
         if (item instanceof SongDto song) {
           Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
-          AddSongToQueueDialog.show(owner, song, imageLoader, normalPlayCost, priorityCost,
+
+          int highestPriority = songQueueService.getHighestPriority();
+          int priorityCost = highestPriority * priorityCostMultiplier;
+
+          AddSongToQueueDialog.show(owner, song, imageLoader, priorityCost,
               () -> songQueueService.addSongToQueue(
                   new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 0)),
               () -> songQueueService.addSongToQueue(

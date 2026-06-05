@@ -64,13 +64,12 @@ public class AddSongToQueueDialog extends JDialog {
    * @param owner The parent Frame (pass JukeANatorFrame).
    * @param song The song to display.
    * @param imageLoader Shared ImageLoader instance.
-   * @param normalPlayCost Credits required for a normal play.
    * @param priorityCost Credits required for a priority play.
    * @param onNormalPlay Action to execute on "Play Song".
    * @param onPriorityPlay Action to execute on "Priority Play".
    */
-  public AddSongToQueueDialog(Frame owner, SongDto song, ImageLoader imageLoader,
-      int normalPlayCost, int priorityCost, PlayAction onNormalPlay, PlayAction onPriorityPlay) {
+  public AddSongToQueueDialog(Frame owner, SongDto song, ImageLoader imageLoader, int priorityCost,
+      PlayAction onNormalPlay, PlayAction onPriorityPlay) {
 
     super(owner, "Add Song to Queue", true /* modal */);
 
@@ -90,8 +89,8 @@ public class AddSongToQueueDialog extends JDialog {
 
     getContentPane().setBackground(BG_DARK);
     getContentPane().setLayout(new BorderLayout());
-    getContentPane().add(buildBorderPanel(song, imageLoader, normalPlayCost, priorityCost,
-        onNormalPlay, onPriorityPlay));
+    getContentPane()
+        .add(buildBorderPanel(song, imageLoader, 1, priorityCost, onNormalPlay, onPriorityPlay));
 
     // ── Countdown timer ───────────────────────────────────────────────────
     countdownTimer = new Timer(1000, e -> {
@@ -455,16 +454,15 @@ public class AddSongToQueueDialog extends JDialog {
    * @param owner Parent frame.
    * @param song Song to display.
    * @param imageLoader Shared loader.
-   * @param normalPlayCost Credits for a normal play.
    * @param priorityCost Credits for a priority play.
    * @param onNormalPlay Callback for normal play.
    * @param onPriorityPlay Callback for priority play.
    */
-  public static void show(Frame owner, SongDto song, ImageLoader imageLoader, int normalPlayCost,
-      int priorityCost, PlayAction onNormalPlay, PlayAction onPriorityPlay) {
+  public static void show(Frame owner, SongDto song, ImageLoader imageLoader, int priorityCost,
+      PlayAction onNormalPlay, PlayAction onPriorityPlay) {
 
-    AddSongToQueueDialog dialog = new AddSongToQueueDialog(owner, song, imageLoader, normalPlayCost,
-        priorityCost, onNormalPlay, onPriorityPlay);
+    AddSongToQueueDialog dialog = new AddSongToQueueDialog(owner, song, imageLoader, priorityCost,
+        onNormalPlay, onPriorityPlay);
 
     dialog.setVisible(true); // blocks here (modal)
   }

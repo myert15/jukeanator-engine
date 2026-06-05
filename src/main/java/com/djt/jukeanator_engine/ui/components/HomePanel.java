@@ -41,8 +41,7 @@ public class HomePanel extends JPanel implements TabNavigator {
   private final SongLibraryService songLibraryService;
   private final SongQueueService songQueueService;
   private final ImageLoader imageLoader;
-  private final int normalPlayCost;
-  private final int priorityCost;
+  private final int priorityCostMultiplier;
   private final int popularityT1;
   private final int popularityT2;
   private final int popularityT3;
@@ -59,8 +58,7 @@ public class HomePanel extends JPanel implements TabNavigator {
    * @param songLibraryService Service for fetching albums / artist details.
    * @param songQueueService Service for queuing songs.
    * @param imageLoader Shared loader.
-   * @param normalPlayCost Credits for normal play.
-   * @param priorityCost Credits for priority play.
+   * @param priorityCostMultiplier
    * @param popularityT1 Lower popularity threshold (1 bar).
    * @param popularityT2 Middle popularity threshold (2 bars).
    * @param popularityT3 Upper popularity threshold (3 bars).
@@ -70,14 +68,13 @@ public class HomePanel extends JPanel implements TabNavigator {
    * @param artH Tile art pixel height.
    */
   public HomePanel(SongLibraryService songLibraryService, SongQueueService songQueueService,
-      ImageLoader imageLoader, int normalPlayCost, int priorityCost, int popularityT1,
-      int popularityT2, int popularityT3, int gridCols, int gridRows, int artW, int artH) {
+      ImageLoader imageLoader, int priorityCostMultiplier, int popularityT1, int popularityT2,
+      int popularityT3, int gridCols, int gridRows, int artW, int artH) {
 
     this.songLibraryService = songLibraryService;
     this.songQueueService = songQueueService;
     this.imageLoader = imageLoader;
-    this.normalPlayCost = normalPlayCost;
-    this.priorityCost = priorityCost;
+    this.priorityCostMultiplier = priorityCostMultiplier;
     this.popularityT1 = popularityT1;
     this.popularityT2 = popularityT2;
     this.popularityT3 = popularityT3;
@@ -122,8 +119,8 @@ public class HomePanel extends JPanel implements TabNavigator {
     }
 
     currentDetailCard = new AlbumDetailCard(owner, full, imageLoader, songQueueService,
-        normalPlayCost, priorityCost, popularityT1, popularityT2, popularityT3, this); // TabNavigator
-                                                                                       // back-reference
+        priorityCostMultiplier, popularityT1, popularityT2, popularityT3, this); // TabNavigator
+                                                                                 // back-reference
 
     replaceCard(CARD_DETAIL, currentDetailCard);
     cardLayout.show(rootPanel, CARD_DETAIL);

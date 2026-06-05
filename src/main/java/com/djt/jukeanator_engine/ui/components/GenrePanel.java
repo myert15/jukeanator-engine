@@ -80,8 +80,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
   private final SongLibraryService songLibraryService;
   private final SongQueueService songQueueService;
   private final ImageLoader imageLoader;
-  private final int normalPlayCost;
-  private final int priorityCost;
+  private final int priorityCostMultiplier;
   private final int popularityT1;
   private final int popularityT2;
   private final int popularityT3;
@@ -95,14 +94,13 @@ public class GenrePanel extends JPanel implements TabNavigator {
   // ─────────────────────────────────────────────────────────────────────────
 
   public GenrePanel(SongLibraryService songLibraryService, SongQueueService songQueueService,
-      ImageLoader imageLoader, int normalPlayCost, int priorityCost, int popularityT1,
-      int popularityT2, int popularityT3, int gridCols, int gridRows, int artW, int artH) {
+      ImageLoader imageLoader, int priorityCostMultiplier, int popularityT1, int popularityT2,
+      int popularityT3, int gridCols, int gridRows, int artW, int artH) {
 
     this.songLibraryService = songLibraryService;
     this.songQueueService = songQueueService;
     this.imageLoader = imageLoader;
-    this.normalPlayCost = normalPlayCost;
-    this.priorityCost = priorityCost;
+    this.priorityCostMultiplier = priorityCostMultiplier;
     this.popularityT1 = popularityT1;
     this.popularityT2 = popularityT2;
     this.popularityT3 = popularityT3;
@@ -140,7 +138,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
   }
 
   public void setGenres(List<GenreDto> genres) {
-    
+
     if (!genres.equals(this.genres)) {
 
       this.genres = genres;
@@ -167,7 +165,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
     }
 
     currentDetailCard = new AlbumDetailCard(owner, full, imageLoader, songQueueService,
-        normalPlayCost, priorityCost, popularityT1, popularityT2, popularityT3, this);
+        priorityCostMultiplier, popularityT1, popularityT2, popularityT3, this);
 
     replaceOuterCard(CARD_DETAIL, currentDetailCard);
     outerCardLayout.show(outerRoot, CARD_DETAIL);
@@ -393,7 +391,7 @@ public class GenrePanel extends JPanel implements TabNavigator {
     }
 
     GenreDetailPanel detailPanel = new GenreDetailPanel(genre, results, imageLoader,
-        songQueueService, normalPlayCost, priorityCost, "← BACK", () -> {
+        songQueueService, priorityCostMultiplier, "← BACK", () -> {
           activeGenre = null;
           innerCardLayout.show(innerRoot, INNER_GRID);
         }, album -> pushAlbumDetail(album), artist -> pushArtistFromGenre(artist),
