@@ -13,6 +13,7 @@ import java.awt.GridLayout;
 import java.awt.RenderingHints;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.concurrent.CompletableFuture;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -236,16 +237,20 @@ public class AddSongToQueueDialog extends JDialog {
 
     this.normalButton = createQueueButton("Play Song", normalPlayCost, ACCENT_BLUE, e -> {
       if (creditManager.deductCredits(normalPlayCost)) {
-        songQueueService
-            .addSongToQueue(new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1));
+
+        CompletableFuture.runAsync(() -> songQueueService
+            .addSongToQueue(new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)));
+
         dismiss();
       }
     });
 
     this.priorityButton = createQueueButton("Priority Play Song", priorityCost, ACCENT_GOLD, e -> {
       if (creditManager.deductCredits(priorityCost)) {
-        songQueueService.addSongToQueue(
-            new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), highestPriority));
+
+        CompletableFuture.runAsync(() -> songQueueService.addSongToQueue(
+            new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), highestPriority)));
+
         dismiss();
       }
     });
