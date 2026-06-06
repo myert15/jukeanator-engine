@@ -52,11 +52,13 @@ public class HomePanel extends JPanel implements TabNavigator {
   private final int gridRows;
   private final int artW;
   private final int artH;
+  private final boolean enableAlbumSelection;
 
   public HomePanel(char incrementCreditsKey, CreditManager creditManager,
       SongLibraryService songLibraryService, SongQueueService songQueueService,
       ImageLoader imageLoader, int priorityCostMultiplier, int popularityT1, int popularityT2,
-      int popularityT3, int gridCols, int gridRows, int artW, int artH) {
+      int popularityT3, int gridCols, int gridRows, int artW, int artH,
+      boolean enableAlbumSelection) {
 
     this.incrementCreditsKey = incrementCreditsKey;
     this.creditManager = creditManager;
@@ -71,6 +73,7 @@ public class HomePanel extends JPanel implements TabNavigator {
     this.gridRows = gridRows;
     this.artW = artW;
     this.artH = artH;
+    this.enableAlbumSelection = enableAlbumSelection;
 
     setLayout(new BorderLayout());
     setOpaque(false);
@@ -107,10 +110,9 @@ public class HomePanel extends JPanel implements TabNavigator {
       currentDetailCard.dismiss(); // stop the countdown timer
     }
 
-    currentDetailCard =
-        new AlbumDetailCard(owner, full, imageLoader, songQueueService, priorityCostMultiplier,
-            popularityT1, popularityT2, popularityT3, this, creditManager, incrementCreditsKey); // TabNavigator
-    // back-reference
+    currentDetailCard = new AlbumDetailCard(owner, full, imageLoader, songQueueService,
+        priorityCostMultiplier, popularityT1, popularityT2, popularityT3, this, creditManager,
+        incrementCreditsKey, enableAlbumSelection); // TabNavigator back-reference
 
     replaceCard(CARD_DETAIL, currentDetailCard);
     cardLayout.show(rootPanel, CARD_DETAIL);

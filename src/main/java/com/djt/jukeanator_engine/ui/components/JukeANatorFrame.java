@@ -76,6 +76,7 @@ public class JukeANatorFrame extends JFrame {
 
   // SEARCH TAB
   private final boolean enableTypeAheadSearch;
+  private final boolean enableAlbumSelection;
   private SearchPanel searchPanel;
 
   // HOT HERE TAB
@@ -134,8 +135,10 @@ public class JukeANatorFrame extends JFrame {
     this.tenDollarBonusCredits = this.jukeANatorUserInterfaceProperties.getTenDollarBonusCredits();
 
     this.enableTypeAheadSearch = this.jukeANatorUserInterfaceProperties.isEnableTypeAheadSearch();
-    
-    this.creditManager = new CreditManager(numCredits, creditsPerDollar, fiveDollarBonusCredits, tenDollarBonusCredits);
+    this.enableAlbumSelection = false;
+
+    this.creditManager = new CreditManager(numCredits, creditsPerDollar, fiveDollarBonusCredits,
+        tenDollarBonusCredits);
 
     initialize();
   }
@@ -425,9 +428,10 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private HomePanel buildHomePanel() {
 
-    return new HomePanel(incrementCreditsKey, creditManager, songLibraryService, songQueueService, imageLoader,
-        priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
-        POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H);
+    return new HomePanel(incrementCreditsKey, creditManager, songLibraryService, songQueueService,
+        imageLoader, priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
+        POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H,
+        enableAlbumSelection);
   }
 
   // ============================================================
@@ -435,10 +439,10 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private SearchPanel buildSearchPanel() {
 
-    return new SearchPanel(incrementCreditsKey, creditManager, songLibraryService, songQueueService, imageLoader,
-        priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
+    return new SearchPanel(incrementCreditsKey, creditManager, songLibraryService, songQueueService,
+        imageLoader, priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
         POPULARITY_THRESHOLD_3, enableTypeAheadSearch, HOME_GRID_COLS, HOME_GRID_ROWS,
-        HOME_TILE_ART_W, HOME_TILE_ART_H);
+        HOME_TILE_ART_W, HOME_TILE_ART_H, enableAlbumSelection);
   }
 
   // ============================================================
@@ -446,9 +450,10 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private HotHerePanel buildHotHerePanel() {
 
-    return new HotHerePanel(incrementCreditsKey, creditManager, songLibraryService, songQueueService, imageLoader,
-        priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
-        POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H);
+    return new HotHerePanel(incrementCreditsKey, creditManager, songLibraryService,
+        songQueueService, imageLoader, priorityCostMultiplier, POPULARITY_THRESHOLD_1,
+        POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS,
+        HOME_TILE_ART_W, HOME_TILE_ART_H, enableAlbumSelection);
   }
 
   // ============================================================
@@ -456,9 +461,10 @@ public class JukeANatorFrame extends JFrame {
   // ============================================================
   private GenrePanel buildGenresPanel() {
 
-    return new GenrePanel(incrementCreditsKey, creditManager, songLibraryService, songQueueService, imageLoader,
-        priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
-        POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H);
+    return new GenrePanel(incrementCreditsKey, creditManager, songLibraryService, songQueueService,
+        imageLoader, priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
+        POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H,
+        enableAlbumSelection);
   }
 
 

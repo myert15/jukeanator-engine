@@ -25,6 +25,11 @@ public class JukeANatorUserInterfaceProperties {
   //
   private boolean enableTypeAheadSearch = true;
 
+  //
+  // ALBUM SELECTION
+  //
+  private boolean enableAlbumSelection = false;
+
   public boolean getEnabled() {
     return enabled;
   }
@@ -87,5 +92,13 @@ public class JukeANatorUserInterfaceProperties {
 
   public void setEnableTypeAheadSearch(boolean enableTypeAheadSearch) {
     this.enableTypeAheadSearch = enableTypeAheadSearch;
+  }
+
+  public boolean isEnableAlbumSelection() {
+    return enableAlbumSelection;
+  }
+
+  public void setEnableAlbumSelection(boolean enableAlbumSelection) {
+    this.enableAlbumSelection = enableAlbumSelection;
   }
 }

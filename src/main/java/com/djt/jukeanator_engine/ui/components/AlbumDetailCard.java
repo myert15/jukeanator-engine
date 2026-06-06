@@ -34,8 +34,8 @@ public class AlbumDetailCard extends JPanel {
 
   public AlbumDetailCard(Frame owner, AlbumDto album, ImageLoader imageLoader,
       SongQueueService songQueueService, int priorityCostMultiplier, int threshold1, int threshold2,
-      int threshold3, TabNavigator navigator, CreditManager creditManager,
-      char incrementCreditsKey) {
+      int threshold3, TabNavigator navigator, CreditManager creditManager, char incrementCreditsKey,
+      boolean enableAlbumSelection) {
 
     setLayout(new BorderLayout());
     setOpaque(false);
@@ -48,6 +48,10 @@ public class AlbumDetailCard extends JPanel {
     };
 
     AlbumViewPanel.AlbumClickListener albumClick = clicked -> {
+
+      if (!enableAlbumSelection) {
+        return;
+      }
 
       secondsRemaining = TIMEOUT_SECONDS;
       updateTimeout();

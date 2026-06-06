@@ -101,15 +101,17 @@ public class SearchPanel extends JPanel implements TabNavigator {
   private final int gridRows;
   private final int artW;
   private final int artH;
+  private final boolean enableAlbumSelection;
 
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
 
-  public SearchPanel(char incrementCreditsKey, CreditManager creditManager, SongLibraryService songLibraryService,
-      SongQueueService songQueueService, ImageLoader imageLoader, int priorityCostMultiplier,
-      int popularityT1, int popularityT2, int popularityT3, boolean enableTypeAheadSearch,
-      int gridCols, int gridRows, int artW, int artH) {
+  public SearchPanel(char incrementCreditsKey, CreditManager creditManager,
+      SongLibraryService songLibraryService, SongQueueService songQueueService,
+      ImageLoader imageLoader, int priorityCostMultiplier, int popularityT1, int popularityT2,
+      int popularityT3, boolean enableTypeAheadSearch, int gridCols, int gridRows, int artW,
+      int artH, boolean enableAlbumSelection) {
 
     this.incrementCreditsKey = incrementCreditsKey;
     this.creditManager = creditManager;
@@ -125,6 +127,7 @@ public class SearchPanel extends JPanel implements TabNavigator {
     this.gridRows = gridRows;
     this.artW = artW;
     this.artH = artH;
+    this.enableAlbumSelection = enableAlbumSelection;
 
     setLayout(new BorderLayout());
     setOpaque(false);
@@ -152,7 +155,8 @@ public class SearchPanel extends JPanel implements TabNavigator {
       currentDetailCard.dismiss();
 
     currentDetailCard = new AlbumDetailCard(owner, full, imageLoader, songQueueService,
-        priorityCostMultiplier, popularityT1, popularityT2, popularityT3, this, creditManager, incrementCreditsKey);
+        priorityCostMultiplier, popularityT1, popularityT2, popularityT3, this, creditManager,
+        incrementCreditsKey, enableAlbumSelection);
 
     replaceCard(CARD_DETAIL, currentDetailCard);
     cardLayout.show(rootPanel, CARD_DETAIL);
