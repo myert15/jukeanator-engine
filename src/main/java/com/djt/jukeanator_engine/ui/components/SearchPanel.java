@@ -38,12 +38,18 @@ public class SearchPanel extends JPanel implements TabNavigator {
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
   private static final Color TEXT_PRIMARY = Color.WHITE;
 
-  // Key colours
-  private static final Color KEY_TOP = new Color(88, 88, 96);
-  private static final Color KEY_MID = new Color(62, 62, 70);
-  private static final Color KEY_FACE = new Color(48, 48, 55);
-  private static final Color KEY_FRONT = new Color(22, 22, 26);
-  private static final Color KEY_SHADOW = new Color(12, 12, 14);
+  // Key colours — improved AMI 3D style
+  // Face gradient: cool dark-slate that reads as a physical key surface
+  private static final Color KEY_FACE_TOP = new Color(72, 76, 88);
+  private static final Color KEY_FACE_MID = new Color(52, 55, 65);
+  private static final Color KEY_FACE_BOTTOM = new Color(35, 37, 45);
+  // Front "shelf" band — very dark, creates the key-depth illusion
+  private static final Color KEY_SHELF = new Color(18, 18, 22);
+  // Drop-shadow rendered offset below the key body
+  private static final Color KEY_SHADOW = new Color(6, 6, 8);
+  // Specular top-edge highlight and subtle side sheens
+  private static final Color KEY_HIGHLIGHT = new Color(160, 162, 175, 200);
+  private static final Color KEY_SIDE = new Color(100, 102, 115, 80);
 
   // ── Layout constants ──────────────────────────────────────────────────────
   private static final int KEYBOARD_HEIGHT = 260;
@@ -494,32 +500,48 @@ public class SearchPanel extends JPanel implements TabNavigator {
         int w = getWidth();
         int h = getHeight();
         int arc = 7;
-        int bandH = Math.round(h * 0.28f);
-        int faceH = h - bandH;
 
+        // Reserve bottom pixels for the shadow; the visible key sits in [0, visH)
+        int shadowH = 4;
+        int visH = h - shadowH;
+
+        // ── Drop-shadow slab ──────────────────────────────────────────────
         g2.setColor(KEY_SHADOW);
-        g2.fillRoundRect(1, 3, w - 2, h - 2, arc, arc);
+        g2.fillRoundRect(1, shadowH, w - 2, visH, arc, arc);
 
-        g2.setColor(KEY_FRONT);
-        g2.fillRoundRect(1, faceH - arc / 2, w - 2, bandH + arc / 2, arc, arc);
+        // ── Shelf band (bottom ~25 % of visible key) ──────────────────────
+        int shelfH = Math.round(visH * 0.25f);
+        int faceH = visH - shelfH;
 
-        float[] frac = {0.0f, 0.55f, 1.0f};
-        Color[] cols = {KEY_TOP, KEY_MID, KEY_FACE};
-        g2.setPaint(new LinearGradientPaint(0, 0, 0, faceH, frac, cols));
+        g2.setColor(KEY_SHELF);
+        g2.fillRoundRect(1, faceH, w - 2, shelfH + arc / 2, arc, arc);
+
+        // ── Face gradient ─────────────────────────────────────────────────
+        boolean pressed = model.isArmed();
+        Color fTop = pressed ? KEY_FACE_BOTTOM : KEY_FACE_TOP;
+        Color fMid = KEY_FACE_MID;
+        Color fBot = pressed ? KEY_FACE_TOP : KEY_FACE_BOTTOM;
+        g2.setPaint(new LinearGradientPaint(0, 0, 0, faceH, new float[] {0f, 0.55f, 1f},
+            new Color[] {fTop, fMid, fBot}));
         g2.fillRoundRect(1, 0, w - 2, faceH + arc / 2, arc, arc);
 
-        g2.setColor(new Color(130, 130, 138, 180));
+        // ── Specular top-edge highlight ────────────────────────────────────
+        g2.setColor(KEY_HIGHLIGHT);
+        g2.setStroke(new java.awt.BasicStroke(1.2f));
         g2.drawLine(arc, 1, w - arc - 1, 1);
 
-        g2.setColor(new Color(88, 88, 96, 80));
+        // ── Side-edge sheens ──────────────────────────────────────────────
+        g2.setColor(KEY_SIDE);
+        g2.setStroke(new java.awt.BasicStroke(1f));
         g2.drawLine(1, 2, 1, faceH - 2);
         g2.drawLine(w - 2, 2, w - 2, faceH - 2);
 
-        g2.setColor(model.isArmed() ? ACCENT_BLUE : TEXT_PRIMARY);
+        // ── Label — vertically centred in faceH ───────────────────────────
         g2.setFont(getFont());
         java.awt.FontMetrics fm = g2.getFontMetrics();
         int tx = (w - fm.stringWidth(getText())) / 2;
         int ty = (faceH - fm.getHeight()) / 2 + fm.getAscent();
+        g2.setColor(pressed ? ACCENT_BLUE : TEXT_PRIMARY);
         g2.drawString(getText(), tx, ty);
 
         g2.dispose();
