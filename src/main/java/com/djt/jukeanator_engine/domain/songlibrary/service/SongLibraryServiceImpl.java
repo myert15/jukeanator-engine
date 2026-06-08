@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -30,7 +29,6 @@ import com.djt.jukeanator_engine.domain.songlibrary.exception.SongLibraryExcepti
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongScanFailedException;
 import com.djt.jukeanator_engine.domain.songlibrary.mapper.SongLibraryMapper;
 import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumFolderEntity;
-import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumMetaDataFileEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.ArtistFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.GenreFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.LibraryItem;
@@ -404,25 +402,13 @@ public final class SongLibraryServiceImpl
 
   @Override
   public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(String artistName,
-      String albumName) {
+      String albumName, int limit) {
     try {
 
-      List<AlbumMetadataSearchResultDto> searchResults = new ArrayList<>();
+      List<AlbumMetadataSearchResultDto> albumMetadataResults =
+          this.songScanner.searchInternetForAlbumMetadata(artistName, albumName, limit);
 
-      Map<String, String> albumMetadataResults =
-          this.songScanner.searchInternetForAlbumMetadata(artistName, albumName);
-
-      String recordLabel = albumMetadataResults.get(AlbumMetaDataFileEntity.RecordLabel);
-      String releaseDate = albumMetadataResults.get(AlbumMetaDataFileEntity.ReleaseDate);
-      String genre = albumMetadataResults.get(AlbumMetaDataFileEntity.Genre);
-      String coverArtUrl = albumMetadataResults.get(AlbumMetaDataFileEntity.CoverArtURL);;
-
-      AlbumMetadataSearchResultDto albumMetadataSearchResultDto = new AlbumMetadataSearchResultDto(
-          artistName, albumName, recordLabel, releaseDate, genre, coverArtUrl);
-
-      searchResults.add(albumMetadataSearchResultDto);
-
-      return searchResults;
+      return albumMetadataResults;
 
     } catch (Exception e) {
       throw new SongLibraryException("Could not search internet for album metadata for artist: "

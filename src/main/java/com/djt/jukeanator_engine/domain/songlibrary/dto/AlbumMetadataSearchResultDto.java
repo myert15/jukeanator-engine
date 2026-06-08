@@ -8,9 +8,10 @@ public class AlbumMetadataSearchResultDto {
   private final String releaseDate;
   private final String genre;
   private final String coverArtUrl;
+  private final boolean hasExplicit;
 
   public AlbumMetadataSearchResultDto(String artistName, String albumName, String recordLabel,
-      String releaseDate, String genre, String coverArtUrl) {
+      String releaseDate, String genre, String coverArtUrl, boolean hasExplicit) {
     super();
     this.artistName = artistName;
     this.albumName = albumName;
@@ -18,6 +19,7 @@ public class AlbumMetadataSearchResultDto {
     this.releaseDate = releaseDate;
     this.genre = genre;
     this.coverArtUrl = coverArtUrl;
+    this.hasExplicit = hasExplicit;
   }
 
   public String getArtistName() {
@@ -42,5 +44,18 @@ public class AlbumMetadataSearchResultDto {
 
   public String getCoverArtUrl() {
     return coverArtUrl;
+  }
+
+  public boolean hasExplicit() {
+    return hasExplicit;
+  }
+
+  public boolean isEmpty() {
+
+    if (this.releaseDate == null || this.releaseDate.isBlank()) {
+      return true;
+    }
+
+    return false;
   }
 }

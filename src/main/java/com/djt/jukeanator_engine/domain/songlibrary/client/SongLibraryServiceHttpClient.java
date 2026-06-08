@@ -30,145 +30,112 @@ public class SongLibraryServiceHttpClient implements SongLibraryService {
   @Override
   public SearchResultDto getMusicByPopularity() {
 
-    return restClient.get()
-        .uri("/api/song-library/popular")
-        .retrieve()
-        .body(SearchResultDto.class);
+    return restClient.get().uri("/api/song-library/popular").retrieve().body(SearchResultDto.class);
   }
-  
+
   @Override
   public SearchResultDto getMusicBySearch(String searchFor) {
 
-    return restClient.get()
-        .uri(uriBuilder -> uriBuilder
-            .path("/api/song-library/search")
-            .queryParam("searchFor", searchFor)
-            .build())
-        .retrieve()
-        .body(SearchResultDto.class);
+    return restClient.get().uri(uriBuilder -> uriBuilder.path("/api/song-library/search")
+        .queryParam("searchFor", searchFor).build()).retrieve().body(SearchResultDto.class);
   }
-  
+
   @Override
   public List<GenreDto> getGenres() {
-    
-    return restClient.get()
-        .uri("/api/song-library/genres").retrieve()
+
+    return restClient.get().uri("/api/song-library/genres").retrieve()
         .body(new ParameterizedTypeReference<>() {});
   }
 
   @Override
   public SearchResultDto getGenreMusicByPopularity(String genreName) {
 
-    return restClient.get()
-        .uri(uriBuilder -> uriBuilder
-            .path("/api/song-library/genres/popular")
-            .queryParam("genreName", genreName)
-            .build())
-        .retrieve()
-        .body(SearchResultDto.class);
+    return restClient.get().uri(uriBuilder -> uriBuilder.path("/api/song-library/genres/popular")
+        .queryParam("genreName", genreName).build()).retrieve().body(SearchResultDto.class);
   }
 
   @Override
   public SearchResultDto getGenreMusicByTitle(String genreName) {
 
-    return restClient.get()
-        .uri(uriBuilder -> uriBuilder
-            .path("/api/song-library/genres/title")
-            .queryParam("genreName", genreName)
-            .build())
-        .retrieve()
-        .body(SearchResultDto.class);
+    return restClient.get().uri(uriBuilder -> uriBuilder.path("/api/song-library/genres/title")
+        .queryParam("genreName", genreName).build()).retrieve().body(SearchResultDto.class);
   }
 
   @Override
   public SearchResultDto getGenreMusicByReleaseDate(String genreName) {
 
-    return restClient.get()
-        .uri(uriBuilder -> uriBuilder
-            .path("/api/song-library/genres/releaseDate")
-            .queryParam("genreName", genreName)
-            .build())
-        .retrieve()
-        .body(SearchResultDto.class);
+    return restClient.get().uri(uriBuilder -> uriBuilder
+        .path("/api/song-library/genres/releaseDate").queryParam("genreName", genreName).build())
+        .retrieve().body(SearchResultDto.class);
   }
-  
+
   @Override
   public List<ArtistDto> getArtists() {
-    
-    return restClient.get(
-        ).uri("/api/song-library/artists").retrieve()
+
+    return restClient.get().uri("/api/song-library/artists").retrieve()
         .body(new ParameterizedTypeReference<>() {});
   }
 
   @Override
   public List<AlbumDto> getAlbums() {
-    
-    return restClient.get()
-        .uri("/api/song-library/albums").retrieve()
+
+    return restClient.get().uri("/api/song-library/albums").retrieve()
         .body(new ParameterizedTypeReference<>() {});
   }
 
   @Override
   public List<AlbumDto> getAlbumsForGenre(Integer genreId) {
 
-    return restClient.get()
-        .uri("/api/song-library/genres/" + genreId + "/albums").retrieve()
+    return restClient.get().uri("/api/song-library/genres/" + genreId + "/albums").retrieve()
         .body(new ParameterizedTypeReference<>() {});
   }
-  
+
   @Override
   public ArtistDto getArtistById(Integer artistId) {
-    
-    return restClient.get()
-        .uri("/api/song-library/artists/" + artistId).retrieve()
+
+    return restClient.get().uri("/api/song-library/artists/" + artistId).retrieve()
         .body(new ParameterizedTypeReference<>() {});
   }
 
   @Override
   public AlbumDto getAlbumById(Integer albumId) {
-    
-    return restClient.get()
-        .uri("/api/song-library/albums/" + albumId).retrieve()
+
+    return restClient.get().uri("/api/song-library/albums/" + albumId).retrieve()
         .body(new ParameterizedTypeReference<>() {});
   }
 
   @Override
   public SongDto getSongById(Integer albumId, Integer songId) {
-    
-    return restClient.get()
-        .uri("/api/song-library/songs/" + albumId + "/" + songId).retrieve()
+
+    return restClient.get().uri("/api/song-library/songs/" + albumId + "/" + songId).retrieve()
         .body(new ParameterizedTypeReference<>() {});
   }
 
   @Override
   public Integer scanFileSystemForSongs() throws SongScanFailedException {
 
-    return restClient.post()
-        .uri("/api/song-library/scanNoPath").retrieve()
-        .body(Integer.class);
+    return restClient.post().uri("/api/song-library/scanNoPath").retrieve().body(Integer.class);
   }
-  
+
   @Override
   public Integer scanFileSystemForSongs(ScanRequest scanRequest) throws SongScanFailedException {
 
-    return restClient.post()
-        .uri("/api/song-library/scan").body(scanRequest).retrieve()
+    return restClient.post().uri("/api/song-library/scan").body(scanRequest).retrieve()
         .body(Integer.class);
   }
-  
+
   @Override
   public Integer resetSongStatistics() {
 
-    return restClient.post()
-        .uri("/api/song-library/resetSongStatistics").retrieve()
+    return restClient.post().uri("/api/song-library/resetSongStatistics").retrieve()
         .body(Integer.class);
   }
-  
-  @Override
-  public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(@RequestParam String artistName, @RequestParam String albumName) {
 
-    return restClient.get()
-        .uri("/api/song-library/searchInternetForAlbumMetadata").retrieve()
+  @Override
+  public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(
+      @RequestParam String artistName, @RequestParam String albumName, @RequestParam int limit) {
+
+    return restClient.get().uri("/api/song-library/searchInternetForAlbumMetadata").retrieve()
         .body(new ParameterizedTypeReference<>() {});
-  }    
+  }
 }

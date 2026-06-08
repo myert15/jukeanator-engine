@@ -1,19 +1,16 @@
 package com.djt.jukeanator_engine.domain.songlibrary.service.utils;
 
 import static java.util.Objects.requireNonNull;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import com.djt.jukeanator_engine.domain.common.exception.EntityAlreadyExistsException;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataSearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongLibraryException;
 import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumFolderEntity;
-import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumMetaDataFileEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.ArtistFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.FolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.GenreFolderEntity;
@@ -158,7 +155,6 @@ public final class SongScanner {
       boolean hasValidMetadata = album.hasValidMetadata();
 
       // First, see if we can retrieve any of this information from tags embedded in the song file
-      Map<String, String> albumMetadataResults = new HashMap<>();
       List<SongFileEntity> songList = album.getChildSongs();
       for (int j = 0; j < songList.size(); j++) {
 
@@ -197,20 +193,14 @@ public final class SongScanner {
           if (tags != null && !tags.isEmpty()) {
 
             String recordLabel = tags.get(JAudioTaggerClient.RECORD_LABEL);
-            if (recordLabel != null && !recordLabel.trim().isBlank()) {
-
-              albumMetadataResults.put(AlbumMetaDataFileEntity.RecordLabel, recordLabel);
-            }
-
             String releaseDate = tags.get(JAudioTaggerClient.RELEASE_DATE);
-            if (releaseDate != null && releaseDate.trim().length() == 4) {
 
-              albumMetadataResults.put(AlbumMetaDataFileEntity.ReleaseDate, releaseDate);
-            }
+            AlbumMetadataSearchResultDto metadata =
+                new AlbumMetadataSearchResultDto("", "", recordLabel, releaseDate, "", "", false);
 
-            if (!albumMetadataResults.isEmpty()) {
+            if (!metadata.isEmpty()) {
 
-              album.getMetaData().writeMetadataToFileSystem(albumMetadataResults);
+              album.getMetaData().writeMetadataToFileSystem(metadata);
               hasValidMetadata = album.hasValidMetadata();
             }
 
@@ -229,17 +219,20 @@ public final class SongScanner {
 
       if (!hasValidCoverArt || (requiresMetadata && !hasValidMetadata)) {
 
-        albumMetadataResults = searchInternetForAlbumMetadata(album);
+        List<AlbumMetadataSearchResultDto> albumMetadataResults =
+            searchInternetForAlbumMetadata(album);
 
-        if (!hasValidCoverArt) {
+        if (!hasValidCoverArt && !albumMetadataResults.isEmpty()) {
 
-          String coverArtUrl = albumMetadataResults.get(AlbumMetaDataFileEntity.CoverArtURL);
+          AlbumMetadataSearchResultDto albumMetadataResult = albumMetadataResults.get(0);
+          String coverArtUrl = albumMetadataResult.getCoverArtUrl();
           this.coverArtDownloader.downloadCoverArt(coverArtPath, coverArtUrl);
         }
 
-        if (!hasValidMetadata) {
+        if (!hasValidMetadata && !albumMetadataResults.isEmpty()) {
 
-          album.getMetaData().writeMetadataToFileSystem(albumMetadataResults);
+          AlbumMetadataSearchResultDto albumMetadataResult = albumMetadataResults.get(0);
+          album.getMetaData().writeMetadataToFileSystem(albumMetadataResult);
         }
       }
 
@@ -248,23 +241,23 @@ public final class SongScanner {
     return rootFolder;
   }
 
-  public Map<String, String> searchInternetForAlbumMetadata(AlbumFolderEntity album) {
+  public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(
+      AlbumFolderEntity album) {
 
-    return searchInternetForAlbumMetadata(album.getParentFolder().getName(), album.getName());
+    return searchInternetForAlbumMetadata(album.getParentFolder().getName(), album.getName(), 1);
   }
 
-  public Map<String, String> searchInternetForAlbumMetadata(String artistName, String albumName) {
+  public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(String artistName,
+      String albumName, int limit) {
 
-    Map<String, String> albumMetadataResults = new HashMap<>();
-
-    albumMetadataResults =
-        this.musicBrainzClientWrapper.searchForAlbumMetadata(artistName, albumName, this.useGenre);
+    List<AlbumMetadataSearchResultDto> albumMetadataResults = this.musicBrainzClientWrapper
+        .searchForAlbumMetadata(artistName, albumName, this.useGenre, limit);
 
     if ((albumMetadataResults == null || albumMetadataResults.isEmpty())
         && this.discogsClientWrapper.hasValidApiKey()) {
 
       albumMetadataResults =
-          this.discogsClientWrapper.searchForAlbumMetadata(artistName, albumName);
+          this.discogsClientWrapper.searchForAlbumMetadata(artistName, albumName, limit);
     }
 
     return albumMetadataResults;

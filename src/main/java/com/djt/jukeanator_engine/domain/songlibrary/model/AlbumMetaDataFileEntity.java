@@ -7,19 +7,12 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.TreeMap;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataSearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongLibraryException;
 
 public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Serializable {
 
   private static final long serialVersionUID = 1L;
-
-  public static final String Genre = "Genre";
-  public static final String CoverArtURL = "CoverArtURL";
-  public static final String RecordLabel = "RecordLabel";
-  public static final String ReleaseDate = "ReleaseDate";
-  public static final String HasExplicit = "HasExplicit";
 
   private String genre = "";
   private String coverArtUrl = "";
@@ -72,10 +65,10 @@ public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Seria
   }
 
   public String getGenre() {
-	 ensureLoaded();
-	 return genre;
+    ensureLoaded();
+    return genre;
   }
-  
+
   public String getCoverArtUrl() {
     ensureLoaded();
     return coverArtUrl;
@@ -103,7 +96,7 @@ public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Seria
   }
 
   private void readMetadataFromFileSystem() {
-    
+
     Path path = Path.of(getNaturalIdentity());
 
     if (!Files.exists(path)) {
@@ -115,9 +108,9 @@ public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Seria
       String line;
 
       while ((line = reader.readLine()) != null) {
-    	  
+
         if (line.startsWith("Genre=")) {
-        	coverArtUrl = line.substring("Genre=".length());
+          coverArtUrl = line.substring("Genre=".length());
         } else if (line.startsWith("CoverArtURL=")) {
           coverArtUrl = line.substring("CoverArtURL=".length());
         } else if (line.startsWith("RecordLabel=")) {
@@ -135,27 +128,23 @@ public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Seria
 
     isLoaded = true;
   }
-  
+
   public void writeMetadataToFileSystem() {
-    
-    Map<String, String> metadata = new TreeMap<>();
-    metadata.put(Genre, this.genre);
-    metadata.put(CoverArtURL, this.coverArtUrl);
-    metadata.put(RecordLabel, this.recordLabel);
-    metadata.put(ReleaseDate, this.releaseDate);
-    metadata.put(HasExplicit, Boolean.toString(this.hasExplicit));
-    
+
+    AlbumMetadataSearchResultDto metadata = new AlbumMetadataSearchResultDto("", "", recordLabel,
+        releaseDate, genre, coverArtUrl, hasExplicit);
+
     writeMetadataToFileSystem(metadata);
   }
 
-  public void writeMetadataToFileSystem(Map<String, String> metadata) {
+  public void writeMetadataToFileSystem(AlbumMetadataSearchResultDto metadata) {
 
     // Populate fields safely
-	this.genre = safe(metadata.getOrDefault(Genre, ""));
-    this.coverArtUrl = safe(metadata.getOrDefault(CoverArtURL, ""));
-    this.recordLabel = safe(metadata.getOrDefault(RecordLabel, "Unknown"));
-    this.releaseDate = safe(metadata.getOrDefault(ReleaseDate, "1950"));
-    this.hasExplicit = Boolean.parseBoolean(metadata.getOrDefault(HasExplicit, "false"));
+    this.genre = safe(metadata.getGenre());
+    this.coverArtUrl = safe(metadata.getCoverArtUrl());
+    this.recordLabel = safe(metadata.getRecordLabel());
+    this.releaseDate = safe(metadata.getReleaseDate());
+    this.hasExplicit = metadata.hasExplicit();
 
     Path path = Path.of(getNaturalIdentity());
 
@@ -168,7 +157,7 @@ public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Seria
       try (BufferedWriter writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8)) {
 
         writer.write("Genre=" + genre);
-        writer.newLine();    	  
+        writer.newLine();
         writer.write("CoverArtURL=" + coverArtUrl);
         writer.newLine();
         writer.write("ReleaseDate=" + releaseDate);
@@ -176,7 +165,7 @@ public class AlbumMetaDataFileEntity extends AbstractFileEntity implements Seria
         writer.write("RecordLabel=" + recordLabel);
         writer.newLine();
         writer.write("HasExplicit=" + hasExplicit);
-        writer.newLine();        
+        writer.newLine();
       }
 
       isLoaded = true;

@@ -29,8 +29,9 @@ public class SongLibraryController implements SongLibraryService {
 
   private final SongLibraryService songLibraryService;
 
-  public SongLibraryController(@Qualifier("songLibraryService") SongLibraryService songLibraryService) {
-    
+  public SongLibraryController(
+      @Qualifier("songLibraryService") SongLibraryService songLibraryService) {
+
     requireNonNull(songLibraryService, "songLibraryService cannot be null");
     this.songLibraryService = songLibraryService;
   }
@@ -40,13 +41,13 @@ public class SongLibraryController implements SongLibraryService {
   public SearchResultDto getMusicByPopularity() {
     return songLibraryService.getMusicByPopularity();
   }
-  
+
   @Override
   @GetMapping("/search")
   public SearchResultDto getMusicBySearch(@RequestParam String searchFor) {
     return songLibraryService.getMusicBySearch(searchFor);
   }
-  
+
   @Override
   @GetMapping("/genres")
   public List<GenreDto> getGenres() {
@@ -70,7 +71,7 @@ public class SongLibraryController implements SongLibraryService {
   public SearchResultDto getGenreMusicByReleaseDate(@RequestParam String genreName) {
     return songLibraryService.getGenreMusicByReleaseDate(genreName);
   }
-  
+
   @Override
   @GetMapping("/artists")
   public List<ArtistDto> getArtists() {
@@ -82,19 +83,19 @@ public class SongLibraryController implements SongLibraryService {
   public ArtistDto getArtistById(@PathVariable Integer id) {
     return songLibraryService.getArtistById(id);
   }
-  
+
   @Override
   @GetMapping("/albums")
   public List<AlbumDto> getAlbums() {
     return songLibraryService.getAlbums();
   }
-  
+
   @Override
   @GetMapping("/genres/{id}/albums")
   public List<AlbumDto> getAlbumsForGenre(@PathVariable Integer genreId) {
-      return songLibraryService.getAlbumsForGenre(genreId);
+    return songLibraryService.getAlbumsForGenre(genreId);
   }
-  
+
   @Override
   @GetMapping("/albums/{id}")
   public AlbumDto getAlbumById(@PathVariable Integer id) {
@@ -113,10 +114,11 @@ public class SongLibraryController implements SongLibraryService {
 
     return songLibraryService.scanFileSystemForSongs();
   }
-  
+
   @Override
   @PostMapping("/scan")
-  public Integer scanFileSystemForSongs(@RequestBody ScanRequest scanRequest) throws SongScanFailedException {
+  public Integer scanFileSystemForSongs(@RequestBody ScanRequest scanRequest)
+      throws SongScanFailedException {
 
     return songLibraryService.scanFileSystemForSongs(scanRequest);
   }
@@ -130,8 +132,9 @@ public class SongLibraryController implements SongLibraryService {
 
   @Override
   @GetMapping("/searchInternetForAlbumMetadata")
-  public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(@RequestParam String artistName, @RequestParam String albumName) {
-    
-    return songLibraryService.searchInternetForAlbumMetadata(artistName, albumName);
-  }  
+  public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(
+      @RequestParam String artistName, @RequestParam String albumName, int limit) {
+
+    return songLibraryService.searchInternetForAlbumMetadata(artistName, albumName, limit);
+  }
 }

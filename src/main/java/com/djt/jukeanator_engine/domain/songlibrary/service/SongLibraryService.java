@@ -14,19 +14,19 @@ import com.djt.jukeanator_engine.domain.songlibrary.exception.SongScanFailedExce
  * @author tmyers
  */
 public interface SongLibraryService {
-  
+
   /**
    * 
    * @return
    */
   SearchResultDto getMusicByPopularity();
-  
+
   /**
    * @param searchFor
    * @return
    */
   SearchResultDto getMusicBySearch(String searchFor);
-  
+
   /**
    * 
    * @return
@@ -50,13 +50,13 @@ public interface SongLibraryService {
    * @return
    */
   SearchResultDto getGenreMusicByReleaseDate(String genreName);
-  
+
   /**
    * 
    * @return
    */
   List<ArtistDto> getArtists();
-  
+
   /**
    * 
    * @return
@@ -68,21 +68,21 @@ public interface SongLibraryService {
    * @return
    */
   List<AlbumDto> getAlbumsForGenre(Integer genreId);
-  
+
   /**
    * 
    * @param artistId
    * @return
    */
   ArtistDto getArtistById(Integer artistId);
-  
+
   /**
    * 
    * @param albumId
    * @return
    */
   AlbumDto getAlbumById(Integer albumId);
-  
+
   /**
    * 
    * @param albumId
@@ -90,7 +90,7 @@ public interface SongLibraryService {
    * @return
    */
   SongDto getSongById(Integer albumId, Integer songId);
-  
+
   /**
    * 
    * @param scanRequest
@@ -98,24 +98,26 @@ public interface SongLibraryService {
    * @throws SongScanFailedException
    */
   Integer scanFileSystemForSongs(ScanRequest request) throws SongScanFailedException;
-  
+
   /**
    * 
    * @return
    * @throws SongScanFailedException
    */
   Integer scanFileSystemForSongs() throws SongScanFailedException;
-  
+
   /**
    * @return
    */
   Integer resetSongStatistics();
-  
+
   /**
    * 
    * @param artistName
    * @param albumName
+   * @param limit
    * @return
    */
-  List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(String artistName, String albumName);
+  List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(String artistName,
+      String albumName, int limit);
 }

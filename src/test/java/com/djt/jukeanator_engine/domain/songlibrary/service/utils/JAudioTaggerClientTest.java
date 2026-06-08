@@ -4,22 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumMetaDataFileEntity;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataSearchResultDto;
 
 /**
  * @author tmyers
@@ -153,7 +151,7 @@ public class JAudioTaggerClientTest {
 				if (!jAudioTaggerClient.hasGenre(file.getAbsolutePath())) {
 					
 					String genre = null;
-					Map<String, String> albumMetadataResults = new HashMap<>();
+					List<AlbumMetadataSearchResultDto> albumMetadataResults = new ArrayList<>();
 
 					Map<String, String> tags = jAudioTaggerClient.getTags(file.getAbsolutePath());
 					String genreTag = tags.get(JAudioTaggerClient.GENRE_NAME);
@@ -162,7 +160,8 @@ public class JAudioTaggerClientTest {
 						String artist = tags.get(JAudioTaggerClient.ARTIST_NAME);
 						String album = tags.get(JAudioTaggerClient.ALBUM_NAME);
 						albumMetadataResults = musicBrainzClientWrapper.searchForAlbumMetadata(artist, album, useGenre);
-						genre = albumMetadataResults.get(AlbumMetaDataFileEntity.Genre);
+						AlbumMetadataSearchResultDto albumMetadataResult = albumMetadataResults.get(0);
+						genre = albumMetadataResult.getGenre();
 						
 						if ((genre == null || genre.isBlank()) && discogsClientWrapper.hasValidApiKey()) {
 
@@ -170,7 +169,8 @@ public class JAudioTaggerClientTest {
 							artist = tags.get(JAudioTaggerClient.ARTIST_NAME);
 							album = tags.get(JAudioTaggerClient.ALBUM_NAME);
 							albumMetadataResults = discogsClientWrapper.searchForAlbumMetadata(artist, album);
-							genre = albumMetadataResults.get(AlbumMetaDataFileEntity.Genre);
+	                        albumMetadataResult = albumMetadataResults.get(0);
+	                        genre = albumMetadataResult.getGenre();							
 						}					
 						
 						if (genre != null && !genre.isBlank() && !genre.equals("Other")) {
@@ -184,13 +184,14 @@ public class JAudioTaggerClientTest {
 				if (!jAudioTaggerClient.hasCoverArt(file.getAbsolutePath())) {
 					
 					String coverArtUrl = null;
-					Map<String, String> albumMetadataResults = new HashMap<>();
+					List<AlbumMetadataSearchResultDto> albumMetadataResults = new ArrayList<>();
 
 					Map<String, String> tags = jAudioTaggerClient.getTags(file.getAbsolutePath());
 					String artist = tags.get(JAudioTaggerClient.ARTIST_NAME);
 					String album = tags.get(JAudioTaggerClient.ALBUM_NAME);
 					albumMetadataResults = musicBrainzClientWrapper.searchForAlbumMetadata(artist, album, useGenre);
-					coverArtUrl = albumMetadataResults.get(AlbumMetaDataFileEntity.CoverArtURL);
+					AlbumMetadataSearchResultDto albumMetadataResult = albumMetadataResults.get(0);
+					coverArtUrl = albumMetadataResult.getCoverArtUrl();
 					
 					if ((coverArtUrl == null || coverArtUrl.isBlank()) && discogsClientWrapper.hasValidApiKey()) {
 
@@ -198,7 +199,8 @@ public class JAudioTaggerClientTest {
 						artist = tags.get(JAudioTaggerClient.ARTIST_NAME);
 						album = tags.get(JAudioTaggerClient.ALBUM_NAME);
 						albumMetadataResults = discogsClientWrapper.searchForAlbumMetadata(artist, album);
-						coverArtUrl = albumMetadataResults.get(AlbumMetaDataFileEntity.CoverArtURL);
+	                    albumMetadataResult = albumMetadataResults.get(0);
+	                    coverArtUrl = albumMetadataResult.getCoverArtUrl();
 					}					
 					
 					if (coverArtUrl != null && !coverArtUrl.isBlank()) {
