@@ -23,6 +23,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.repository.SongLibraryReposi
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddAlbumToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddMultipleSongsToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
+import com.djt.jukeanator_engine.domain.songqueue.dto.ChangeSongQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongIdentifier;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
 import com.djt.jukeanator_engine.domain.songqueue.event.MultipleSongsAddedToQueueEvent;
@@ -187,7 +188,94 @@ public final class SongQueueServiceImpl
 
     return numSongsRandomized;
   }
+  
+  @Override 
+  public Integer moveSongUpInQueue(ChangeSongQueueRequest changeSongQueueRequest) {
+    
+    int albumId = changeSongQueueRequest.getAlbumId();
+    int songId = changeSongQueueRequest.getSongId();
+    
+    try {
+      AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
+      if (album != null) {
 
+        SongFileEntity song = album.getChildSong(songId);
+        if (song != null) {
+
+          Integer numSongsInQueue = songQueueRoot.moveSongUpInQueue(song);
+          if (numSongsInQueue.intValue() > 0) {
+            
+            songQueueRepository.storeAggregateRoot(songQueueRoot);
+
+            eventPublisher.publishEvent(new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
+          }                    
+          return numSongsInQueue;
+        }
+      }
+    } catch (EntityDoesNotExistException e) {
+    }
+    
+    throw new SongQueueException("Could not add move song up in queue, albumId: " + albumId + ", songId: " + songId);
+  }
+
+  @Override  
+  public Integer moveSongDownInQueue(ChangeSongQueueRequest changeSongQueueRequest) {
+    
+    int albumId = changeSongQueueRequest.getAlbumId();
+    int songId = changeSongQueueRequest.getSongId();
+    
+    try {
+      AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
+      if (album != null) {
+
+        SongFileEntity song = album.getChildSong(songId);
+        if (song != null) {
+
+          Integer numSongsInQueue = songQueueRoot.moveSongDownInQueue(song);
+          if (numSongsInQueue.intValue() > 0) {
+           
+            songQueueRepository.storeAggregateRoot(songQueueRoot);
+
+            eventPublisher.publishEvent(new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
+          }                    
+          return numSongsInQueue;
+        }
+      }
+    } catch (EntityDoesNotExistException e) {
+    }
+    
+    throw new SongQueueException("Could not add move song down in queue, albumId: " + albumId + ", songId: " + songId);
+  }    
+
+  @Override  
+  public Integer removeSongDownFromQueue(ChangeSongQueueRequest changeSongQueueRequest) {
+    
+    int albumId = changeSongQueueRequest.getAlbumId();
+    int songId = changeSongQueueRequest.getSongId();
+    
+    try {
+      AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
+      if (album != null) {
+
+        SongFileEntity song = album.getChildSong(songId);
+        if (song != null) {
+
+          Integer numSongsInQueue = songQueueRoot.removeSongFromQueue(song);
+          if (numSongsInQueue.intValue() > 0) {
+           
+            songQueueRepository.storeAggregateRoot(songQueueRoot);
+
+            eventPublisher.publishEvent(new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
+          }                    
+          return numSongsInQueue;
+        }
+      }
+    } catch (EntityDoesNotExistException e) {
+    }
+    
+    throw new SongQueueException("Could not add move song down in queue, albumId: " + albumId + ", songId: " + songId);
+  }    
+  
   private SongQueueEntryDto addSongToQueue(Integer albumId, Integer songId, Integer priority) {
 
     try {

@@ -105,6 +105,12 @@ public class SongLibraryController implements SongLibraryService {
   public SongDto getSongById(@PathVariable Integer albumId, @PathVariable Integer songId) {
     return songLibraryService.getSongById(albumId, songId);
   }
+
+  @PostMapping("/scanNoPath")
+  public Integer scanFileSystemForSongs() throws SongScanFailedException {
+
+    return songLibraryService.scanFileSystemForSongs();
+  }
   
   @PostMapping("/scan")
   public Integer scanFileSystemForSongs(@RequestBody ScanRequest scanRequest) throws SongScanFailedException {

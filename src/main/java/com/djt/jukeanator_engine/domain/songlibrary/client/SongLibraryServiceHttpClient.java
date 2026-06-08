@@ -137,6 +137,14 @@ public class SongLibraryServiceHttpClient implements SongLibraryService {
         .uri("/api/song-library/songs/" + albumId + "/" + songId).retrieve()
         .body(new ParameterizedTypeReference<>() {});
   }
+
+  @Override
+  public Integer scanFileSystemForSongs() throws SongScanFailedException {
+
+    return restClient.post()
+        .uri("/api/song-library/scanNoPath").retrieve()
+        .body(Integer.class);
+  }
   
   @Override
   public Integer scanFileSystemForSongs(ScanRequest scanRequest) throws SongScanFailedException {

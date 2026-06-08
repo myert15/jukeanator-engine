@@ -336,6 +336,12 @@ public final class SongLibraryServiceImpl
   }
 
   @Override
+  public Integer scanFileSystemForSongs() throws SongScanFailedException {
+    
+    return scanFileSystemForSongs(new ScanRequest(this.scanPath));
+  } 
+  
+  @Override
   public Integer scanFileSystemForSongs(ScanRequest scanRequest) throws SongScanFailedException {
 
     try {

@@ -37,19 +37,12 @@ public class SongQueueRootEntity extends AbstractPersistentEntity {
     return songs;
   }
 
-  public Integer flushQueue() {
-
-    Integer numSongsFlushed = Integer.valueOf(this.songs.size());
-    this.songs.clear();
-    return numSongsFlushed;
-  }
-
-  public Integer randomizeQueue() {
-
-    Collections.shuffle(songs);
-    return Integer.valueOf(this.songs.size());
-  }
-
+  /**
+   * 
+   * @param song
+   * @param priority
+   * @return
+   */
   public SongQueueEntryEntity addSongToQueue(SongFileEntity song, Integer priority) {
 
     SongQueueEntryEntity entry = new SongQueueEntryEntity(song, priority);
@@ -70,8 +63,104 @@ public class SongQueueRootEntity extends AbstractPersistentEntity {
     return entry;
   }
 
+  /**
+   * 
+   * @return
+   */
+  public Integer flushQueue() {
+
+    Integer numSongsFlushed = Integer.valueOf(this.songs.size());
+    this.songs.clear();
+    return numSongsFlushed;
+  }
+
+  /**
+   * 
+   * @return
+   */
+  public Integer randomizeQueue() {
+
+    Collections.shuffle(songs);
+    return Integer.valueOf(this.songs.size());
+  }
+
+  /**
+   * Moves song up one position in the song queue.
+   * 
+   * @param song The song to move
+   * @return The number of songs in the song queue if the song was moved. Otherwise, if the song is
+   *         already at the top of the queue, then -1 is removed
+   */
+  public Integer moveSongUpInQueue(SongFileEntity song) {
+
+    int index = getIndexForSongQueueEntry(song);
+    if (index > 0) {
+
+      SongQueueEntryEntity current = this.songs.get(index);
+      this.songs.set(index, this.songs.get(index - 1));
+      this.songs.set(index - 1, current);
+
+      return Integer.valueOf(this.songs.size());
+    }
+    return -1;
+  }
+
+  /**
+   * Moves song down one position in the song queue.
+   * 
+   * @param song The song to move
+   * @return The number of songs in the song queue if the song was moved. Otherwise, if the song is
+   *         already at the bottom of the queue, then -1 is removed
+   */
+  public Integer moveSongDownInQueue(SongFileEntity song) {
+
+    int index = getIndexForSongQueueEntry(song);
+    if (index > 0) {
+
+      SongQueueEntryEntity current = this.songs.get(index);
+      this.songs.set(index, this.songs.get(index + 1));
+      this.songs.set(index + 1, current);
+
+      return Integer.valueOf(this.songs.size());
+    }
+    return -1;
+  }
+
+  /**
+   * 
+   * @param song
+   * @return
+   */
+  public Integer removeSongFromQueue(SongFileEntity song) {
+
+    int index = getIndexForSongQueueEntry(song);
+    if (index > 0) {
+
+      SongQueueEntryEntity current = this.songs.get(index);
+      this.songs.remove(current);
+
+      return Integer.valueOf(this.songs.size());
+    }
+    return -1;
+  }
+  
+  /**
+   * 
+   * @param songQueueEntry
+   * @return
+   */
   public boolean removeSongFromQueue(SongQueueEntryEntity songQueueEntry) {
 
     return this.songs.remove(songQueueEntry);
+  }  
+
+  private int getIndexForSongQueueEntry(SongFileEntity song) {
+
+    for (SongQueueEntryEntity entry : songs) {
+      if (entry.getSong().equals(song)) {
+        return songs.indexOf(entry);
+      }
+    }
+    return -1;
   }
 }

@@ -85,6 +85,9 @@ public class JukeANatorFrame extends JFrame {
   // GENRE TAB
   private GenrePanel genrePanel;
 
+  // ADMIN TAB
+  private AdminPanel adminPanel;
+  
   // QUEUE TAB
   private final CardLayout queueCardLayout = new CardLayout();
   private final JPanel queueRootPanel = new JPanel(queueCardLayout);
@@ -346,7 +349,9 @@ public class JukeANatorFrame extends JFrame {
     tabs.addTab("GENRES", genrePanel);
 
     tabs.addTab("QUEUE", buildQueuePanel());
-    tabs.addTab("ADMIN", buildPlaceholderPanel());
+    
+    adminPanel = buildAdminPanel();
+    tabs.addTab("ADMIN", adminPanel);
 
     tabs.setTabComponentAt(0, new JukeboxTabComponent("HOME", "⌂", new Color(255, 120, 120)));
     tabs.setTabComponentAt(1, new JukeboxTabComponent("SEARCH", "⌕", new Color(0, 220, 255)));
@@ -466,9 +471,16 @@ public class JukeANatorFrame extends JFrame {
         POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H,
         enableAlbumSelection);
   }
+  
+  // ============================================================
+  // ADMIN PANEL
+  // ============================================================
+  private AdminPanel buildAdminPanel() {
 
-
-
+    return new AdminPanel(this, songLibraryService, songQueueService, songPlayerService,
+        creditManager, imageLoader);
+  }
+  
   // ============================================================
   // QUEUE PANEL
   // ============================================================
@@ -895,26 +907,6 @@ public class JukeANatorFrame extends JFrame {
     panel.add(albumArtLabel, BorderLayout.EAST);
 
     panel.setVisible(false); // hidden until a song starts
-
-    return panel;
-  }
-
-
-
-  // ============================================================
-  // PLACEHOLDER
-  // ============================================================
-  private JPanel buildPlaceholderPanel() {
-
-    JPanel panel = new JPanel(new CardLayout());
-    panel.setOpaque(false);
-
-    JLabel label = new JLabel("NOT IMPLEMENTED");
-    label.setForeground(TEXT_SECONDARY);
-    label.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 28));
-    label.setHorizontalAlignment(SwingConstants.CENTER);
-
-    panel.add(label);
 
     return panel;
   }

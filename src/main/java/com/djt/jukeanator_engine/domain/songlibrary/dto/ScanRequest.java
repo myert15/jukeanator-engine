@@ -4,8 +4,6 @@ public class ScanRequest {
 
   private String scanPath;
 
-  public ScanRequest() {}
-
   public ScanRequest(String scanPath) {
     this.scanPath = scanPath;
   }

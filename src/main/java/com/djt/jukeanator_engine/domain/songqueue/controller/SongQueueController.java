@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddAlbumToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddMultipleSongsToQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.AddSongToQueueRequest;
+import com.djt.jukeanator_engine.domain.songqueue.dto.ChangeSongQueueRequest;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 
@@ -75,5 +76,23 @@ public class SongQueueController implements SongQueueService {
   public Integer randomizeQueue() {
     
     return songQueueService.randomizeQueue();
-  }  
+  }
+  
+  @PostMapping("/moveSongUpInQueue") 
+  public Integer moveSongUpInQueue(ChangeSongQueueRequest changeSongQueueRequest) {
+    
+    return songQueueService.moveSongUpInQueue(changeSongQueueRequest);
+  }
+
+  @PostMapping("/moveSongDownInQueue")  
+  public Integer moveSongDownInQueue(ChangeSongQueueRequest changeSongQueueRequest) {
+    
+    return songQueueService.moveSongDownInQueue(changeSongQueueRequest);
+  }
+  
+  @PostMapping("/removeSongDownFromQueue")  
+  public Integer removeSongDownFromQueue(ChangeSongQueueRequest changeSongQueueRequest) {
+    
+    return songQueueService.removeSongDownFromQueue(changeSongQueueRequest);
+  }   
 }
