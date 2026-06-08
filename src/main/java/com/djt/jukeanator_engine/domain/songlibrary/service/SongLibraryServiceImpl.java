@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,6 +30,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.exception.SongLibraryExcepti
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongScanFailedException;
 import com.djt.jukeanator_engine.domain.songlibrary.mapper.SongLibraryMapper;
 import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumFolderEntity;
+import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumMetaDataFileEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.ArtistFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.GenreFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.LibraryItem;
@@ -338,10 +340,10 @@ public final class SongLibraryServiceImpl
 
   @Override
   public Integer scanFileSystemForSongs() throws SongScanFailedException {
-    
+
     return scanFileSystemForSongs(new ScanRequest(this.scanPath));
-  } 
-  
+  }
+
   @Override
   public Integer scanFileSystemForSongs(ScanRequest scanRequest) throws SongScanFailedException {
 
@@ -363,7 +365,8 @@ public final class SongLibraryServiceImpl
       initializeSongLibrary();
 
       // Publish the event
-      eventPublisher.publishEvent(new ScanFileSystemForSongsEvent(scanPath, root.getAlbums().size()));
+      eventPublisher
+          .publishEvent(new ScanFileSystemForSongsEvent(scanPath, root.getAlbums().size()));
 
       return Integer.valueOf(root.getAlbums().size());
     } catch (SongLibraryException sle) {
@@ -400,19 +403,30 @@ public final class SongLibraryServiceImpl
   }
 
   @Override
-  public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(String artistName, String albumName) {
+  public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(String artistName,
+      String albumName) {
     try {
-      
-      List<AlbumMetadataSearchResultDto> searchResults = new ArrayList<>();
-      
-      
-      // TODO: TDM: Implement searchInternetForAlbumMetadata
 
+      List<AlbumMetadataSearchResultDto> searchResults = new ArrayList<>();
+
+      Map<String, String> albumMetadataResults =
+          this.songScanner.searchInternetForAlbumMetadata(artistName, albumName);
+
+      String recordLabel = albumMetadataResults.get(AlbumMetaDataFileEntity.RecordLabel);
+      String releaseDate = albumMetadataResults.get(AlbumMetaDataFileEntity.ReleaseDate);
+      String genre = albumMetadataResults.get(AlbumMetaDataFileEntity.Genre);
+      String coverArtUrl = albumMetadataResults.get(AlbumMetaDataFileEntity.CoverArtURL);;
+
+      AlbumMetadataSearchResultDto albumMetadataSearchResultDto = new AlbumMetadataSearchResultDto(
+          artistName, albumName, recordLabel, releaseDate, genre, coverArtUrl);
+
+      searchResults.add(albumMetadataSearchResultDto);
 
       return searchResults;
 
     } catch (Exception e) {
-      throw new SongLibraryException("Could not search internet for album metadata for artist: " + artistName + " and album: " + albumName, e);
+      throw new SongLibraryException("Could not search internet for album metadata for artist: "
+          + artistName + " and album: " + albumName, e);
     }
   }
 
@@ -478,41 +492,41 @@ public final class SongLibraryServiceImpl
 
     try {
 
-      SongFileEntity song = this.root.getSongById(event.queueEntry().getSong().getAlbumId(), event.queueEntry().getSong().getSongId());
+      SongFileEntity song = this.root.getSongById(event.queueEntry().getSong().getAlbumId(),
+          event.queueEntry().getSong().getSongId());
       song.incrementNumPlays();
-      
+
       // Publish the event
       eventPublisher.publishEvent(new SongStatisticsChangedEvent());
-      
+
       this.songLibraryRepository.storeSongLibraryAsync();
 
     } catch (EntityDoesNotExistException ednee) {
-      throw new SongLibraryException(
-          "Could not increment num plays for: " + event.queueEntry(), 
+      throw new SongLibraryException("Could not increment num plays for: " + event.queueEntry(),
           ednee);
     }
   }
-  
+
   @EventListener
   public void handleMultipleSongsAddedToQueueEvent(MultipleSongsAddedToQueueEvent event) {
 
     try {
 
-      for (SongQueueEntryDto queueEntry: event.queueEntries()) {
-        
-        SongFileEntity song = this.root.getSongById(queueEntry.getSong().getAlbumId(), queueEntry.getSong().getSongId());
+      for (SongQueueEntryDto queueEntry : event.queueEntries()) {
+
+        SongFileEntity song = this.root.getSongById(queueEntry.getSong().getAlbumId(),
+            queueEntry.getSong().getSongId());
         song.incrementNumPlays();
       }
 
       // Publish the event
       eventPublisher.publishEvent(new SongStatisticsChangedEvent());
-      
+
       this.songLibraryRepository.storeSongLibraryAsync();
 
     } catch (EntityDoesNotExistException ednee) {
-      throw new SongLibraryException(
-          "Could not increment num plays for: " + event.queueEntries(), 
+      throw new SongLibraryException("Could not increment num plays for: " + event.queueEntries(),
           ednee);
     }
-  }  
+  }
 }

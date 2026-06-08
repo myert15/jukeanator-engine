@@ -1,14 +1,14 @@
 package com.djt.jukeanator_engine.domain.songlibrary.dto;
 
 public class AlbumMetadataSearchResultDto {
-  
+
   private final String artistName;
   private final String albumName;
   private final String recordLabel;
   private final String releaseDate;
   private final String genre;
   private final String coverArtUrl;
-  
+
   public AlbumMetadataSearchResultDto(String artistName, String albumName, String recordLabel,
       String releaseDate, String genre, String coverArtUrl) {
     super();
@@ -42,5 +42,5 @@ public class AlbumMetadataSearchResultDto {
 
   public String getCoverArtUrl() {
     return coverArtUrl;
-  }  
+  }
 }

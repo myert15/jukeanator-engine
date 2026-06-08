@@ -24,7 +24,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.model.SongFileEntity;
  * @author tmyers
  */
 public final class SongScanner {
-  
+
   private static final String IGNORE_MARKER_FILENAME = "ignore.me";
 
   private RootFolderEntity rootFolder;
@@ -145,7 +145,7 @@ public final class SongScanner {
       if (genre != null && genre.getPersistentIdentity() == null) {
         genre.setPersistentIdentity(genreIndex++);
       }
-      
+
       ArtistFolderEntity artist = album.getParentArtist();
       if (artist != null && artist.getPersistentIdentity() == null) {
         artist.setPersistentIdentity(artistIndex++);
@@ -163,28 +163,28 @@ public final class SongScanner {
       for (int j = 0; j < songList.size(); j++) {
 
         SongFileEntity song = songList.get(j);
-        
+
         String songPathname = song.getNaturalIdentity();
         String songFilename = song.getName();
         song.setPersistentIdentity(j);
-        
+
         String songArtistName = SongFileEntity.extractArtistName(songFilename);
         if (songArtistName != null && !songArtistName.trim().isBlank()) {
           song.setArtistName(stripNonPrintableCharacters(songArtistName));
         }
-        
+
         String songName = SongFileEntity.extractSongName(songFilename);
         if (songName != null && !songName.trim().isBlank()) {
           song.setSongName(stripNonPrintableCharacters(songName));
         }
-        
+
         Integer trackNumber = SongFileEntity.extractTrackNumber(songFilename);
         if (trackNumber != null && trackNumber.intValue() > 0) {
           song.setTrackNumber(trackNumber);
         } else {
-          song.setTrackNumber(Integer.valueOf(j+1));
-        }              
-        
+          song.setTrackNumber(Integer.valueOf(j + 1));
+        }
+
         if (!hasValidCoverArt) {
 
           this.jAudioTaggerClient.extractCoverArt(coverArtPath, songPathname);
@@ -226,10 +226,10 @@ public final class SongScanner {
           }
         }
       }
-      
+
       if (!hasValidCoverArt || (requiresMetadata && !hasValidMetadata)) {
 
-        albumMetadataResults = searchInternetForAlbumMetadata(album); 
+        albumMetadataResults = searchInternetForAlbumMetadata(album);
 
         if (!hasValidCoverArt) {
 
@@ -242,27 +242,32 @@ public final class SongScanner {
           album.getMetaData().writeMetadataToFileSystem(albumMetadataResults);
         }
       }
-      
+
     }
 
     return rootFolder;
   }
-  
+
   public Map<String, String> searchInternetForAlbumMetadata(AlbumFolderEntity album) {
-    
+
+    return searchInternetForAlbumMetadata(album.getParentFolder().getName(), album.getName());
+  }
+
+  public Map<String, String> searchInternetForAlbumMetadata(String artistName, String albumName) {
+
     Map<String, String> albumMetadataResults = new HashMap<>();
-    
-    albumMetadataResults = this.musicBrainzClientWrapper.searchForAlbumMetadata(
-        album.getParentFolder().getName(), album.getName(), this.useGenre);
+
+    albumMetadataResults =
+        this.musicBrainzClientWrapper.searchForAlbumMetadata(artistName, albumName, this.useGenre);
 
     if ((albumMetadataResults == null || albumMetadataResults.isEmpty())
         && this.discogsClientWrapper.hasValidApiKey()) {
 
-      albumMetadataResults = this.discogsClientWrapper
-          .searchForAlbumMetadata(album.getParentFolder().getName(), album.getName());
+      albumMetadataResults =
+          this.discogsClientWrapper.searchForAlbumMetadata(artistName, albumName);
     }
-    
-    return albumMetadataResults;    
+
+    return albumMetadataResults;
   }
 
   private void process(FolderEntity parentFolder) {
