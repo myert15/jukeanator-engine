@@ -57,7 +57,6 @@ public class JukeANatorFrame extends JFrame {
   private static final int POPULARITY_THRESHOLD_3 = 50;
 
   // COLORS
-  // private static final Color BG_DARK = new Color(10, 10, 10);
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
   private static final Color TEXT_PRIMARY = Color.WHITE;
   private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
@@ -937,6 +936,8 @@ public class JukeANatorFrame extends JFrame {
   public void setQueue(List<SongQueueEntryDto> queue) {
 
     SwingUtilities.invokeLater(() -> {
+      
+      adminPanel.setQueue(queue);
 
       queueListModel.clear();
 
@@ -948,6 +949,7 @@ public class JukeANatorFrame extends JFrame {
 
   // NOW PLAYING
   public void setNowPlaying(SongDto songDto) {
+    
     SwingUtilities.invokeLater(() -> {
       if (songDto == null) {
         clearNowPlaying();
@@ -969,6 +971,7 @@ public class JukeANatorFrame extends JFrame {
   }
 
   private void clearNowPlaying() {
+    
     songLabel.setText("");
     artistLabel.setText("");
     albumLabel.setText("");

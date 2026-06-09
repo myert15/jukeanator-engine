@@ -129,7 +129,7 @@ public class AdminPanel extends JPanel {
     }));
 
     refreshAlbumList();
-    refreshQueueList();
+    setQueue(songQueueService.getQueuedSongs());
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -223,23 +223,6 @@ public class AdminPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // WEST — library action buttons (operate on selected album)
   // ─────────────────────────────────────────────────────────────────────────
-  /**
-   * Returns a narrow vertical strip of fixed-size buttons anchored to the WEST edge. Every button
-   * acts on the currently selected album and delegates to {@link SongLibraryService} or
-   * system-level operations.
-   *
-   * <p>
-   * Button order (top → bottom), matching the reference screenshot left column:
-   * <ol>
-   * <li>Report / Dupes / Add — skipped (not in scope; placeholders left commented)</li>
-   * <li><b>Add to Queue</b> — {@code SongQueueService.addAlbumToQueue}</li>
-   * <li><b>Edit Album</b> — {@code EditAlbumDialog}</li>
-   * <li><b>Reset Stats</b> — {@code SongLibraryService.resetSongStatistics}</li>
-   * <li><b>Rescan</b> — {@code SongLibraryService.scanFileSystemForSongs}</li>
-   * <li><b>Minimize</b> — iconify the owner frame</li>
-   * <li><b>Exit</b> — {@code System.exit(0)}</li>
-   * </ol>
-   */
   private JPanel buildLibraryButtons() {
 
     JPanel strip = buildButtonStrip();
@@ -264,28 +247,6 @@ public class AdminPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // EAST — queue action buttons (operate on selected queue entry)
   // ─────────────────────────────────────────────────────────────────────────
-  /**
-   * Returns a narrow vertical strip of fixed-size buttons anchored to the EAST edge. Every button
-   * acts on the currently selected queue entry or the queue as a whole and delegates to
-   * {@link SongQueueService} / {@link SongPlayerService}.
-   *
-   * <p>
-   * Button order (top → bottom), matching the reference screenshot right column:
-   * <ol>
-   * <li><b>Next</b> — advance to next track</li>
-   * <li><b>Pause</b> — pause playback</li>
-   * <li><b>Play</b> — play selected queue entry immediately</li>
-   * <li><b>Move ▲</b> — {@code SongQueueService.moveSongUpInQueue}</li>
-   * <li><b>Move ▼</b> — {@code SongQueueService.moveSongDownInQueue}</li>
-   * <li><b>Remove</b> — {@code SongQueueService.removeSongDownFromQueue}</li>
-   * <li><b>Flush</b> — {@code SongQueueService.flushQueue}</li>
-   * <li><b>Rndm</b> — {@code SongQueueService.randomizeQueue}</li>
-   * <li><b>+ Credit</b> — {@code CreditManager.addDollar}</li>
-   * <li><b>- Credit</b> — {@code CreditManager.deductCredits}</li>
-   * <li><b>Load PL</b> — load playlist from file</li>
-   * <li><b>Save PL</b> — save playlist to file</li>
-   * </ol>
-   */
   private JPanel buildQueueButtons() {
 
     JPanel strip = buildButtonStrip();
@@ -331,8 +292,8 @@ public class AdminPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // ALBUM ACTIONS (SongLibraryService)
   // ─────────────────────────────────────────────────────────────────────────
-
   private void doAddAlbumToQueue() {
+
     AlbumDto selected = albumList.getSelectedValue();
     if (selected == null) {
       JOptionPane.showMessageDialog(this, "Please select an album first.", "No Selection",
@@ -343,18 +304,14 @@ public class AdminPanel extends JPanel {
       try {
         AlbumDto full = songLibraryService.getAlbumById(selected.getAlbumId());
         songQueueService.addAlbumToQueue(new AddAlbumToQueueRequest(full.getAlbumId(), 1));
-        SwingUtilities.invokeLater(this::refreshQueueList);
       } catch (Exception ex) {
         ex.printStackTrace();
       }
     });
   }
 
-  /**
-   * Refactored to pass the selected album and the compiled invalid metadata master list to
-   * EditAlbumDialog matching Item #1 specifications.
-   */
   private void doEditAlbum() {
+
     AlbumDto selected = albumList.getSelectedValue();
     if (selected == null) {
       JOptionPane.showMessageDialog(this, "Please select an album first.", "No Selection",
@@ -362,7 +319,6 @@ public class AdminPanel extends JPanel {
       return;
     }
 
-    // Instantiates matching the parameters designed in Item #1
     EditAlbumDialog dialog =
         new EditAlbumDialog(ownerFrame, songLibraryService, selected, albumsWithInvalidMetadata);
     dialog.setVisible(true);
@@ -370,13 +326,13 @@ public class AdminPanel extends JPanel {
   }
 
   private void doResetStats() {
+
     int confirm = JOptionPane.showConfirmDialog(this, "Reset all song play statistics?",
         "Reset Statistics", JOptionPane.YES_NO_OPTION);
     if (confirm == JOptionPane.YES_OPTION) {
       CompletableFuture.runAsync(() -> {
         try {
           songLibraryService.resetSongStatistics();
-          SwingUtilities.invokeLater(this::refreshQueueList);
         } catch (Exception ex) {
           ex.printStackTrace();
         }
@@ -385,8 +341,9 @@ public class AdminPanel extends JPanel {
   }
 
   private void doRescan() {
+
     int confirm =
-        JOptionPane.showConfirmDialog(this, "Rescan the music library? This may take a moment.",
+        JOptionPane.showConfirmDialog(this, "Rescan the song library? This may take a moment.",
             "Rescan Library", JOptionPane.YES_NO_OPTION);
     if (confirm == JOptionPane.YES_OPTION) {
       CompletableFuture.runAsync(() -> {
@@ -401,6 +358,7 @@ public class AdminPanel extends JPanel {
   }
 
   private void doMinimize() {
+
     SwingUtilities.invokeLater(() -> {
       GraphicsDevice gd =
           GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
@@ -410,6 +368,7 @@ public class AdminPanel extends JPanel {
   }
 
   private void doExit() {
+
     int confirm = JOptionPane.showConfirmDialog(this, "Exit JukeANator?", "Confirm Exit",
         JOptionPane.YES_NO_OPTION);
     if (confirm == JOptionPane.YES_OPTION) {
@@ -420,17 +379,17 @@ public class AdminPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // QUEUE ACTIONS (SongQueueService / SongPlayerService)
   // ─────────────────────────────────────────────────────────────────────────
-
   private void doPlayNextTrack() {
+
     try {
       songPlayerService.playNextTrack();
-      refreshQueueList();
     } catch (Exception ex) {
       ex.printStackTrace();
     }
   }
 
   private void doPause() {
+
     try {
       songPlayerService.pause();
     } catch (Exception ex) {
@@ -439,6 +398,7 @@ public class AdminPanel extends JPanel {
   }
 
   private void doPlaySelected() {
+
     SongQueueEntryDto selected = queueList.getSelectedValue();
     if (selected == null) {
       JOptionPane.showMessageDialog(this, "Please select a song in the queue first.",
@@ -452,13 +412,13 @@ public class AdminPanel extends JPanel {
             selected.getSong().getAlbumId(), selected.getSong().getSongId()));
       }
       songPlayerService.playNextTrack();
-      refreshQueueList();
     } catch (Exception ex) {
       ex.printStackTrace();
     }
   }
 
   private void doMoveUp() {
+
     SongQueueEntryDto selected = queueList.getSelectedValue();
     if (selected == null)
       return;
@@ -466,7 +426,6 @@ public class AdminPanel extends JPanel {
     try {
       songQueueService.moveSongUpInQueue(new ChangeSongQueueRequest(selected.getSong().getAlbumId(),
           selected.getSong().getSongId()));
-      refreshQueueList();
       queueList.setSelectedIndex(Math.max(0, idx - 1));
     } catch (Exception ex) {
       ex.printStackTrace();
@@ -474,6 +433,7 @@ public class AdminPanel extends JPanel {
   }
 
   private void doMoveDown() {
+
     SongQueueEntryDto selected = queueList.getSelectedValue();
     if (selected == null)
       return;
@@ -481,7 +441,6 @@ public class AdminPanel extends JPanel {
     try {
       songQueueService.moveSongDownInQueue(new ChangeSongQueueRequest(
           selected.getSong().getAlbumId(), selected.getSong().getSongId()));
-      refreshQueueList();
       queueList.setSelectedIndex(Math.min(queueListModel.getSize() - 1, idx + 1));
     } catch (Exception ex) {
       ex.printStackTrace();
@@ -489,6 +448,7 @@ public class AdminPanel extends JPanel {
   }
 
   private void doRemoveSong() {
+
     SongQueueEntryDto selected = queueList.getSelectedValue();
     if (selected == null) {
       JOptionPane.showMessageDialog(this, "Please select a song in the queue first.",
@@ -498,19 +458,18 @@ public class AdminPanel extends JPanel {
     try {
       songQueueService.removeSongDownFromQueue(new ChangeSongQueueRequest(
           selected.getSong().getAlbumId(), selected.getSong().getSongId()));
-      refreshQueueList();
     } catch (Exception ex) {
       ex.printStackTrace();
     }
   }
 
   private void doFlushQueue() {
+
     int confirm = JOptionPane.showConfirmDialog(this, "Clear the entire song queue?", "Flush Queue",
         JOptionPane.YES_NO_OPTION);
     if (confirm == JOptionPane.YES_OPTION) {
       try {
         songQueueService.flushQueue();
-        refreshQueueList();
       } catch (Exception ex) {
         ex.printStackTrace();
       }
@@ -518,15 +477,13 @@ public class AdminPanel extends JPanel {
   }
 
   private void doRandomizeQueue() {
+
     try {
       songQueueService.randomizeQueue();
-      refreshQueueList();
     } catch (Exception ex) {
       ex.printStackTrace();
     }
   }
-
-  // ── Credits ───────────────────────────────────────────────────────────────
 
   private void doIncrementCredits() {
     creditManager.addDollar();
@@ -536,9 +493,8 @@ public class AdminPanel extends JPanel {
     creditManager.deductCredits(1);
   }
 
-  // ── Playlist ──────────────────────────────────────────────────────────────
-
   private void doLoadPlaylist() {
+
     JFileChooser chooser = new JFileChooser();
     chooser.setDialogTitle("Load Playlist");
     chooser.setFileFilter(new FileNameExtensionFilter("Playlist files (*.txt)", "txt"));
@@ -562,10 +518,10 @@ public class AdminPanel extends JPanel {
             "Failed to load playlist: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE));
       }
     });
-
   }
 
   private void doSavePlaylist() {
+
     JFileChooser chooser = new JFileChooser();
     chooser.setDialogTitle("Save Playlist");
     chooser.setFileFilter(new FileNameExtensionFilter("Playlist files (*.txt)", "txt"));
@@ -587,18 +543,10 @@ public class AdminPanel extends JPanel {
             "Failed to save playlist: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE));
       }
     });
-
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // DATA REFRESH & INVALID METADATA SCANNING
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * * Re-populates the album list from the library service and filters the items into a separate
-   * list tracking entries with missing or incorrect data (Item #1).
-   */
   public void refreshAlbumList() {
+
     CompletableFuture.runAsync(() -> {
       try {
         List<AlbumDto> albums = songLibraryService.getAlbums();
@@ -621,11 +569,8 @@ public class AdminPanel extends JPanel {
     });
   }
 
-  /**
-   * Evaluates validation requirements matching specified constraint structures from Item #1.
-   * Isolates records missing critical values or carrying default/low-resolution assets.
-   */
   private boolean isMetadataInvalid(AlbumDto album) {
+
     // Check missing, blank, or fallback release dates (1950)
     if (album.getReleaseDate() == null || album.getReleaseDate().isBlank()
         || "1950".equals(album.getReleaseDate().trim())) {
@@ -662,14 +607,17 @@ public class AdminPanel extends JPanel {
       // Inability to successfully process or stream structural dimensions flags item as invalid
       return true;
     }
-
     return false;
   }
 
-  /** Re-populates the queue list from the queue service. */
-  public void refreshQueueList() {
+  public void setQueue(List<SongQueueEntryDto> queue) {
+
+    refreshQueueList(songQueueService.getQueuedSongs());
+  }
+
+  private void refreshQueueList(List<SongQueueEntryDto> queue) {
     try {
-      List<SongQueueEntryDto> queue = songQueueService.getQueuedSongs();
+
       SwingUtilities.invokeLater(() -> {
         int sel = queueList.getSelectedIndex();
         queueListModel.clear();
@@ -687,7 +635,6 @@ public class AdminPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // CELL RENDERERS
   // ─────────────────────────────────────────────────────────────────────────
-
   private class AlbumCellRenderer extends JPanel implements javax.swing.ListCellRenderer<AlbumDto> {
 
     private static final long serialVersionUID = 1L;
@@ -897,7 +844,6 @@ public class AdminPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // WIDGET HELPERS
   // ─────────────────────────────────────────────────────────────────────────
-
   /**
    * Vertical BoxLayout strip with uniform top padding — the structural container for both the WEST
    * and EAST button columns.
