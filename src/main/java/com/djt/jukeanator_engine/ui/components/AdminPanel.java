@@ -12,12 +12,15 @@ import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -45,13 +48,18 @@ import com.djt.jukeanator_engine.ui.model.CreditManager;
 import com.djt.jukeanator_engine.ui.util.PlayListManager;
 
 /**
- * Admin panel providing direct control over the song queue, album library management,
- * and jukebox operation. Styled to match the JukeANator dark UI palette.
+ * Admin panel providing direct control over the song queue, album library management, and jukebox
+ * operation. Styled to match the JukeANator dark UI palette.
  *
- * <p>Layout:
+ * <p>
+ * Layout (mirrors the reference screenshot):
  * <ul>
- *   <li><b>LEFT</b>  — Scrollable album list with per-album and global action buttons below.</li>
- *   <li><b>RIGHT</b> — Scrollable song queue list with playback and queue management buttons.</li>
+ * <li><b>WEST</b> — Narrow column of fixed-size library action buttons (operate on selected album;
+ * use {@link SongLibraryService}).</li>
+ * <li><b>CENTER</b> — Side-by-side scrollable album list (left) and song-queue list (right). Queue
+ * rows render the same green popularity bars as {@link AlbumViewPanel}.</li>
+ * <li><b>EAST</b> — Narrow column of fixed-size queue action buttons (operate on selected queue
+ * entry; use {@link SongQueueService}).</li>
  * </ul>
  */
 public class AdminPanel extends JPanel {
@@ -59,22 +67,25 @@ public class AdminPanel extends JPanel {
   private static final long serialVersionUID = 1L;
 
   // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color ACCENT_BLUE   = new Color(0, 210, 255);
-  private static final Color ACCENT_GOLD   = new Color(255, 200, 0);
-  private static final Color ACCENT_GREEN  = new Color(60, 210, 80);
-  private static final Color ACCENT_RED    = new Color(220, 60, 60);
+  private static final Color ACCENT_BLUE = new Color(0, 210, 255);
+  private static final Color ACCENT_GOLD = new Color(255, 200, 0);
+  private static final Color ACCENT_GREEN = new Color(60, 210, 80);
+  private static final Color ACCENT_RED = new Color(220, 60, 60);
   private static final Color ACCENT_ORANGE = new Color(255, 140, 0);
   private static final Color ACCENT_VIOLET = new Color(180, 80, 255);
-  private static final Color TEXT_PRIMARY  = Color.WHITE;
-  private static final Color TEXT_MUTED    = new Color(160, 165, 180);
-  private static final Color LIST_BG       = new Color(10, 12, 18);
-  private static final Color LIST_SEL_BG   = new Color(0, 60, 80);
-  private static final Color ROW_ALT       = new Color(18, 20, 28);
-  private static final Color SEPARATOR     = new Color(40, 44, 60);
+  private static final Color TEXT_PRIMARY = Color.WHITE;
+  private static final Color TEXT_MUTED = new Color(160, 165, 180);
+  private static final Color LIST_BG = new Color(10, 12, 18);
+  private static final Color LIST_SEL_BG = new Color(0, 60, 80);
+  private static final Color ROW_ALT = new Color(18, 20, 28);
+  private static final Color SEPARATOR = new Color(40, 44, 60);
 
-  // ── Button sizing ─────────────────────────────────────────────────────────
-  private static final Dimension BTN_WIDE   = new Dimension(Integer.MAX_VALUE, 52);
-  private static final Dimension BTN_NARROW = new Dimension(Integer.MAX_VALUE, 48);
+  /**
+   * Fixed size for every sidebar button — narrow enough to leave the lists dominant, tall enough to
+   * be touch-friendly and readable. The width is intentionally capped rather than Integer.MAX_VALUE
+   * so the sidebar columns stay anchored.
+   */
+  private static final Dimension BTN_SIZE = new Dimension(84, 42);
 
   // ── Dependencies ──────────────────────────────────────────────────────────
   private final SongLibraryService songLibraryService;
@@ -83,9 +94,6 @@ public class AdminPanel extends JPanel {
   private final CreditManager creditManager;
   private final ImageLoader imageLoader;
   private final Frame ownerFrame;
-  //private final Runnable onMinimize;
-  //private final Runnable onExit;
-  //private final Runnable onRescan;
 
   // ── Album list ────────────────────────────────────────────────────────────
   private final DefaultListModel<AlbumDto> albumListModel = new DefaultListModel<>();
@@ -98,17 +106,22 @@ public class AdminPanel extends JPanel {
   // ── Header credit label (refreshed on change) ─────────────────────────────
   private JLabel creditCountLabel;
 
+  // ── Popularity thresholds (passed through to the queue cell renderer) ─────
+  private int popularityT1 = 1;
+  private int popularityT2 = 5;
+  private int popularityT3 = 15;
+
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
 
   /**
-   * @param ownerFrame         Parent frame (for dialogs).
+   * @param ownerFrame Parent frame (for dialogs).
    * @param songLibraryService Library service.
-   * @param songQueueService   Queue service.
-   * @param songPlayerService  Player service.
-   * @param creditManager      Credit manager (shared with main UI).
-   * @param imageLoader        Shared image loader.
+   * @param songQueueService Queue service.
+   * @param songPlayerService Player service.
+   * @param creditManager Credit manager (shared with main UI).
+   * @param imageLoader Shared image loader.
    */
   public AdminPanel(Frame ownerFrame, SongLibraryService songLibraryService,
       SongQueueService songQueueService, SongPlayerService songPlayerService,
@@ -125,22 +138,17 @@ public class AdminPanel extends JPanel {
     setOpaque(false);
 
     add(buildHeaderBar(), BorderLayout.NORTH);
+    add(buildLibraryButtons(), BorderLayout.WEST);
+    add(buildListsCenter(), BorderLayout.CENTER);
+    add(buildQueueButtons(), BorderLayout.EAST);
 
-    JPanel body = new JPanel(new GridLayout(1, 2, 6, 0));
-    body.setOpaque(false);
-    body.setBorder(new EmptyBorder(6, 8, 8, 8));
-    body.add(buildAlbumPane());
-    body.add(buildQueuePane());
-    add(body, BorderLayout.CENTER);
-
-    // Register for credit changes so the header counter stays live
+    // Keep the header credit counter live
     creditManager.addListener(() -> SwingUtilities.invokeLater(() -> {
       if (creditCountLabel != null) {
         creditCountLabel.setText(String.valueOf(creditManager.getCredits()));
       }
     }));
 
-    // Initial data load
     refreshAlbumList();
     refreshQueueList();
   }
@@ -152,7 +160,9 @@ public class AdminPanel extends JPanel {
 
     JPanel bar = new JPanel(new BorderLayout(16, 0)) {
       private static final long serialVersionUID = 1L;
-      @Override protected void paintComponent(Graphics g) {
+
+      @Override
+      protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setColor(new Color(8, 8, 14));
         g2.fillRect(0, 0, getWidth(), getHeight());
@@ -165,12 +175,10 @@ public class AdminPanel extends JPanel {
     bar.setOpaque(false);
     bar.setBorder(new EmptyBorder(10, 14, 10, 14));
 
-    // Left: title
     JLabel title = new JLabel("⚙  ADMIN PANEL");
     title.setForeground(ACCENT_GOLD);
     title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
 
-    // Right: credits badge
     JPanel creditBadge = new JPanel(new BorderLayout(6, 0));
     creditBadge.setOpaque(false);
     JLabel crLabel = new JLabel("CREDITS:");
@@ -184,20 +192,17 @@ public class AdminPanel extends JPanel {
 
     bar.add(title, BorderLayout.WEST);
     bar.add(creditBadge, BorderLayout.EAST);
-
     return bar;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // LEFT — ALBUM PANE
+  // CENTER — side-by-side lists
   // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildAlbumPane() {
+  private JPanel buildListsCenter() {
 
-    JPanel pane = new JPanel(new BorderLayout(0, 6));
-    pane.setOpaque(false);
-
-    // ── Section header ────────────────────────────────────────────────────
-    pane.add(sectionHeader("JUKEBOX LIST", ACCENT_BLUE), BorderLayout.NORTH);
+    JPanel center = new JPanel(new GridLayout(1, 2, 6, 0));
+    center.setOpaque(false);
+    center.setBorder(new EmptyBorder(6, 0, 6, 0));
 
     // ── Album list ────────────────────────────────────────────────────────
     albumList.setOpaque(true);
@@ -210,70 +215,10 @@ public class AdminPanel extends JPanel {
     albumList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     albumList.setCellRenderer(new AlbumCellRenderer());
 
-    JScrollPane albumScroll = darkScrollPane(albumList);
-
-    // ── Per-album buttons ─────────────────────────────────────────────────
-    JPanel albumActions = new JPanel(new GridLayout(1, 2, 6, 0));
-    albumActions.setOpaque(false);
-
-    JButton addBtn = sideButton("Add Album to Queue", ACCENT_GREEN);
-    addBtn.addActionListener(e -> doAddAlbumToQueue());
-
-    JButton editBtn = sideButton("Edit CD", ACCENT_GOLD);
-    editBtn.addActionListener(e -> doEditAlbum());
-
-    albumActions.add(addBtn);
-    albumActions.add(editBtn);
-
-    // ── Global utility buttons ────────────────────────────────────────────
-    JPanel globalActions = new JPanel(new GridLayout(3, 1, 0, 6));
-    globalActions.setOpaque(false);
-
-    JButton minimizeBtn = sideButton("⊟  Minimize Screen", ACCENT_BLUE);
-    minimizeBtn.addActionListener(e -> {
-      SwingUtilities.invokeLater(() -> {
-        GraphicsDevice gd =
-            GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-        gd.setFullScreenWindow(null);
-        ownerFrame.setState(JFrame.ICONIFIED);        
-      });
-    });
-
-    JButton rescanBtn = sideButton("↺  Rescan Library", ACCENT_VIOLET);
-    rescanBtn.addActionListener(e -> {
-      songLibraryService.scanFileSystemForSongs();
-    });
-
-    JButton exitBtn = sideButton("✕  Exit", ACCENT_RED);
-    exitBtn.addActionListener(e -> {
-      System.exit(0);
-    });
-
-    globalActions.add(minimizeBtn);
-    globalActions.add(rescanBtn);
-    globalActions.add(exitBtn);
-
-    JPanel bottom = new JPanel(new BorderLayout(0, 6));
-    bottom.setOpaque(false);
-    bottom.add(albumActions, BorderLayout.NORTH);
-    bottom.add(globalActions, BorderLayout.CENTER);
-
-    pane.add(albumScroll, BorderLayout.CENTER);
-    pane.add(bottom, BorderLayout.SOUTH);
-
-    return pane;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // RIGHT — QUEUE PANE
-  // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildQueuePane() {
-
-    JPanel pane = new JPanel(new BorderLayout(0, 6));
-    pane.setOpaque(false);
-
-    // ── Section header ────────────────────────────────────────────────────
-    pane.add(sectionHeader("SONG QUEUE", ACCENT_GREEN), BorderLayout.NORTH);
+    JPanel albumPane = new JPanel(new BorderLayout(0, 4));
+    albumPane.setOpaque(false);
+    albumPane.add(sectionHeader("JUKEBOX LIST", ACCENT_BLUE), BorderLayout.NORTH);
+    albumPane.add(darkScrollPane(albumList), BorderLayout.CENTER);
 
     // ── Queue list ────────────────────────────────────────────────────────
     queueList.setOpaque(true);
@@ -282,109 +227,139 @@ public class AdminPanel extends JPanel {
     queueList.setSelectionBackground(LIST_SEL_BG);
     queueList.setSelectionForeground(Color.WHITE);
     queueList.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-    queueList.setFixedCellHeight(40);
+    queueList.setFixedCellHeight(44);
     queueList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     queueList.setCellRenderer(new QueueCellRenderer());
 
-    JScrollPane queueScroll = darkScrollPane(queueList);
+    JPanel queuePane = new JPanel(new BorderLayout(0, 4));
+    queuePane.setOpaque(false);
+    queuePane.add(sectionHeader("SONG QUEUE", ACCENT_GREEN), BorderLayout.NORTH);
+    queuePane.add(darkScrollPane(queueList), BorderLayout.CENTER);
 
-    // ── Playback controls (row 1) ──────────────────────────────────────────
-    JPanel playbackRow = new JPanel(new GridLayout(1, 3, 6, 0));
-    playbackRow.setOpaque(false);
-
-    JButton nextBtn  = sideButton("▶▶  Next Track",  ACCENT_GREEN);
-    JButton pauseBtn = sideButton("⏸  Pause",        ACCENT_BLUE);
-    JButton playBtn  = sideButton("▶  Play Song",    ACCENT_GREEN);
-
-    nextBtn.addActionListener(e  -> doPlayNextTrack());
-    pauseBtn.addActionListener(e -> doPause());
-    playBtn.addActionListener(e  -> doPlaySelected());
-
-    playbackRow.add(nextBtn);
-    playbackRow.add(pauseBtn);
-    playbackRow.add(playBtn);
-
-    // ── Queue position controls (row 2) ───────────────────────────────────
-    JPanel posRow = new JPanel(new GridLayout(1, 2, 6, 0));
-    posRow.setOpaque(false);
-
-    JButton upBtn   = sideButton("▲  Move Up",   ACCENT_BLUE);
-    JButton downBtn = sideButton("▼  Move Down", ACCENT_BLUE);
-
-    upBtn.addActionListener(e   -> doMoveUp());
-    downBtn.addActionListener(e -> doMoveDown());
-
-    posRow.add(upBtn);
-    posRow.add(downBtn);
-
-    // ── Queue management (row 3) ───────────────────────────────────────────
-    JPanel mgmtRow = new JPanel(new GridLayout(1, 2, 6, 0));
-    mgmtRow.setOpaque(false);
-
-    JButton flushBtn    = sideButton("🗑  Flush Queue",      ACCENT_RED);
-    JButton randomBtn   = sideButton("⇌  Randomize Queue", ACCENT_VIOLET);
-
-    flushBtn.addActionListener(e  -> doFlushQueue());
-    randomBtn.addActionListener(e -> doRandomizeQueue());
-
-    mgmtRow.add(flushBtn);
-    mgmtRow.add(randomBtn);
-
-    // ── Playlist I/O (row 4) ──────────────────────────────────────────────
-    JPanel playlistRow = new JPanel(new GridLayout(1, 2, 6, 0));
-    playlistRow.setOpaque(false);
-
-    JButton loadBtn = sideButton("📂  Load PlayList", ACCENT_GOLD);
-    JButton saveBtn = sideButton("💾  Save PlayList", ACCENT_GOLD);
-
-    loadBtn.addActionListener(e -> doLoadPlayList());
-    saveBtn.addActionListener(e -> doSavePlayList());
-
-    playlistRow.add(loadBtn);
-    playlistRow.add(saveBtn);
-
-    // ── Credits row ───────────────────────────────────────────────────────
-    JPanel creditsRow = new JPanel(new GridLayout(1, 2, 6, 0));
-    creditsRow.setOpaque(false);
-
-    JButton incBtn = sideButton("＋  Add Credit",    ACCENT_GREEN);
-    JButton decBtn = sideButton("－  Remove Credit", ACCENT_ORANGE);
-
-    incBtn.addActionListener(e -> doIncrementCredits());
-    decBtn.addActionListener(e -> doDecrementCredits());
-
-    creditsRow.add(incBtn);
-    creditsRow.add(decBtn);
-
-    // ── Stack all button rows ─────────────────────────────────────────────
-    JPanel allButtons = new JPanel(new GridLayout(5, 1, 0, 6));
-    allButtons.setOpaque(false);
-    allButtons.add(playbackRow);
-    allButtons.add(posRow);
-    allButtons.add(mgmtRow);
-    allButtons.add(playlistRow);
-    allButtons.add(creditsRow);
-
-    pane.add(queueScroll, BorderLayout.CENTER);
-    pane.add(allButtons, BorderLayout.SOUTH);
-
-    return pane;
+    center.add(albumPane);
+    center.add(queuePane);
+    return center;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // ALBUM ACTIONS
+  // WEST — library action buttons (operate on selected album)
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Returns a narrow vertical strip of fixed-size buttons anchored to the WEST edge. Every button
+   * acts on the currently selected album and delegates to {@link SongLibraryService} or
+   * system-level operations.
+   *
+   * <p>
+   * Button order (top → bottom), matching the reference screenshot left column:
+   * <ol>
+   * <li>Report / Dupes / Add — skipped (not in scope; placeholders left commented)</li>
+   * <li><b>Add to Queue</b> — {@code SongQueueService.addAlbumToQueue}</li>
+   * <li><b>Edit CD</b> — {@code EditAlbumDialog}</li>
+   * <li><b>Reset Stats</b> — {@code SongLibraryService.resetSongStatistics}</li>
+   * <li><b>Rescan</b> — {@code SongLibraryService.scanFileSystemForSongs}</li>
+   * <li><b>Minimize</b> — iconify the owner frame</li>
+   * <li><b>Exit</b> — {@code System.exit(0)}</li>
+   * </ol>
+   */
+  private JPanel buildLibraryButtons() {
+
+    JPanel strip = buildButtonStrip();
+
+    strip.add(sideButton("Add\nAlbum", ACCENT_GREEN, e -> doAddAlbumToQueue()));
+    strip.add(sideButton("Edit\nCD", ACCENT_GOLD, e -> doEditAlbum()));
+    strip.add(sideButton("Reset\nStats", ACCENT_ORANGE, e -> doResetStats()));
+    strip.add(sideButton("Rescan\nLib", ACCENT_VIOLET, e -> doRescan()));
+    strip.add(Box.createVerticalGlue());
+    strip.add(sideButton("⊟ Min", ACCENT_BLUE, e -> doMinimize()));
+    strip.add(sideButton("✕ Exit", ACCENT_RED, e -> doExit()));
+
+    // Wrap so the strip itself is opaque-background-free but has a right border separator
+    JPanel wrapper = new JPanel(new BorderLayout());
+    wrapper.setOpaque(false);
+    wrapper.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createMatteBorder(0, 0, 0, 1, SEPARATOR), new EmptyBorder(6, 6, 6, 6)));
+    wrapper.add(strip, BorderLayout.CENTER);
+    return wrapper;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // EAST — queue action buttons (operate on selected queue entry)
+  // ─────────────────────────────────────────────────────────────────────────
+  /**
+   * Returns a narrow vertical strip of fixed-size buttons anchored to the EAST edge. Every button
+   * acts on the currently selected queue entry or the queue as a whole and delegates to
+   * {@link SongQueueService} / {@link SongPlayerService}.
+   *
+   * <p>
+   * Button order (top → bottom), matching the reference screenshot right column:
+   * <ol>
+   * <li><b>Next</b> — advance to next track</li>
+   * <li><b>Pause</b> — pause playback</li>
+   * <li><b>Play</b> — play selected queue entry immediately</li>
+   * <li><b>Move ▲</b> — {@code SongQueueService.moveSongUpInQueue}</li>
+   * <li><b>Move ▼</b> — {@code SongQueueService.moveSongDownInQueue}</li>
+   * <li><b>Remove</b> — {@code SongQueueService.removeSongDownFromQueue}</li>
+   * <li><b>Flush</b> — {@code SongQueueService.flushQueue}</li>
+   * <li><b>Rndm</b> — {@code SongQueueService.randomizeQueue}</li>
+   * <li><b>+ Credit</b> — {@code CreditManager.addDollar}</li>
+   * <li><b>- Credit</b> — {@code CreditManager.deductCredits}</li>
+   * <li><b>Load PL</b> — load playlist from file</li>
+   * <li><b>Save PL</b> — save playlist to file</li>
+   * </ol>
+   */
+  private JPanel buildQueueButtons() {
+
+    JPanel strip = buildButtonStrip();
+
+    // ── Playback ──────────────────────────────────────────────────────────
+    strip.add(sideButton("▶▶\nNext", ACCENT_GREEN, e -> doPlayNextTrack()));
+    strip.add(sideButton("⏸\nPause", ACCENT_BLUE, e -> doPause()));
+    strip.add(sideButton("▶\nPlay", ACCENT_GREEN, e -> doPlaySelected()));
+
+    strip.add(verticalSpacer(8));
+
+    // ── Position ──────────────────────────────────────────────────────────
+    strip.add(sideButton("▲\nMove", ACCENT_BLUE, e -> doMoveUp()));
+    strip.add(sideButton("▼\nMove", ACCENT_BLUE, e -> doMoveDown()));
+    strip.add(sideButton("✕\nRmv", ACCENT_RED, e -> doRemoveSong()));
+
+    strip.add(verticalSpacer(8));
+
+    // ── Queue management ──────────────────────────────────────────────────
+    strip.add(sideButton("🗑\nFlush", ACCENT_RED, e -> doFlushQueue()));
+    strip.add(sideButton("⇌\nRndm", ACCENT_VIOLET, e -> doRandomizeQueue()));
+
+    strip.add(verticalSpacer(8));
+
+    // ── Credits ───────────────────────────────────────────────────────────
+    strip.add(sideButton("＋\nCred", ACCENT_GREEN, e -> doIncrementCredits()));
+    strip.add(sideButton("－\nCred", ACCENT_ORANGE, e -> doDecrementCredits()));
+
+    strip.add(Box.createVerticalGlue());
+
+    // ── Playlist I/O ──────────────────────────────────────────────────────
+    strip.add(sideButton("📂\nLoad", ACCENT_GOLD, e -> doLoadPlayList()));
+    strip.add(sideButton("💾\nSave", ACCENT_GOLD, e -> doSavePlayList()));
+
+    JPanel wrapper = new JPanel(new BorderLayout());
+    wrapper.setOpaque(false);
+    wrapper.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createMatteBorder(0, 1, 0, 0, SEPARATOR), new EmptyBorder(6, 6, 6, 6)));
+    wrapper.add(strip, BorderLayout.CENTER);
+    return wrapper;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ALBUM ACTIONS (SongLibraryService)
   // ─────────────────────────────────────────────────────────────────────────
 
   private void doAddAlbumToQueue() {
-
     AlbumDto selected = albumList.getSelectedValue();
     if (selected == null) {
       JOptionPane.showMessageDialog(this, "Please select an album first.", "No Selection",
           JOptionPane.WARNING_MESSAGE);
       return;
     }
-
-    // Fetch full album (with songs) before queuing
     CompletableFuture.runAsync(() -> {
       try {
         AlbumDto full = songLibraryService.getAlbumById(selected.getAlbumId());
@@ -397,26 +372,69 @@ public class AdminPanel extends JPanel {
   }
 
   private void doEditAlbum() {
-
     AlbumDto selected = albumList.getSelectedValue();
     if (selected == null) {
       JOptionPane.showMessageDialog(this, "Please select an album first.", "No Selection",
           JOptionPane.WARNING_MESSAGE);
       return;
     }
-
     EditAlbumDialog.show(ownerFrame, selected, songLibraryService, imageLoader);
-    // Refresh so any cover-art changes are reflected in the list
     albumList.repaint();
   }
 
+  private void doResetStats() {
+    int confirm = JOptionPane.showConfirmDialog(this, "Reset all song play statistics?",
+        "Reset Statistics", JOptionPane.YES_NO_OPTION);
+    if (confirm == JOptionPane.YES_OPTION) {
+      CompletableFuture.runAsync(() -> {
+        try {
+          songLibraryService.resetSongStatistics();
+          SwingUtilities.invokeLater(this::refreshQueueList);
+        } catch (Exception ex) {
+          ex.printStackTrace();
+        }
+      });
+    }
+  }
+
+  private void doRescan() {
+    int confirm =
+        JOptionPane.showConfirmDialog(this, "Rescan the music library? This may take a moment.",
+            "Rescan Library", JOptionPane.YES_NO_OPTION);
+    if (confirm == JOptionPane.YES_OPTION) {
+      CompletableFuture.runAsync(() -> {
+        try {
+          songLibraryService.scanFileSystemForSongs();
+          SwingUtilities.invokeLater(this::refreshAlbumList);
+        } catch (Exception ex) {
+          ex.printStackTrace();
+        }
+      });
+    }
+  }
+
+  private void doMinimize() {
+    SwingUtilities.invokeLater(() -> {
+      GraphicsDevice gd =
+          GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+      gd.setFullScreenWindow(null);
+      ownerFrame.setState(JFrame.ICONIFIED);
+    });
+  }
+
+  private void doExit() {
+    int confirm = JOptionPane.showConfirmDialog(this, "Exit JukeANator?", "Confirm Exit",
+        JOptionPane.YES_NO_OPTION);
+    if (confirm == JOptionPane.YES_OPTION) {
+      System.exit(0);
+    }
+  }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // QUEUE ACTIONS
+  // QUEUE ACTIONS (SongQueueService / SongPlayerService)
   // ─────────────────────────────────────────────────────────────────────────
 
   private void doPlayNextTrack() {
-
     try {
       songPlayerService.playNextTrack();
       refreshQueueList();
@@ -426,7 +444,6 @@ public class AdminPanel extends JPanel {
   }
 
   private void doPause() {
-
     try {
       songPlayerService.pause();
     } catch (Exception ex) {
@@ -435,21 +452,17 @@ public class AdminPanel extends JPanel {
   }
 
   private void doPlaySelected() {
-
     SongQueueEntryDto selected = queueList.getSelectedValue();
     if (selected == null) {
       JOptionPane.showMessageDialog(this, "Please select a song in the queue first.",
           "No Selection", JOptionPane.WARNING_MESSAGE);
       return;
     }
-
     try {
-      // Move selected entry to the front by moving it up until it reaches position 0
       int idx = queueList.getSelectedIndex();
       for (int i = 0; i < idx; i++) {
-        
-        ChangeSongQueueRequest changeSongQueueRequest = new ChangeSongQueueRequest(selected.getSong().getAlbumId(), selected.getSong().getSongId()); 
-        songQueueService.moveSongUpInQueue(changeSongQueueRequest);
+        songQueueService.moveSongUpInQueue(new ChangeSongQueueRequest(
+            selected.getSong().getAlbumId(), selected.getSong().getSongId()));
       }
       songPlayerService.playNextTrack();
       refreshQueueList();
@@ -459,48 +472,54 @@ public class AdminPanel extends JPanel {
   }
 
   private void doMoveUp() {
-
     SongQueueEntryDto selected = queueList.getSelectedValue();
-    if (selected == null) return;
-
+    if (selected == null)
+      return;
     int idx = queueList.getSelectedIndex();
     try {
-      
-      ChangeSongQueueRequest changeSongQueueRequest = new ChangeSongQueueRequest(selected.getSong().getAlbumId(), selected.getSong().getSongId()); 
-      songQueueService.moveSongUpInQueue(changeSongQueueRequest);
-      
+      songQueueService.moveSongUpInQueue(new ChangeSongQueueRequest(selected.getSong().getAlbumId(),
+          selected.getSong().getSongId()));
       refreshQueueList();
-      // Keep same logical item selected after refresh
-      int newIdx = Math.max(0, idx - 1);
-      queueList.setSelectedIndex(newIdx);
+      queueList.setSelectedIndex(Math.max(0, idx - 1));
     } catch (Exception ex) {
       ex.printStackTrace();
     }
   }
 
   private void doMoveDown() {
-
     SongQueueEntryDto selected = queueList.getSelectedValue();
-    if (selected == null) return;
-
+    if (selected == null)
+      return;
     int idx = queueList.getSelectedIndex();
     try {
-      
-      ChangeSongQueueRequest changeSongQueueRequest = new ChangeSongQueueRequest(selected.getSong().getAlbumId(), selected.getSong().getSongId()); 
-      songQueueService.moveSongDownInQueue(changeSongQueueRequest);
-      
+      songQueueService.moveSongDownInQueue(new ChangeSongQueueRequest(
+          selected.getSong().getAlbumId(), selected.getSong().getSongId()));
       refreshQueueList();
-      int newIdx = Math.min(queueListModel.getSize() - 1, idx + 1);
-      queueList.setSelectedIndex(newIdx);
+      queueList.setSelectedIndex(Math.min(queueListModel.getSize() - 1, idx + 1));
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  private void doRemoveSong() {
+    SongQueueEntryDto selected = queueList.getSelectedValue();
+    if (selected == null) {
+      JOptionPane.showMessageDialog(this, "Please select a song in the queue first.",
+          "No Selection", JOptionPane.WARNING_MESSAGE);
+      return;
+    }
+    try {
+      songQueueService.removeSongDownFromQueue(new ChangeSongQueueRequest(
+          selected.getSong().getAlbumId(), selected.getSong().getSongId()));
+      refreshQueueList();
     } catch (Exception ex) {
       ex.printStackTrace();
     }
   }
 
   private void doFlushQueue() {
-
-    int confirm = JOptionPane.showConfirmDialog(this,
-        "Clear the entire song queue?", "Flush Queue", JOptionPane.YES_NO_OPTION);
+    int confirm = JOptionPane.showConfirmDialog(this, "Clear the entire song queue?", "Flush Queue",
+        JOptionPane.YES_NO_OPTION);
     if (confirm == JOptionPane.YES_OPTION) {
       try {
         songQueueService.flushQueue();
@@ -512,7 +531,6 @@ public class AdminPanel extends JPanel {
   }
 
   private void doRandomizeQueue() {
-
     try {
       songQueueService.randomizeQueue();
       refreshQueueList();
@@ -521,17 +539,26 @@ public class AdminPanel extends JPanel {
     }
   }
 
+  // ── Credits ───────────────────────────────────────────────────────────────
+
+  private void doIncrementCredits() {
+    creditManager.addDollar();
+  }
+
+  private void doDecrementCredits() {
+    creditManager.deductCredits(1);
+  }
+
   // ── Playlist ──────────────────────────────────────────────────────────────
 
   private void doLoadPlayList() {
-
     JFileChooser chooser = new JFileChooser();
     chooser.setDialogTitle("Load PlayList");
     chooser.setFileFilter(new FileNameExtensionFilter("PlayList files (*.txt)", "txt"));
     chooser.setCurrentDirectory(PlayListManager.defaultPlayListFile().getParentFile());
 
-    int result = chooser.showOpenDialog(this);
-    if (result != JFileChooser.APPROVE_OPTION) return;
+    if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
+      return;
 
     File file = chooser.getSelectedFile();
     CompletableFuture.runAsync(() -> {
@@ -540,8 +567,7 @@ public class AdminPanel extends JPanel {
         int loaded = 0;
         for (String path : paths) {
           try {
-            // TODO:  Implement SongLibraryService.getSongByFilePath(path)
-            //SongDto song = songLibraryService.getSongByFilePath(path);
+            // TODO: implement SongLibraryService.getSongByFilePath(path)
             SongDto song = null;
             if (song != null) {
               songQueueService.addSongToQueue(
@@ -549,7 +575,8 @@ public class AdminPanel extends JPanel {
                       song.getAlbumId(), song.getSongId(), 1));
               loaded++;
             }
-          } catch (Exception ignored) {}
+          } catch (Exception ignored) {
+          }
         }
         final int finalLoaded = loaded;
         SwingUtilities.invokeLater(() -> {
@@ -560,72 +587,45 @@ public class AdminPanel extends JPanel {
         });
       } catch (Exception ex) {
         ex.printStackTrace();
-        SwingUtilities.invokeLater(() ->
-            JOptionPane.showMessageDialog(this, "Failed to load playlist: " + ex.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE));
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
+            "Failed to load playlist: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE));
       }
     });
   }
 
   private void doSavePlayList() {
-
     JFileChooser chooser = new JFileChooser();
     chooser.setDialogTitle("Save PlayList");
     chooser.setFileFilter(new FileNameExtensionFilter("PlayList files (*.txt)", "txt"));
     chooser.setSelectedFile(PlayListManager.defaultPlayListFile());
 
-    int result = chooser.showSaveDialog(this);
-    if (result != JFileChooser.APPROVE_OPTION) return;
+    if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+      return;
 
     CompletableFuture.runAsync(() -> {
       try {
         List<String> paths = new ArrayList<>();
         for (int i = 0; i < queueListModel.getSize(); i++) {
           SongQueueEntryDto entry = queueListModel.getElementAt(i);
-          
+          // TODO: implement entry.getSong().getFilePath()
           String fp = null;
-          
-          // TODO: Implement service method to get Song Path
-          //String fp = entry.getSong()..getFilePath();
-          
-          if (fp != null) paths.add(fp);
+          if (fp != null)
+            paths.add(fp);
         }
-        
         File selectedFile = chooser.getSelectedFile();
+        final File file = selectedFile.getName().toLowerCase().endsWith(".txt") ? selectedFile
+            : new File(selectedFile.getAbsolutePath() + ".txt");
 
-        final File file;
-        if (!selectedFile.getName().toLowerCase().endsWith(".txt")) {
-          file = new File(selectedFile.getAbsolutePath() + ".txt");
-        } else {
-          file = selectedFile;
-        }        
-        
-        
         PlayListManager.savePlayList(file, paths);
-        
-        final File saved = file;
-        SwingUtilities.invokeLater(() ->
-            JOptionPane.showMessageDialog(this,
-                "Saved " + paths.size() + " songs to:\n" + saved.getAbsolutePath(),
-                "PlayList Saved", JOptionPane.INFORMATION_MESSAGE));
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
+            "Saved " + paths.size() + " songs to:\n" + file.getAbsolutePath(), "PlayList Saved",
+            JOptionPane.INFORMATION_MESSAGE));
       } catch (Exception ex) {
         ex.printStackTrace();
-        SwingUtilities.invokeLater(() ->
-            JOptionPane.showMessageDialog(this, "Failed to save playlist: " + ex.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE));
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
+            "Failed to save playlist: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE));
       }
     });
-  }
-
-  // ── Credits ───────────────────────────────────────────────────────────────
-
-  private void doIncrementCredits() {
-    // addDollar() is the standard way to add credits (also used by the bill acceptor key binding)
-    creditManager.addDollar();
-  }
-
-  private void doDecrementCredits() {
-    creditManager.deductCredits(1);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -634,13 +634,13 @@ public class AdminPanel extends JPanel {
 
   /** Re-populates the album list from the library service. */
   public void refreshAlbumList() {
-
     CompletableFuture.runAsync(() -> {
       try {
         List<AlbumDto> albums = songLibraryService.getAlbums();
         SwingUtilities.invokeLater(() -> {
           albumListModel.clear();
-          if (albums != null) albums.forEach(albumListModel::addElement);
+          if (albums != null)
+            albums.forEach(albumListModel::addElement);
         });
       } catch (Exception ex) {
         ex.printStackTrace();
@@ -650,13 +650,13 @@ public class AdminPanel extends JPanel {
 
   /** Re-populates the queue list from the queue service. */
   public void refreshQueueList() {
-
     try {
       List<SongQueueEntryDto> queue = songQueueService.getQueuedSongs();
       SwingUtilities.invokeLater(() -> {
         int sel = queueList.getSelectedIndex();
         queueListModel.clear();
-        if (queue != null) queue.forEach(queueListModel::addElement);
+        if (queue != null)
+          queue.forEach(queueListModel::addElement);
         if (sel >= 0 && sel < queueListModel.getSize()) {
           queueList.setSelectedIndex(sel);
         }
@@ -670,12 +670,11 @@ public class AdminPanel extends JPanel {
   // CELL RENDERERS
   // ─────────────────────────────────────────────────────────────────────────
 
-  private class AlbumCellRenderer extends JPanel
-      implements javax.swing.ListCellRenderer<AlbumDto> {
+  private class AlbumCellRenderer extends JPanel implements javax.swing.ListCellRenderer<AlbumDto> {
 
     private static final long serialVersionUID = 1L;
-    private final JLabel thumb  = new JLabel();
-    private final JLabel name   = new JLabel();
+    private final JLabel thumb = new JLabel();
+    private final JLabel name = new JLabel();
     private final JLabel artist = new JLabel();
 
     AlbumCellRenderer() {
@@ -701,9 +700,8 @@ public class AdminPanel extends JPanel {
     }
 
     @Override
-    public java.awt.Component getListCellRendererComponent(
-        JList<? extends AlbumDto> list, AlbumDto album,
-        int index, boolean isSelected, boolean cellHasFocus) {
+    public java.awt.Component getListCellRendererComponent(JList<? extends AlbumDto> list,
+        AlbumDto album, int index, boolean isSelected, boolean cellHasFocus) {
 
       name.setText(AlbumGridPanel.albumDisplayName(album.getAlbumName(), album.getGenreName()));
       artist.setText(album.getArtistName() != null ? album.getArtistName() : "");
@@ -734,45 +732,80 @@ public class AdminPanel extends JPanel {
     }
   }
 
-  private static class QueueCellRenderer extends JPanel
+  /**
+   * Queue row renderer. Mirrors the track-row style of {@link AlbumViewPanel}: the same three-bar
+   * popularity widget appears on the WEST side of each row, followed by a queue-position badge,
+   * then the song name and artist/album sub-label.
+   *
+   * <p>
+   * The {@link PopularityBarsPanel} inner class is identical to the one in {@link AlbumViewPanel} —
+   * if a shared utility class is introduced in the future both can be migrated to it.
+   */
+  private class QueueCellRenderer extends JPanel
       implements javax.swing.ListCellRenderer<SongQueueEntryDto> {
 
     private static final long serialVersionUID = 1L;
+
+    // ── Popularity bar constants (match AlbumViewPanel exactly) ───────────
+    private static final int BAR_WIDTH = 5;
+    private static final int BAR_GAP = 3;
+    private static final int BAR_MAX_H = 18;
+    private static final int[] BAR_HEIGHTS = {8, 13, 18};
+
+    // ── Sub-widgets ───────────────────────────────────────────────────────
+    private final PopularityBarsPanel barsPanel = new PopularityBarsPanel(0);
     private final JLabel position = new JLabel();
-    private final JLabel song     = new JLabel();
-    private final JLabel sub      = new JLabel();
+    private final JLabel song = new JLabel();
+    private final JLabel sub = new JLabel();
 
     QueueCellRenderer() {
-      setLayout(new BorderLayout(8, 0));
+      setLayout(new BorderLayout(6, 0));
       setBorder(new EmptyBorder(4, 8, 4, 8));
 
-      position.setPreferredSize(new Dimension(28, 32));
+      // Popularity bars — fixed size matches AlbumViewPanel track rows
+      barsPanel.setPreferredSize(new Dimension(3 * (BAR_WIDTH + BAR_GAP) + 6, BAR_MAX_H + 4));
+      barsPanel.setOpaque(false);
+
+      // Position / priority badge
+      position.setPreferredSize(new Dimension(28, 36));
       position.setHorizontalAlignment(SwingConstants.CENTER);
       position.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
-      position.setForeground(TEXT_MUTED);
 
-      JPanel text = new JPanel(new BorderLayout(0, 0));
+      // Text cluster
+      JPanel text = new JPanel(new BorderLayout(0, 1));
       text.setOpaque(false);
       song.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
       sub.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
       text.add(song, BorderLayout.CENTER);
       text.add(sub, BorderLayout.SOUTH);
 
-      add(position, BorderLayout.WEST);
+      // Left cluster: bars + badge
+      JPanel left = new JPanel(new BorderLayout(4, 0));
+      left.setOpaque(false);
+      left.add(barsPanel, BorderLayout.WEST);
+      left.add(position, BorderLayout.CENTER);
+
+      add(left, BorderLayout.WEST);
       add(text, BorderLayout.CENTER);
     }
 
     @Override
-    public java.awt.Component getListCellRendererComponent(
-        JList<? extends SongQueueEntryDto> list, SongQueueEntryDto entry,
-        int index, boolean isSelected, boolean cellHasFocus) {
+    public java.awt.Component getListCellRendererComponent(JList<? extends SongQueueEntryDto> list,
+        SongQueueEntryDto entry, int index, boolean isSelected, boolean cellHasFocus) {
 
+      // ── Popularity bars ────────────────────────────────────────────────
+      int plays = entry.getSong().getNumPlays() == null ? 0 : entry.getSong().getNumPlays();
+      int active = barsForPlays(plays, popularityT1, popularityT2, popularityT3);
+      barsPanel.setActiveBars(active);
+
+      // ── Position / priority badge ──────────────────────────────────────
       position.setText(String.valueOf(index + 1));
-      song.setText(entry.getSong().getSongName());
-      sub.setText(entry.getSong().getArtistName() + "  •  " + entry.getSong().getAlbumName());
-
       int p = entry.getPriority() == null ? 0 : entry.getPriority();
       position.setForeground(p >= 8 ? ACCENT_RED : p >= 4 ? ACCENT_ORANGE : TEXT_MUTED);
+
+      // ── Song / sub text ────────────────────────────────────────────────
+      song.setText(entry.getSong().getSongName());
+      sub.setText(entry.getSong().getArtistName() + "  •  " + entry.getSong().getAlbumName());
 
       if (isSelected) {
         setBackground(LIST_SEL_BG);
@@ -786,21 +819,92 @@ public class AdminPanel extends JPanel {
       setOpaque(true);
       return this;
     }
+
+    // ── Shared popularity-bar helpers (mirrors AlbumViewPanel.barsForPlays) ─
+    private int barsForPlays(int plays, int t1, int t2, int t3) {
+      if (plays >= t3)
+        return 3;
+      if (plays >= t2)
+        return 2;
+      if (plays >= t1)
+        return 1;
+      return 0;
+    }
+
+    // ── Inner popularity-bars widget ──────────────────────────────────────
+    /**
+     * Identical painting logic to {@code AlbumViewPanel.PopularityBarsPanel}. Extracted here so the
+     * queue renderer is self-contained. If a shared utility class is created later, both can
+     * delegate to it.
+     */
+    private class PopularityBarsPanel extends JPanel {
+      private static final long serialVersionUID = 1L;
+      private int activeBars;
+
+      PopularityBarsPanel(int activeBars) {
+        this.activeBars = activeBars;
+        setOpaque(false);
+      }
+
+      void setActiveBars(int n) {
+        this.activeBars = n;
+      }
+
+      @Override
+      protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        int baseline = getHeight() - 2;
+        for (int i = 0; i < 3; i++) {
+          int barH = BAR_HEIGHTS[i];
+          int x = i * (BAR_WIDTH + BAR_GAP);
+          int y = baseline - barH;
+
+          if (i < activeBars) {
+            int alpha = Math.min(255, 180 + (i * 25));
+            g2.setColor(new Color(ACCENT_GREEN.getRed(), ACCENT_GREEN.getGreen(),
+                ACCENT_GREEN.getBlue(), alpha));
+          } else {
+            g2.setColor(new Color(60, 60, 70, 120));
+          }
+          g2.fillRoundRect(x, y, BAR_WIDTH, barH, 2, 2);
+        }
+        g2.dispose();
+      }
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // WIDGET HELPERS
   // ─────────────────────────────────────────────────────────────────────────
 
-  private static JPanel sectionHeader(String text, Color accent) {
+  /**
+   * Vertical BoxLayout strip with uniform top padding — the structural container for both the WEST
+   * and EAST button columns.
+   */
+  private static JPanel buildButtonStrip() {
+    JPanel strip = new JPanel();
+    strip.setOpaque(false);
+    strip.setLayout(new BoxLayout(strip, BoxLayout.Y_AXIS));
+    return strip;
+  }
 
+  /** Thin vertical spacer for visual grouping inside a button strip. */
+  private static javax.swing.Box.Filler verticalSpacer(int height) {
+    return (javax.swing.Box.Filler) Box.createRigidArea(new Dimension(0, height));
+  }
+
+  private static JPanel sectionHeader(String text, Color accent) {
     JPanel header = new JPanel(new BorderLayout()) {
       private static final long serialVersionUID = 1L;
-      @Override protected void paintComponent(Graphics g) {
+
+      @Override
+      protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setColor(new Color(8, 8, 14));
         g2.fillRect(0, 0, getWidth(), getHeight());
-        // Accent underline
         g2.setColor(accent);
         g2.fillRect(0, getHeight() - 2, getWidth(), 2);
         g2.dispose();
@@ -809,33 +913,55 @@ public class AdminPanel extends JPanel {
     };
     header.setOpaque(false);
     header.setBorder(new EmptyBorder(6, 10, 6, 10));
-
     JLabel lbl = new JLabel(text);
     lbl.setForeground(accent);
     lbl.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
     header.add(lbl, BorderLayout.WEST);
-
     return header;
   }
 
   /**
-   * Full-width side-panel button using the same AMI 3D gradient style as the rest of the UI.
+   * Fixed-size side-panel button with the same AMI 3-D gradient style.
+   *
+   * <p>
+   * The {@code label} string may contain a {@code \n} to split across two lines; the first line is
+   * rendered in a slightly larger font as an icon/symbol row and the second as the text label —
+   * matching the reference screenshot's compact two-line button style.
+   *
+   * @param label Button text; use {@code \n} for a two-line layout.
+   * @param accent Border/gradient accent colour.
+   * @param action {@code ActionListener} fired on click.
    */
-  private static JButton sideButton(String label, Color accent) {
+  private static JButton sideButton(String label, Color accent,
+      java.awt.event.ActionListener action) {
 
-    final Color GRAD_TOP    = accent.darker();
+    final Color GRAD_TOP = accent.darker();
     final Color GRAD_BOTTOM = accent.darker().darker();
 
-    JButton btn = new JButton(label) {
+    // Split into icon line + text line if a newline is present
+    final String[] parts = label.split("\n", 2);
+    final String line1 = parts[0];
+    final String line2 = parts.length > 1 ? parts[1] : null;
+
+    JButton btn = new JButton() {
       private static final long serialVersionUID = 1L;
       private boolean hovered = false;
       {
         addMouseListener(new java.awt.event.MouseAdapter() {
-          public void mouseEntered(java.awt.event.MouseEvent e) { hovered = true;  repaint(); }
-          public void mouseExited (java.awt.event.MouseEvent e) { hovered = false; repaint(); }
+          public void mouseEntered(java.awt.event.MouseEvent e) {
+            hovered = true;
+            repaint();
+          }
+
+          public void mouseExited(java.awt.event.MouseEvent e) {
+            hovered = false;
+            repaint();
+          }
         });
       }
-      @Override protected void paintComponent(Graphics g) {
+
+      @Override
+      protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
@@ -844,9 +970,9 @@ public class AdminPanel extends JPanel {
         int w = getWidth(), h = getHeight();
         int arc = 8;
         int shadowH = 3;
-        int visH    = h - shadowH;
-        int shelfH  = Math.round(visH * 0.22f);
-        int faceH   = visH - shelfH;
+        int visH = h - shadowH;
+        int shelfH = Math.round(visH * 0.22f);
+        int faceH = visH - shelfH;
 
         // Drop-shadow
         g2.setColor(new Color(2, 2, 6));
@@ -862,11 +988,9 @@ public class AdminPanel extends JPanel {
         g2.setPaint(new GradientPaint(0, 0, top, 0, faceH, bot));
         g2.fillRoundRect(1, 0, w - 2, faceH + arc / 2, arc, arc);
 
-        // Specular top edge
-        g2.setColor(new Color(
-            Math.min(255, accent.getRed()   + 80),
-            Math.min(255, accent.getGreen() + 80),
-            Math.min(255, accent.getBlue()  + 80), 160));
+        // Specular edge
+        g2.setColor(new Color(Math.min(255, accent.getRed() + 80),
+            Math.min(255, accent.getGreen() + 80), Math.min(255, accent.getBlue() + 80), 160));
         g2.setStroke(new java.awt.BasicStroke(1f));
         g2.drawLine(arc, 1, w - arc - 1, 1);
 
@@ -875,32 +999,49 @@ public class AdminPanel extends JPanel {
         g2.setStroke(new java.awt.BasicStroke(1.5f));
         g2.drawRoundRect(1, 1, w - 3, visH - 2, arc, arc);
 
-        // Label
-        g2.setFont(getFont());
-        java.awt.FontMetrics fm = g2.getFontMetrics();
+        // Text — one or two lines centred on the face
         g2.setColor(Color.WHITE);
-        int tx = (w  - fm.stringWidth(label)) / 2;
-        int ty = (faceH - fm.getHeight()) / 2 + fm.getAscent();
-        g2.drawString(label, tx, ty);
-
+        if (line2 == null) {
+          // Single line
+          g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
+          java.awt.FontMetrics fm = g2.getFontMetrics();
+          g2.drawString(line1, (w - fm.stringWidth(line1)) / 2,
+              (faceH - fm.getHeight()) / 2 + fm.getAscent());
+        } else {
+          // Two lines: symbol on top, text label below
+          Font f1 = new Font(Font.SANS_SERIF, Font.BOLD, 13);
+          Font f2 = new Font(Font.SANS_SERIF, Font.BOLD, 10);
+          java.awt.FontMetrics fm1 = g2.getFontMetrics(f1);
+          java.awt.FontMetrics fm2 = g2.getFontMetrics(f2);
+          int totalH = fm1.getHeight() + fm2.getHeight() - 2;
+          int startY = (faceH - totalH) / 2 + fm1.getAscent();
+          g2.setFont(f1);
+          g2.drawString(line1, (w - fm1.stringWidth(line1)) / 2, startY);
+          g2.setFont(f2);
+          g2.drawString(line2, (w - fm2.stringWidth(line2)) / 2,
+              startY + fm1.getDescent() + fm2.getAscent());
+        }
         g2.dispose();
       }
     };
 
-    btn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+    btn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
     btn.setForeground(Color.WHITE);
     btn.setContentAreaFilled(false);
     btn.setBorderPainted(false);
     btn.setFocusPainted(false);
     btn.setOpaque(false);
-    btn.setMaximumSize(BTN_WIDE);
-    btn.setPreferredSize(BTN_NARROW);
+    btn.setMargin(new Insets(0, 0, 0, 0));
+    // Fixed size — both preferred and maximum are clamped so BoxLayout doesn't stretch them
+    btn.setPreferredSize(BTN_SIZE);
+    btn.setMaximumSize(BTN_SIZE);
+    btn.setMinimumSize(BTN_SIZE);
     btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    btn.addActionListener(action);
     return btn;
   }
 
   private static JScrollPane darkScrollPane(java.awt.Component view) {
-
     JScrollPane sp = new JScrollPane(view);
     sp.setOpaque(false);
     sp.getViewport().setOpaque(false);
@@ -910,26 +1051,3 @@ public class AdminPanel extends JPanel {
     return sp;
   }
 }
-  
-  /*
-  private void doRescan() {
-
-    int confirm = JOptionPane.showConfirmDialog(this,
-        "Rescan the music library? This may take a moment.", "Rescan Library",
-        JOptionPane.YES_NO_OPTION);
-    if (confirm == JOptionPane.YES_OPTION) {
-      if (onRescan != null) onRescan.run();
-      // Re-populate album list after rescan
-      refreshAlbumList();
-    }
-  }
-
-  private void doExit() {
-
-    int confirm = JOptionPane.showConfirmDialog(this,
-        "Exit JukeANator?", "Confirm Exit", JOptionPane.YES_NO_OPTION);
-    if (confirm == JOptionPane.YES_OPTION) {
-      if (onExit != null) onExit.run();
-    }
-  }
-  */
