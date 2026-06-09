@@ -226,7 +226,7 @@ public final class SongScanner {
 
           AlbumMetadataSearchResultDto albumMetadataResult = albumMetadataResults.get(0);
           String coverArtUrl = albumMetadataResult.getCoverArtUrl();
-          this.coverArtDownloader.downloadCoverArt(coverArtPath, coverArtUrl);
+          downloadCoverArt(coverArtPath, coverArtUrl);
         }
 
         if (!hasValidMetadata && !albumMetadataResults.isEmpty()) {
@@ -239,6 +239,11 @@ public final class SongScanner {
     }
 
     return rootFolder;
+  }
+
+  public void downloadCoverArt(String coverArtPath, String coverArtUrl) {
+
+    this.coverArtDownloader.downloadCoverArt(coverArtPath, coverArtUrl);
   }
 
   public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(

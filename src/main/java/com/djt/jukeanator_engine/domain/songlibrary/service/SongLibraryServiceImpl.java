@@ -19,6 +19,7 @@ import com.djt.jukeanator_engine.domain.common.service.query.model.QueryResponse
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataSearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.DownloadAlbumCoverArtRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
@@ -379,6 +380,7 @@ public final class SongLibraryServiceImpl
 
   @Override
   public Integer resetSongStatistics() {
+
     try {
 
       // Reset all the song statistics
@@ -403,6 +405,7 @@ public final class SongLibraryServiceImpl
   @Override
   public List<AlbumMetadataSearchResultDto> searchInternetForAlbumMetadata(String artistName,
       String albumName, int limit) {
+
     try {
 
       List<AlbumMetadataSearchResultDto> albumMetadataResults =
@@ -415,6 +418,26 @@ public final class SongLibraryServiceImpl
           + artistName + " and album: " + albumName, e);
     }
   }
+
+  public String downloadAlbumCoverArt(DownloadAlbumCoverArtRequest downloadAlbumCoverArtRequest) {
+
+    try {
+
+      AlbumFolderEntity album = root.getAlbumById(downloadAlbumCoverArtRequest.getAlbumId());
+
+      String coverArtPath = album.getCoverArtPath();
+
+      this.songScanner.downloadCoverArt(coverArtPath,
+          downloadAlbumCoverArtRequest.getCoverArtUrl());
+
+      return coverArtPath;
+
+    } catch (Exception e) {
+      throw new SongLibraryException(
+          "Could not download cover art for: " + downloadAlbumCoverArtRequest, e);
+    }
+  }
+
 
   // Repository methods
   @Override

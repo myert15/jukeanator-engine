@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataSearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.DownloadAlbumCoverArtRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
@@ -136,5 +137,12 @@ public class SongLibraryController implements SongLibraryService {
       @RequestParam String artistName, @RequestParam String albumName, int limit) {
 
     return songLibraryService.searchInternetForAlbumMetadata(artistName, albumName, limit);
+  }
+
+  @Override
+  @PostMapping("/downloadAlbumCoverArt")
+  public String downloadAlbumCoverArt(DownloadAlbumCoverArtRequest downloadAlbumCoverArtRequest) {
+
+    return songLibraryService.downloadAlbumCoverArt(downloadAlbumCoverArtRequest);
   }
 }

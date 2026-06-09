@@ -7,6 +7,7 @@ import org.springframework.web.client.RestClient;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataSearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.DownloadAlbumCoverArtRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
@@ -137,5 +138,12 @@ public class SongLibraryServiceHttpClient implements SongLibraryService {
 
     return restClient.get().uri("/api/song-library/searchInternetForAlbumMetadata").retrieve()
         .body(new ParameterizedTypeReference<>() {});
+  }
+
+  @Override
+  public String downloadAlbumCoverArt(DownloadAlbumCoverArtRequest downloadAlbumCoverArtRequest) {
+
+    return restClient.post().uri("/api/song-library/downloadAlbumCoverArt")
+        .body(downloadAlbumCoverArtRequest).retrieve().body(String.class);
   }
 }
