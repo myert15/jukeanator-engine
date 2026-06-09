@@ -258,7 +258,7 @@ public class AdminPanel extends JPanel {
    * <ol>
    * <li>Report / Dupes / Add — skipped (not in scope; placeholders left commented)</li>
    * <li><b>Add to Queue</b> — {@code SongQueueService.addAlbumToQueue}</li>
-   * <li><b>Edit CD</b> — {@code EditAlbumDialog}</li>
+   * <li><b>Edit Album</b> — {@code EditAlbumDialog}</li>
    * <li><b>Reset Stats</b> — {@code SongLibraryService.resetSongStatistics}</li>
    * <li><b>Rescan</b> — {@code SongLibraryService.scanFileSystemForSongs}</li>
    * <li><b>Minimize</b> — iconify the owner frame</li>
@@ -269,12 +269,12 @@ public class AdminPanel extends JPanel {
 
     JPanel strip = buildButtonStrip();
 
-    strip.add(sideButton("Add\nAlbum", ACCENT_GREEN, e -> doAddAlbumToQueue()));
-    strip.add(sideButton("Edit\nCD", ACCENT_GOLD, e -> doEditAlbum()));
+    strip.add(sideButton("Queue\nAlbum", ACCENT_GREEN, e -> doAddAlbumToQueue()));
+    strip.add(sideButton("Edit\nAlbum", ACCENT_GOLD, e -> doEditAlbum()));
     strip.add(sideButton("Reset\nStats", ACCENT_ORANGE, e -> doResetStats()));
-    strip.add(sideButton("Rescan\nLib", ACCENT_VIOLET, e -> doRescan()));
+    strip.add(sideButton("Rescan\nLibrary", ACCENT_VIOLET, e -> doRescan()));
     strip.add(Box.createVerticalGlue());
-    strip.add(sideButton("⊟ Min", ACCENT_BLUE, e -> doMinimize()));
+    strip.add(sideButton("⊟ Minimize", ACCENT_BLUE, e -> doMinimize()));
     strip.add(sideButton("✕ Exit", ACCENT_RED, e -> doExit()));
 
     // Wrap so the strip itself is opaque-background-free but has a right border separator
@@ -323,27 +323,27 @@ public class AdminPanel extends JPanel {
     strip.add(verticalSpacer(8));
 
     // ── Position ──────────────────────────────────────────────────────────
-    strip.add(sideButton("▲\nMove", ACCENT_BLUE, e -> doMoveUp()));
-    strip.add(sideButton("▼\nMove", ACCENT_BLUE, e -> doMoveDown()));
-    strip.add(sideButton("✕\nRmv", ACCENT_RED, e -> doRemoveSong()));
+    strip.add(sideButton("▲\nMove Up", ACCENT_BLUE, e -> doMoveUp()));
+    strip.add(sideButton("▼\nMove Dn", ACCENT_BLUE, e -> doMoveDown()));
+    strip.add(sideButton("✕\nRemove", ACCENT_RED, e -> doRemoveSong()));
 
     strip.add(verticalSpacer(8));
 
     // ── Queue management ──────────────────────────────────────────────────
     strip.add(sideButton("🗑\nFlush", ACCENT_RED, e -> doFlushQueue()));
-    strip.add(sideButton("⇌\nRndm", ACCENT_VIOLET, e -> doRandomizeQueue()));
+    strip.add(sideButton("⇌\nShuffle", ACCENT_VIOLET, e -> doRandomizeQueue()));
 
     strip.add(verticalSpacer(8));
 
     // ── Credits ───────────────────────────────────────────────────────────
-    strip.add(sideButton("＋\nCred", ACCENT_GREEN, e -> doIncrementCredits()));
-    strip.add(sideButton("－\nCred", ACCENT_ORANGE, e -> doDecrementCredits()));
+    strip.add(sideButton("＋\nCredits", ACCENT_GREEN, e -> doIncrementCredits()));
+    strip.add(sideButton("－\nCredits", ACCENT_ORANGE, e -> doDecrementCredits()));
 
     strip.add(Box.createVerticalGlue());
 
     // ── Playlist I/O ──────────────────────────────────────────────────────
-    strip.add(sideButton("📂\nLoad", ACCENT_GOLD, e -> doLoadPlayList()));
-    strip.add(sideButton("💾\nSave", ACCENT_GOLD, e -> doSavePlayList()));
+    strip.add(sideButton("📂\nLoad Playlist", ACCENT_GOLD, e -> doLoadPlayList()));
+    strip.add(sideButton("💾\nSave Playlist", ACCENT_GOLD, e -> doSavePlayList()));
 
     JPanel wrapper = new JPanel(new BorderLayout());
     wrapper.setOpaque(false);

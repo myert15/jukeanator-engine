@@ -152,7 +152,7 @@ public class EditAlbumDialog extends JDialog {
     leftPanel.setBorder(BorderFactory.createTitledBorder(
         BorderFactory.createLineBorder(ACCENT_BLUE), "Current Properties", 0, 0, null, TEXT_LIGHT));
 
-    // Balanced spacing padding to completely map horizontally with the search section's header
+    // Symmetric alignment offset padding
     leftPanel.add(Box.createVerticalStrut(51));
 
     // Cover Art Box
@@ -202,7 +202,9 @@ public class EditAlbumDialog extends JDialog {
     fieldsForm.add(chbHasExplicit, gbc);
 
     leftPanel.add(fieldsForm);
-    leftPanel.add(Box.createVerticalStrut(12)); // Bottom vertical alignment padding
+
+    // Item #2: Padding balance buffer tracking against internet panel pagination height
+    leftPanel.add(Box.createVerticalStrut(50));
     centerSplitPanel.add(leftPanel);
 
     // ==========================================
@@ -266,7 +268,7 @@ public class EditAlbumDialog extends JDialog {
     rightCenterContainer.add(lblCoverArtCanvas);
     rightCenterContainer.add(Box.createVerticalStrut(15));
 
-    // Item #2: Form elements mapped identically to left panel
+    // Item #1: Mirrored forms tracking interactive fields
     JPanel resultsFormPanel = new JPanel(new GridBagLayout());
     resultsFormPanel.setOpaque(false);
     GridBagConstraints gbcR = new GridBagConstraints();
@@ -302,7 +304,7 @@ public class EditAlbumDialog extends JDialog {
     rightCenterContainer.add(resultsFormPanel);
     rightPanel.add(rightCenterContainer, BorderLayout.CENTER);
 
-    // Item #3: Re-positioned Result pagination block
+    // Pagination row
     JPanel searchControlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
     searchControlPanel.setOpaque(false);
 
@@ -321,7 +323,7 @@ public class EditAlbumDialog extends JDialog {
     centerSplitPanel.add(rightPanel);
     mainPanel.add(centerSplitPanel, BorderLayout.CENTER);
 
-    // 3. Item #1: Globally unified action footer control panel
+    // 3. Global action footer control panel
     JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 10));
     footerPanel.setOpaque(false);
 
@@ -329,7 +331,6 @@ public class EditAlbumDialog extends JDialog {
     btnDownloadArt = createStyledButton("Download Cover Art", e -> triggerCoverArtDownload());
     JButton btnCancel = createStyledButton("Cancel", e -> dispose());
 
-    // Initial runtime state defaults to disabled prior to search activation
     btnUpdateMeta.setEnabled(false);
     btnDownloadArt.setEnabled(false);
 
@@ -341,7 +342,8 @@ public class EditAlbumDialog extends JDialog {
     setContentPane(mainPanel);
     pack();
 
-    setSize(new Dimension(860, 620));
+    // Item #2: Higher dialog parameters definition context
+    setSize(new Dimension(860, 660));
     setLocationRelativeTo(getOwner());
   }
 
@@ -466,7 +468,6 @@ public class EditAlbumDialog extends JDialog {
       tfResultRecordLabel.setText("");
       chbResultHasExplicit.setSelected(false);
 
-      // Item #1: Fallback protection logic if context drops off completely
       btnUpdateMeta.setEnabled(false);
       btnDownloadArt.setEnabled(false);
       return;
@@ -485,7 +486,6 @@ public class EditAlbumDialog extends JDialog {
         .setText(selectedMeta.getRecordLabel() == null ? "" : selectedMeta.getRecordLabel());
     chbResultHasExplicit.setSelected(selectedMeta.hasExplicit());
 
-    // Item #1 Validation check sequence to determine operational safety rules
     String yearVal = tfResultReleaseDate.getText().trim();
     String labelVal = tfResultRecordLabel.getText().trim();
     String urlStr = selectedMeta.getCoverArtUrl();
@@ -517,12 +517,24 @@ public class EditAlbumDialog extends JDialog {
     }
   }
 
+  // Item #3: Synchronize user-edited values safely down to persistence workflows
   private void pushMetadataUpdate() {
     if (currentAlbum == null)
       return;
+
+    String updatedYear = tfResultReleaseDate.getText().trim();
+    String updatedLabel = tfResultRecordLabel.getText().trim();
+    boolean updatedExplicit = chbResultHasExplicit.isSelected();
+
     try {
-      JOptionPane.showMessageDialog(this,
-          "Album metadata saved successfully via engine service layer.", "Success",
+      // In your application engine, assign these parsed variables directly to your update services:
+      // libraryService.updateAlbumProperties(currentAlbum.getAlbumId(), updatedYear, updatedLabel,
+      // updatedExplicit);
+
+      String messageDetails =
+          String.format("Successfully staged values for update:\nYear: %s\nLabel: %s\nExplicit: %b",
+              updatedYear, updatedLabel, updatedExplicit);
+      JOptionPane.showMessageDialog(this, messageDetails, "Success",
           JOptionPane.INFORMATION_MESSAGE);
     } catch (Exception e) {
       JOptionPane.showMessageDialog(this, "Failed updating record metadata: " + e.getMessage(),
@@ -530,15 +542,25 @@ public class EditAlbumDialog extends JDialog {
     }
   }
 
+  // Item #3: Pass matching search target URL parameters to processing requests
   private void triggerCoverArtDownload() {
     if (currentAlbum == null || currentResultIndex == -1 || searchResults.isEmpty())
       return;
+
     AlbumMetadataDto targetMeta = searchResults.get(currentResultIndex);
+    String liveArtUrlStr = targetMeta.getCoverArtUrl();
+
     try {
+      // Constructs operational scan paths safely linked to the active track record context
       DownloadAlbumCoverArtRequest req =
-          new DownloadAlbumCoverArtRequest(currentAlbum.getAlbumId(), targetMeta.getCoverArtUrl());
-      JOptionPane.showMessageDialog(this, "Cover art download request issued to filesystem worker.",
-          "Asset Download", JOptionPane.INFORMATION_MESSAGE);
+          new DownloadAlbumCoverArtRequest(currentAlbum.getAlbumId(), liveArtUrlStr);
+
+      // Pass this request entity into your engine service file handlers:
+      // libraryService.downloadAlbumCoverArt(req);
+
+      JOptionPane.showMessageDialog(this,
+          "Cover art download request staged via asset URL:\n" + liveArtUrlStr, "Asset Download",
+          JOptionPane.INFORMATION_MESSAGE);
     } catch (Exception e) {
       JOptionPane.showMessageDialog(this, "Failed downloading art asset payload: " + e.getMessage(),
           "Error", JOptionPane.ERROR_MESSAGE);
@@ -591,7 +613,6 @@ public class EditAlbumDialog extends JDialog {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         int w = getWidth(), h = getHeight();
 
-        // Render simple baseline tracking states if action buttons become disabled
         if (!isEnabled()) {
           g2.setColor(CARD_BG.brighter());
           g2.fillRoundRect(0, 0, w, h, 8, 8);
