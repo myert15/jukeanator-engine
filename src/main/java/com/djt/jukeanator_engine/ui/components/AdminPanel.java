@@ -18,6 +18,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -110,6 +111,9 @@ public class AdminPanel extends JPanel {
   private int popularityT1 = 1;
   private int popularityT2 = 5;
   private int popularityT3 = 15;
+
+  // ── Invalid Metadata Tracking Cache (Item #1) ─────────────────────────────
+  private final List<AlbumDto> albumsWithInvalidMetadata = new ArrayList<>();
 
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
@@ -371,6 +375,10 @@ public class AdminPanel extends JPanel {
     });
   }
 
+  /**
+   * Refactored to pass the selected album and the compiled invalid metadata master list to
+   * EditAlbumDialog matching Item #1 specifications.
+   */
   private void doEditAlbum() {
     AlbumDto selected = albumList.getSelectedValue();
     if (selected == null) {
@@ -378,7 +386,11 @@ public class AdminPanel extends JPanel {
           JOptionPane.WARNING_MESSAGE);
       return;
     }
-    EditAlbumDialog.show(ownerFrame, selected, songLibraryService, imageLoader);
+
+    // Instantiates matching the parameters designed in Item #1
+    EditAlbumDialog dialog =
+        new EditAlbumDialog(ownerFrame, songLibraryService, selected, albumsWithInvalidMetadata);
+    dialog.setVisible(true);
     albumList.repaint();
   }
 
@@ -629,23 +641,79 @@ public class AdminPanel extends JPanel {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // DATA REFRESH
+  // DATA REFRESH & INVALID METADATA SCANNING
   // ─────────────────────────────────────────────────────────────────────────
 
-  /** Re-populates the album list from the library service. */
+  /**
+   * * Re-populates the album list from the library service and filters the items into a separate
+   * list tracking entries with missing or incorrect data (Item #1).
+   */
   public void refreshAlbumList() {
     CompletableFuture.runAsync(() -> {
       try {
         List<AlbumDto> albums = songLibraryService.getAlbums();
         SwingUtilities.invokeLater(() -> {
           albumListModel.clear();
-          if (albums != null)
-            albums.forEach(albumListModel::addElement);
+          albumsWithInvalidMetadata.clear();
+
+          if (albums != null) {
+            for (AlbumDto album : albums) {
+              albumListModel.addElement(album);
+              if (isMetadataInvalid(album)) {
+                albumsWithInvalidMetadata.add(album);
+              }
+            }
+          }
         });
       } catch (Exception ex) {
         ex.printStackTrace();
       }
     });
+  }
+
+  /**
+   * Evaluates validation requirements matching specified constraint structures from Item #1.
+   * Isolates records missing critical values or carrying default/low-resolution assets.
+   */
+  private boolean isMetadataInvalid(AlbumDto album) {
+    // Check missing, blank, or fallback release dates (1950)
+    if (album.getReleaseDate() == null || album.getReleaseDate().isBlank()
+        || "1950".equals(album.getReleaseDate().trim())) {
+      return true;
+    }
+
+    // Check missing, blank, or fallback record label designations (Unknown)
+    if (album.getRecordLabel() == null || album.getRecordLabel().isBlank()
+        || "Unknown".equalsIgnoreCase(album.getRecordLabel().trim())) {
+      return true;
+    }
+
+    // Check physical sizing dimensions on tracking image path assets (At least 250x250)
+    String coverArtPath = album.getCoverArtPath();
+    if (coverArtPath == null || coverArtPath.isBlank()) {
+      return true;
+    }
+
+    try {
+      File imgFile = new File(coverArtPath);
+      if (!imgFile.exists()) {
+        return true;
+      }
+
+      java.awt.image.BufferedImage bufImage = ImageIO.read(imgFile);
+      if (bufImage == null) {
+        return true;
+      }
+
+      if (bufImage.getWidth() < 250 || bufImage.getHeight() < 250) {
+        return true;
+      }
+    } catch (Exception e) {
+      // Inability to successfully process or stream structural dimensions flags item as invalid
+      return true;
+    }
+
+    return false;
   }
 
   /** Re-populates the queue list from the queue service. */

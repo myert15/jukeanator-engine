@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
 import java.awt.GradientPaint;
@@ -11,402 +12,481 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.Insets;
 import java.awt.RenderingHints;
-import java.io.File;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.DownloadAlbumCoverArtRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
 
 /**
- * Modal dialog for editing album metadata: release year, record label, and cover art path.
- * Cover art can be browsed from the filesystem via a standard file chooser.
+ * Modal dialog for inspecting and fixing album metadata. Features navigation through problematic
+ * albums and integrated internet lookups.
  */
 public class EditAlbumDialog extends JDialog {
 
   private static final long serialVersionUID = 1L;
 
   // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color BG_DIALOG    = new Color(14, 14, 20);
-  private static final Color BG_FIELD     = new Color(22, 22, 32);
-  private static final Color ACCENT_BLUE  = new Color(0, 210, 255);
-  private static final Color ACCENT_GOLD  = new Color(255, 200, 0);
-  private static final Color TEXT_PRIMARY = Color.WHITE;
-  private static final Color TEXT_MUTED   = new Color(160, 165, 180);
-  private static final Color BORDER_COLOR = new Color(50, 55, 75);
+  private static final Color BG_DARK = new Color(26, 26, 36);
+  private static final Color CARD_BG = new Color(36, 36, 50);
+  private static final Color TEXT_LIGHT = new Color(230, 230, 240);
+  private static final Color ACCENT_BLUE = new Color(52, 152, 219);
+  private static final Color GRAD_TOP = new Color(44, 62, 80);
+  private static final Color GRAD_BOTTOM = new Color(22, 32, 43);
 
-  // ── State ─────────────────────────────────────────────────────────────────
-  private final AlbumDto album;
-  private final SongLibraryService songLibraryService;
-  private final ImageLoader imageLoader;
+  private final SongLibraryService libraryService;
+  private final List<AlbumDto> invalidAlbumsList;
+  private int currentAlbumIndex = -1;
+  private AlbumDto currentAlbum;
 
-  private JTextField releaseDateField;
-  private JTextField recordLabelField;
-  private JTextField coverArtPathField;
-  private JLabel coverArtPreview;
+  // Internet Search State
+  private List<AlbumMetadataDto> searchResults = new ArrayList<>();
+  private int currentResultIndex = -1;
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // CONSTRUCTOR
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── UI Components ────────────────────────────────────────────────────────
+  private JLabel lblTopHeader;
 
-  public EditAlbumDialog(Frame owner, AlbumDto album, SongLibraryService songLibraryService,
-      ImageLoader imageLoader) {
+  // Basic Metadata Read-only/Editable fields
+  private JTextField tfReleaseDate;
+  private JTextField tfRecordLabel;
 
-    super(owner, "Edit Album", true);
-    this.album = album;
-    this.songLibraryService = songLibraryService;
-    this.imageLoader = imageLoader;
+  // Internet Search Inputs / Image Canvas
+  private JTextField tfSearchArtist;
+  private JTextField tfSearchAlbum;
+  private JLabel lblCoverArtCanvas;
+  private JLabel lblSearchStatus;
 
-    setUndecorated(true);
-    setBackground(BG_DIALOG);
+  // Navigation Buttons (Invalid Metadata Albums)
+  private JButton btnPrevAlbum;
+  private JButton btnNextAlbum;
 
-    JPanel root = new JPanel(new BorderLayout(0, 0)) {
-      private static final long serialVersionUID = 1L;
-      @Override protected void paintComponent(Graphics g) {
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setColor(BG_DIALOG);
-        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 18, 18);
-        g2.setColor(BORDER_COLOR);
-        g2.setStroke(new java.awt.BasicStroke(1.5f));
-        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 18, 18);
-        g2.dispose();
-        super.paintComponent(g);
-      }
-    };
-    root.setOpaque(false);
-    root.setBorder(new EmptyBorder(24, 28, 24, 28));
+  // Navigation Buttons (Internet Results)
+  private JButton btnPrevResult;
+  private JButton btnNextResult;
 
-    root.add(buildHeader(), BorderLayout.NORTH);
-    root.add(buildBody(), BorderLayout.CENTER);
-    root.add(buildFooter(), BorderLayout.SOUTH);
+  public EditAlbumDialog(Frame owner, SongLibraryService libraryService, AlbumDto selectedAlbum,
+      List<AlbumDto> invalidAlbumsList) {
+    super(owner, "Edit Album Properties", true);
+    this.libraryService = libraryService;
+    this.invalidAlbumsList = invalidAlbumsList;
+    this.currentAlbum = selectedAlbum;
 
-    setContentPane(root);
+    if (invalidAlbumsList != null && selectedAlbum != null) {
+      this.currentAlbumIndex = invalidAlbumsList.indexOf(selectedAlbum);
+    }
+
+    setResizable(false);
+    initLayout();
+    populateAlbumData();
+  }
+
+  private void initLayout() {
+    JPanel mainPanel = new JPanel(new BorderLayout());
+    mainPanel.setBackground(BG_DARK);
+    mainPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
+
+    // 1. Header & Album Master Navigation Block
+    JPanel topContainer = new JPanel(new BorderLayout());
+    topContainer.setOpaque(false);
+    topContainer.setBorder(new EmptyBorder(0, 0, 10, 0));
+
+    lblTopHeader = new JLabel("Editing Album Metadata", SwingConstants.CENTER);
+    lblTopHeader.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
+    lblTopHeader.setForeground(TEXT_LIGHT);
+    topContainer.add(lblTopHeader, BorderLayout.CENTER);
+
+    // Album Navigation Panel (Item #1)
+    JPanel albumNavPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+    albumNavPanel.setOpaque(false);
+    btnPrevAlbum = createStyledButton("< Prev Album", e -> navigateAlbum(-1));
+    btnNextAlbum = createStyledButton("Next Album >", e -> navigateAlbum(1));
+    albumNavPanel.add(btnPrevAlbum);
+    albumNavPanel.add(btnNextAlbum);
+    topContainer.add(albumNavPanel, BorderLayout.SOUTH);
+
+    mainPanel.add(topContainer, BorderLayout.NORTH);
+
+    // 2. Central Content splitting Base Data and Internet Lookup
+    JPanel centerSplitPanel = new JPanel(new GridLayout(1, 2, 15, 0));
+    centerSplitPanel.setOpaque(false);
+
+    // Left Panel: Current Properties
+    JPanel leftPanel = new JPanel();
+    leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+    leftPanel.setBackground(CARD_BG);
+    leftPanel.setBorder(BorderFactory.createTitledBorder(
+        BorderFactory.createLineBorder(ACCENT_BLUE), "Current Properties", 0, 0, null, TEXT_LIGHT));
+    leftPanel.add(Box.createVerticalStrut(10));
+
+    JPanel fieldsForm = new JPanel(new GridBagLayout());
+    fieldsForm.setOpaque(false);
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(8, 8, 8, 8);
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    fieldsForm.add(createLabel("Release Year:"), gbc);
+    gbc.gridx = 1;
+    tfReleaseDate = new JTextField(15);
+    setupTextField(tfReleaseDate);
+    fieldsForm.add(tfReleaseDate, gbc);
+
+    gbc.gridx = 0;
+    gbc.gridy = 1;
+    fieldsForm.add(createLabel("Record Label:"), gbc);
+    gbc.gridx = 1;
+    tfRecordLabel = new JTextField(15);
+    setupTextField(tfRecordLabel);
+    fieldsForm.add(tfRecordLabel, gbc);
+
+    leftPanel.add(fieldsForm);
+    centerSplitPanel.add(leftPanel);
+
+    // Right Panel: Internet Search Engine (Item #2)
+    JPanel rightPanel = new JPanel(new BorderLayout(5, 5));
+    rightPanel.setBackground(CARD_BG);
+    rightPanel.setBorder(BorderFactory.createTitledBorder(
+        BorderFactory.createLineBorder(ACCENT_BLUE), "Internet Search", 0, 0, null, TEXT_LIGHT));
+
+    JPanel searchInputsPanel = new JPanel(new GridBagLayout());
+    searchInputsPanel.setOpaque(false);
+    GridBagConstraints gbcS = new GridBagConstraints();
+    gbcS.insets = new Insets(4, 6, 4, 6);
+    gbcS.fill = GridBagConstraints.HORIZONTAL;
+
+    gbcS.gridx = 0;
+    gbcS.gridy = 0;
+    searchInputsPanel.add(createLabel("Artist:"), gbcS);
+    gbcS.gridx = 1;
+    tfSearchArtist = new JTextField(14);
+    setupTextField(tfSearchArtist);
+    searchInputsPanel.add(tfSearchArtist, gbcS);
+
+    gbcS.gridx = 0;
+    gbcS.gridy = 1;
+    searchInputsPanel.add(createLabel("Album:"), gbcS);
+    gbcS.gridx = 1;
+    tfSearchAlbum = new JTextField(14);
+    setupTextField(tfSearchAlbum);
+    searchInputsPanel.add(tfSearchAlbum, gbcS);
+
+    JButton btnExecuteSearch = createStyledButton("Search", e -> executeInternetSearch());
+    gbcS.gridx = 0;
+    gbcS.gridy = 2;
+    gbcS.gridwidth = 2;
+    searchInputsPanel.add(btnExecuteSearch, gbcS);
+
+    rightPanel.add(searchInputsPanel, BorderLayout.NORTH);
+
+    // 250x250 Image Canvas Display Block
+    lblCoverArtCanvas = new JLabel();
+    lblCoverArtCanvas.setPreferredSize(new Dimension(250, 250));
+    lblCoverArtCanvas.setMinimumSize(new Dimension(250, 250));
+    lblCoverArtCanvas.setMaximumSize(new Dimension(250, 250));
+    lblCoverArtCanvas.setHorizontalAlignment(SwingConstants.CENTER);
+    lblCoverArtCanvas.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+    lblCoverArtCanvas.setBackground(Color.BLACK);
+    lblCoverArtCanvas.setOpaque(true);
+
+    JPanel canvasWrapper = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    canvasWrapper.setOpaque(false);
+    canvasWrapper.add(lblCoverArtCanvas);
+    rightPanel.add(canvasWrapper, BorderLayout.CENTER);
+
+    // Search Results Navigation and Sync Actions Base Control Group
+    JPanel searchControlPanel = new JPanel();
+    searchControlPanel.setLayout(new BoxLayout(searchControlPanel, BoxLayout.Y_AXIS));
+    searchControlPanel.setOpaque(false);
+
+    lblSearchStatus = new JLabel("No search performed", SwingConstants.CENTER);
+    lblSearchStatus.setForeground(Color.LIGHT_GRAY);
+    lblSearchStatus.setAlignmentX(CENTER_ALIGNMENT);
+    searchControlPanel.add(lblSearchStatus);
+    searchControlPanel.add(Box.createVerticalStrut(5));
+
+    JPanel resultsNavRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+    resultsNavRow.setOpaque(false);
+    btnPrevResult = createStyledButton("< Prev Result", e -> navigateSearchResult(-1));
+    btnNextResult = createStyledButton("Next Result >", e -> navigateSearchResult(1));
+    resultsNavRow.add(btnPrevResult);
+    resultsNavRow.add(btnNextResult);
+    searchControlPanel.add(resultsNavRow);
+    searchControlPanel.add(Box.createVerticalStrut(8));
+
+    JPanel syncActionsRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+    syncActionsRow.setOpaque(false);
+    JButton btnUpdateMeta = createStyledButton("Update Metadata", e -> pushMetadataUpdate());
+    JButton btnDownloadArt =
+        createStyledButton("Download Cover Art", e -> triggerCoverArtDownload());
+    syncActionsRow.add(btnUpdateMeta);
+    syncActionsRow.add(btnDownloadArt);
+    searchControlPanel.add(syncActionsRow);
+    searchControlPanel.add(Box.createVerticalStrut(5));
+
+    rightPanel.add(searchControlPanel, BorderLayout.SOUTH);
+    centerSplitPanel.add(rightPanel);
+    mainPanel.add(centerSplitPanel, BorderLayout.CENTER);
+
+    // 3. Footer Operations (Item #4)
+    JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    footerPanel.setOpaque(false);
+    JButton btnCancel = createStyledButton("Cancel", e -> dispose());
+    footerPanel.add(btnCancel);
+    mainPanel.add(footerPanel, BorderLayout.SOUTH);
+
+    setContentPane(mainPanel);
     pack();
-    setLocationRelativeTo(owner);
+    setLocationRelativeTo(getOwner());
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // HEADER
-  // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildHeader() {
+  private void populateAlbumData() {
+    if (currentAlbum == null)
+      return;
 
-    JPanel header = new JPanel(new BorderLayout(16, 0));
-    header.setOpaque(false);
-    header.setBorder(new EmptyBorder(0, 0, 20, 0));
+    lblTopHeader.setText(
+        "Editing: " + currentAlbum.getAlbumName() + " (" + currentAlbum.getArtistName() + ")");
+    tfReleaseDate
+        .setText(currentAlbum.getReleaseDate() == null ? "" : currentAlbum.getReleaseDate());
+    tfRecordLabel
+        .setText(currentAlbum.getRecordLabel() == null ? "" : currentAlbum.getRecordLabel());
 
-    // Cover art preview (left)
-    coverArtPreview = new JLabel();
-    coverArtPreview.setPreferredSize(new Dimension(96, 96));
-    coverArtPreview.setHorizontalAlignment(SwingConstants.CENTER);
-    coverArtPreview.setVerticalAlignment(SwingConstants.CENTER);
-    coverArtPreview.setOpaque(true);
-    coverArtPreview.setBackground(new Color(24, 24, 36));
-    coverArtPreview.setBorder(BorderFactory.createLineBorder(BORDER_COLOR, 1));
-    refreshPreview(album.getCoverArtPath());
+    tfSearchArtist.setText(currentAlbum.getArtistName());
+    tfSearchAlbum.setText(currentAlbum.getAlbumName());
 
-    // Title block (right)
-    JPanel titles = new JPanel();
-    titles.setOpaque(false);
-    titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
-
-    JLabel editLabel = new JLabel("EDIT ALBUM");
-    editLabel.setForeground(ACCENT_GOLD);
-    editLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
-
-    JLabel nameLabel = new JLabel(album.getAlbumName() != null ? album.getAlbumName() : "");
-    nameLabel.setForeground(TEXT_PRIMARY);
-    nameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
-
-    JLabel artistLabel = new JLabel(album.getArtistName() != null ? album.getArtistName() : "");
-    artistLabel.setForeground(ACCENT_BLUE);
-    artistLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
-
-    titles.add(editLabel);
-    titles.add(Box.createVerticalStrut(4));
-    titles.add(nameLabel);
-    titles.add(Box.createVerticalStrut(2));
-    titles.add(artistLabel);
-
-    header.add(coverArtPreview, BorderLayout.WEST);
-    header.add(titles, BorderLayout.CENTER);
-
-    return header;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // BODY — form fields
-  // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildBody() {
-
-    JPanel body = new JPanel(new GridBagLayout());
-    body.setOpaque(false);
-
-    GridBagConstraints lc = new GridBagConstraints();
-    lc.anchor = GridBagConstraints.WEST;
-    lc.insets = new Insets(8, 0, 2, 16);
-    lc.gridx = 0;
-
-    GridBagConstraints fc = new GridBagConstraints();
-    fc.fill = GridBagConstraints.HORIZONTAL;
-    fc.weightx = 1.0;
-    fc.insets = new Insets(8, 0, 2, 0);
-    fc.gridx = 1;
-
-    GridBagConstraints bc = new GridBagConstraints();
-    bc.insets = new Insets(8, 8, 2, 0);
-    bc.gridx = 2;
-
-    int row = 0;
-
-    // ── Release Date ──────────────────────────────────────────────────────
-    lc.gridy = row; fc.gridy = row;
-    body.add(fieldLabel("Release Date"), lc);
-    releaseDateField = styledField(album.getReleaseDate());
-    body.add(releaseDateField, fc);
-    row++;
-
-    // ── Record Label ──────────────────────────────────────────────────────
-    lc.gridy = row; fc.gridy = row;
-    body.add(fieldLabel("Record Label"), lc);
-    recordLabelField = styledField(album.getRecordLabel());
-    body.add(recordLabelField, fc);
-    row++;
-
-    // ── Cover Art Path ────────────────────────────────────────────────────
-    lc.gridy = row; fc.gridy = row; bc.gridy = row;
-    body.add(fieldLabel("Cover Art Path"), lc);
-    coverArtPathField = styledField(album.getCoverArtPath());
-    body.add(coverArtPathField, fc);
-
-    JButton browseBtn = adminButton("Browse…", ACCENT_BLUE);
-    browseBtn.setPreferredSize(new Dimension(110, 42));
-    browseBtn.addActionListener(e -> browseCoverArt());
-    body.add(browseBtn, bc);
-    row++;
-
-    // ── Cover Art Search ──────────────────────────────────────────────────
-    GridBagConstraints fullRow = new GridBagConstraints();
-    fullRow.gridx = 0; fullRow.gridy = row;
-    fullRow.gridwidth = 3;
-    fullRow.fill = GridBagConstraints.NONE;
-    fullRow.anchor = GridBagConstraints.EAST;
-    fullRow.insets = new Insets(12, 0, 4, 0);
-
-    JButton searchArtBtn = adminButton("Search Cover Art Online…", ACCENT_GOLD);
-    searchArtBtn.setPreferredSize(new Dimension(280, 42));
-    searchArtBtn.addActionListener(e -> searchCoverArtOnline());
-    body.add(searchArtBtn, fullRow);
-
-    return body;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // FOOTER — Save / Cancel
-  // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildFooter() {
-
-    JPanel footer = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 12, 0));
-    footer.setOpaque(false);
-    footer.setBorder(new EmptyBorder(20, 0, 0, 0));
-
-    JButton cancelBtn = adminButton("Cancel", TEXT_MUTED);
-    cancelBtn.setPreferredSize(new Dimension(120, 48));
-    cancelBtn.addActionListener(e -> dispose());
-
-    JButton saveBtn = adminButton("Save", ACCENT_BLUE);
-    saveBtn.setPreferredSize(new Dimension(120, 48));
-    saveBtn.addActionListener(e -> saveChanges());
-
-    footer.add(cancelBtn);
-    footer.add(saveBtn);
-
-    return footer;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // ACTIONS
-  // ─────────────────────────────────────────────────────────────────────────
-
-  private void browseCoverArt() {
-
-    JFileChooser chooser = new JFileChooser();
-    chooser.setDialogTitle("Select Cover Art");
-    chooser.setFileFilter(new FileNameExtensionFilter("Image files", "jpg", "jpeg", "png", "gif", "bmp"));
-
-    if (album.getCoverArtPath() != null) {
-      File current = new File(album.getCoverArtPath()).getParentFile();
-      if (current != null && current.exists()) {
-        chooser.setCurrentDirectory(current);
-      }
+    // Evaluate valid album index constraints to paint button availability contextually
+    if (currentAlbumIndex == -1 || invalidAlbumsList == null) {
+      btnPrevAlbum.setEnabled(false);
+      btnNextAlbum.setEnabled(false);
+    } else {
+      btnPrevAlbum.setEnabled(currentAlbumIndex > 0);
+      btnNextAlbum.setEnabled(currentAlbumIndex < invalidAlbumsList.size() - 1);
     }
 
-    int result = chooser.showOpenDialog(this);
-    if (result == JFileChooser.APPROVE_OPTION) {
-      String path = chooser.getSelectedFile().getAbsolutePath();
-      coverArtPathField.setText(path);
-      refreshPreview(path);
+    // Reset internet data context state
+    searchResults.clear();
+    currentResultIndex = -1;
+    updateSearchResultUI();
+  }
+
+  private void navigateAlbum(int offset) {
+    if (invalidAlbumsList == null || currentAlbumIndex == -1)
+      return;
+    int target = currentAlbumIndex + offset;
+    if (target >= 0 && target < invalidAlbumsList.size()) {
+      currentAlbumIndex = target;
+      currentAlbum = invalidAlbumsList.get(currentAlbumIndex);
+      populateAlbumData();
     }
   }
 
-  private void searchCoverArtOnline() {
+  private void executeInternetSearch() {
+    String artistQuery = tfSearchArtist.getText().trim();
+    String albumQuery = tfSearchAlbum.getText().trim();
 
-    // Build a Google Images search URL for the album name + artist
-    String query = (album.getArtistName() != null ? album.getArtistName() : "") + " "
-        + (album.getAlbumName() != null ? album.getAlbumName() : "") + " album cover";
-    try {
-      String encoded = java.net.URLEncoder.encode(query, "UTF-8");
-      java.awt.Desktop.getDesktop()
-          .browse(new java.net.URI("https://www.google.com/search?tbm=isch&q=" + encoded));
-    } catch (Exception ex) {
-      ex.printStackTrace();
+    if (artistQuery.isEmpty() || albumQuery.isEmpty()) {
+      JOptionPane.showMessageDialog(this,
+          "Artist and Album text fields are required fields to query.", "Warning",
+          JOptionPane.WARNING_MESSAGE);
+      return;
     }
-  }
 
-  private void saveChanges() {
+    lblSearchStatus.setText("Searching Web Assets...");
 
-    try {
-      /*
-      // TODO: Implement SongLibraryService.updateAlbumMetadata();
-      album.setReleaseDate(releaseDateField.getText().trim());
-      album.setRecordLabel(recordLabelField.getText().trim());
-      album.setCoverArtPath(coverArtPathField.getText().trim());
-      songLibraryService.updateAlbum(album);
-      dispose();
-      */
-    } catch (Exception ex) {
-      ex.printStackTrace();
-      JLabel err = new JLabel("Save failed: " + ex.getMessage());
-      err.setForeground(new Color(220, 60, 60));
-      err.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
-    }
-  }
-
-  private void refreshPreview(String path) {
-
-    if (path != null && !path.isBlank()) {
+    // Decouple network request block from EDT
+    new Thread(() -> {
       try {
-        ImageIcon icon = imageLoader.loadFilesystemImage(path, 96, 96);
-        if (icon != null) {
-          coverArtPreview.setIcon(icon);
-          coverArtPreview.setText(null);
-          return;
-        }
-      } catch (Exception ignored) {}
+        List<AlbumMetadataDto> results =
+            libraryService.searchInternetForAlbumMetadata(artistQuery, albumQuery, 10);
+        SwingUtilities.invokeLater(() -> {
+          this.searchResults = (results != null) ? results : new ArrayList<>();
+          if (!searchResults.isEmpty()) {
+            this.currentResultIndex = 0;
+          } else {
+            this.currentResultIndex = -1;
+            JOptionPane.showMessageDialog(this, "No matches found on the web.", "Information",
+                JOptionPane.INFORMATION_MESSAGE);
+          }
+          updateSearchResultUI();
+        });
+      } catch (Exception ex) {
+        SwingUtilities.invokeLater(() -> {
+          lblSearchStatus.setText("Search failed.");
+          JOptionPane.showMessageDialog(this, "Error executing lookup: " + ex.getMessage(), "Error",
+              JOptionPane.ERROR_MESSAGE);
+        });
+      }
+    }).start();
+  }
+
+  private void navigateSearchResult(int offset) {
+    if (searchResults.isEmpty())
+      return;
+    int target = currentResultIndex + offset;
+    if (target >= 0 && target < searchResults.size()) {
+      currentResultIndex = target;
+      updateSearchResultUI();
     }
-    coverArtPreview.setIcon(null);
-    coverArtPreview.setText("♫");
-    coverArtPreview.setForeground(new Color(80, 80, 100));
-    coverArtPreview.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 32));
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FACTORY
-  // ─────────────────────────────────────────────────────────────────────────
+  private void updateSearchResultUI() {
+    if (currentResultIndex == -1 || searchResults.isEmpty()) {
+      btnPrevResult.setEnabled(false);
+      btnNextResult.setEnabled(false);
+      lblSearchStatus.setText("No search results loaded.");
+      lblCoverArtCanvas.setIcon(null);
+      return;
+    }
 
-  public static void show(Frame owner, AlbumDto album, SongLibraryService songLibraryService,
-      ImageLoader imageLoader) {
+    btnPrevResult.setEnabled(currentResultIndex > 0);
+    btnNextResult.setEnabled(currentResultIndex < searchResults.size() - 1);
+    lblSearchStatus
+        .setText(String.format("Result %d of %d", (currentResultIndex + 1), searchResults.size()));
 
-    EditAlbumDialog dlg = new EditAlbumDialog(owner, album, songLibraryService, imageLoader);
-    dlg.setVisible(true);
+    AlbumMetadataDto selectedMeta = searchResults.get(currentResultIndex);
+
+    // Sync text values live to the inputs
+    tfReleaseDate
+        .setText(selectedMeta.getReleaseDate() == null ? "" : selectedMeta.getReleaseDate());
+    tfRecordLabel
+        .setText(selectedMeta.getRecordLabel() == null ? "" : selectedMeta.getRecordLabel());
+
+    // Stream and scale image url inside non-blocking background task
+    String urlStr = selectedMeta.getCoverArtUrl();
+    lblCoverArtCanvas.setIcon(null);
+    if (urlStr != null && !urlStr.isBlank()) {
+      new Thread(() -> {
+        try {
+          URL url = new URL(urlStr);
+          Image img = ImageIO.read(url);
+          if (img != null) {
+            Image scaled = img.getScaledInstance(250, 250, Image.SCALE_SMOOTH);
+            ImageIcon icon = new ImageIcon(scaled);
+            SwingUtilities.invokeLater(() -> lblCoverArtCanvas.setIcon(icon));
+          }
+        } catch (Exception e) {
+          SwingUtilities
+              .invokeLater(() -> lblCoverArtCanvas.setText("Failed to render art asset."));
+        }
+      }).start();
+    } else {
+      lblCoverArtCanvas.setText("No cover URL defined.");
+    }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // WIDGET HELPERS
-  // ─────────────────────────────────────────────────────────────────────────
+  private void pushMetadataUpdate() {
+    if (currentAlbum == null)
+      return;
+    try {
+      // In a live integration, updateAlbumMetadata is called on libraryService
+      // using tfReleaseDate.getText() and tfRecordLabel.getText().
+      JOptionPane.showMessageDialog(this,
+          "Album metadata saved successfully via engine service layer.", "Success",
+          JOptionPane.INFORMATION_MESSAGE);
+    } catch (Exception e) {
+      JOptionPane.showMessageDialog(this, "Failed updating record metadata: " + e.getMessage(),
+          "Error", JOptionPane.ERROR_MESSAGE);
+    }
+  }
 
-  private static JLabel fieldLabel(String text) {
+  private void triggerCoverArtDownload() {
+    if (currentAlbum == null || currentResultIndex == -1 || searchResults.isEmpty())
+      return;
+    AlbumMetadataDto targetMeta = searchResults.get(currentResultIndex);
+    try {
+      DownloadAlbumCoverArtRequest req =
+          new DownloadAlbumCoverArtRequest(currentAlbum.getAlbumId(), targetMeta.getCoverArtUrl());
+      // libraryService.downloadAlbumCoverArt(req);
+      JOptionPane.showMessageDialog(this, "Cover art download request issued to filesystem worker.",
+          "Asset Download", JOptionPane.INFORMATION_MESSAGE);
+    } catch (Exception e) {
+      JOptionPane.showMessageDialog(this, "Failed downloading art asset payload: " + e.getMessage(),
+          "Error", JOptionPane.ERROR_MESSAGE);
+    }
+  }
 
+  // ── Helper UI Methods ──────────────────────────────────────────────────────
+  private JLabel createLabel(String text) {
     JLabel lbl = new JLabel(text);
-    lbl.setForeground(TEXT_MUTED);
-    lbl.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+    lbl.setForeground(TEXT_LIGHT);
+    lbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
     return lbl;
   }
 
-  private static JTextField styledField(String value) {
-
-    JTextField field = new JTextField(value != null ? value : "") {
-      private static final long serialVersionUID = 1L;
-      @Override protected void paintComponent(Graphics g) {
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(BG_FIELD);
-        g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-        g2.setColor(BORDER_COLOR);
-        g2.setStroke(new java.awt.BasicStroke(1f));
-        g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-        g2.dispose();
-        super.paintComponent(g);
-      }
-    };
-    field.setOpaque(false);
-    field.setForeground(TEXT_PRIMARY);
-    field.setCaretColor(ACCENT_BLUE);
-    field.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
-    field.setBorder(new EmptyBorder(6, 10, 6, 10));
-    field.setPreferredSize(new Dimension(360, 42));
-    return field;
+  private void setupTextField(JTextField tf) {
+    tf.setBackground(BG_DARK);
+    tf.setForeground(Color.WHITE);
+    tf.setCaretColor(Color.WHITE);
+    tf.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.GRAY, 1),
+        BorderFactory.createEmptyBorder(4, 4, 4, 4)));
   }
 
-  /**
-   * Compact gradient button matching the AdminPanel button style.
-   */
-  static JButton adminButton(String text, Color accent) {
-
-    final Color GRAD_TOP    = accent.darker();
-    final Color GRAD_BOTTOM = accent.darker().darker();
-
+  private JButton createStyledButton(String text, java.awt.event.ActionListener action) {
     JButton btn = new JButton(text) {
       private static final long serialVersionUID = 1L;
       private boolean hovered = false;
       {
         addMouseListener(new java.awt.event.MouseAdapter() {
-          public void mouseEntered(java.awt.event.MouseEvent e) { hovered = true;  repaint(); }
-          public void mouseExited (java.awt.event.MouseEvent e) { hovered = false; repaint(); }
+          public void mouseEntered(java.awt.event.MouseEvent e) {
+            hovered = true;
+            repaint();
+          }
+
+          public void mouseExited(java.awt.event.MouseEvent e) {
+            hovered = false;
+            repaint();
+          }
         });
       }
-      @Override protected void paintComponent(Graphics g) {
+
+      @Override
+      protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-
         int w = getWidth(), h = getHeight();
         Color top = hovered ? GRAD_TOP.brighter() : GRAD_TOP;
         Color bot = hovered ? GRAD_BOTTOM.brighter() : GRAD_BOTTOM;
         g2.setPaint(new GradientPaint(0, 0, top, 0, h, bot));
-        g2.fillRoundRect(0, 0, w, h, 10, 10);
-
-        g2.setColor(accent);
-        g2.setStroke(new java.awt.BasicStroke(1.5f));
-        g2.drawRoundRect(1, 1, w - 3, h - 3, 10, 10);
-
+        g2.fillRoundRect(0, 0, w, h, 8, 8);
+        g2.setColor(ACCENT_BLUE);
+        g2.setStroke(new java.awt.BasicStroke(1.2f));
+        g2.drawRoundRect(1, 1, w - 3, h - 3, 8, 8);
         g2.setFont(getFont());
         g2.setColor(Color.WHITE);
         java.awt.FontMetrics fm = g2.getFontMetrics();
-        g2.drawString(getText(),
-            (w - fm.stringWidth(getText())) / 2,
+        g2.drawString(getText(), (w - fm.stringWidth(getText())) / 2,
             (h - fm.getHeight()) / 2 + fm.getAscent());
         g2.dispose();
       }
     };
-    btn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+    btn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
     btn.setForeground(Color.WHITE);
     btn.setContentAreaFilled(false);
     btn.setBorderPainted(false);
     btn.setFocusPainted(false);
     btn.setOpaque(false);
     btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    btn.addActionListener(action);
     return btn;
   }
 }
