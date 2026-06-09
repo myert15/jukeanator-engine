@@ -92,7 +92,7 @@ public class SongLibraryController implements SongLibraryService {
   }
 
   @Override
-  @GetMapping("/genres/{id}/albums")
+  @GetMapping("/genres/{genreId}/albums")
   public List<AlbumDto> getAlbumsForGenre(@PathVariable Integer genreId) {
     return songLibraryService.getAlbumsForGenre(genreId);
   }
@@ -133,10 +133,18 @@ public class SongLibraryController implements SongLibraryService {
 
   @Override
   @GetMapping("/searchInternetForAlbumMetadata")
-  public List<AlbumMetadataDto> searchInternetForAlbumMetadata(
-      @RequestParam String artistName, @RequestParam String albumName, int limit) {
+  public List<AlbumMetadataDto> searchInternetForAlbumMetadata(@RequestParam String artistName,
+      @RequestParam String albumName, int limit) {
 
     return songLibraryService.searchInternetForAlbumMetadata(artistName, albumName, limit);
+  }
+
+  @Override
+  @PostMapping("/albums/{albumId}/updateAlbumMetadata")
+  public AlbumMetadataDto updateAlbumMetadata(@PathVariable Integer albumId,
+      AlbumMetadataDto albumMetadata) {
+
+    return songLibraryService.updateAlbumMetadata(albumId, albumMetadata);
   }
 
   @Override

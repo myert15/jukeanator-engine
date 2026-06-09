@@ -133,11 +133,18 @@ public class SongLibraryServiceHttpClient implements SongLibraryService {
   }
 
   @Override
-  public List<AlbumMetadataDto> searchInternetForAlbumMetadata(
-      @RequestParam String artistName, @RequestParam String albumName, @RequestParam int limit) {
+  public List<AlbumMetadataDto> searchInternetForAlbumMetadata(@RequestParam String artistName,
+      @RequestParam String albumName, @RequestParam int limit) {
 
     return restClient.get().uri("/api/song-library/searchInternetForAlbumMetadata").retrieve()
         .body(new ParameterizedTypeReference<>() {});
+  }
+
+  @Override
+  public AlbumMetadataDto updateAlbumMetadata(Integer albumId, AlbumMetadataDto albumMetadata) {
+
+    return restClient.post().uri("/api/song-library/albums/" + albumId + "/updateAlbumMetadata")
+        .body(albumMetadata).retrieve().body(AlbumMetadataDto.class);
   }
 
   @Override

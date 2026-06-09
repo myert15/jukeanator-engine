@@ -119,8 +119,16 @@ public interface SongLibraryService {
    * @param limit
    * @return
    */
-  List<AlbumMetadataDto> searchInternetForAlbumMetadata(String artistName,
-      String albumName, int limit);
+  List<AlbumMetadataDto> searchInternetForAlbumMetadata(String artistName, String albumName,
+      int limit);
+
+  /**
+   * 
+   * @param albumId
+   * @param albumMetadata
+   * @return
+   */
+  AlbumMetadataDto updateAlbumMetadata(Integer albumId, AlbumMetadataDto albumMetadata);
 
   /**
    * 

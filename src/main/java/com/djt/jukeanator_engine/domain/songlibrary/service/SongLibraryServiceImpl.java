@@ -403,8 +403,8 @@ public final class SongLibraryServiceImpl
   }
 
   @Override
-  public List<AlbumMetadataDto> searchInternetForAlbumMetadata(String artistName,
-      String albumName, int limit) {
+  public List<AlbumMetadataDto> searchInternetForAlbumMetadata(String artistName, String albumName,
+      int limit) {
 
     try {
 
@@ -419,11 +419,28 @@ public final class SongLibraryServiceImpl
     }
   }
 
+  @Override
+  public AlbumMetadataDto updateAlbumMetadata(Integer albumId, AlbumMetadataDto albumMetadata) {
+
+    try {
+
+      AlbumFolderEntity album = this.root.getAlbumById(albumId);
+
+      album.getMetaData().writeMetadataToFileSystem(albumMetadata);
+
+      return albumMetadata;
+
+    } catch (Exception e) {
+      throw new SongLibraryException("Could not update metadata for album: " + albumId, e);
+    }
+  }
+
+  @Override
   public String downloadAlbumCoverArt(DownloadAlbumCoverArtRequest downloadAlbumCoverArtRequest) {
 
     try {
 
-      AlbumFolderEntity album = root.getAlbumById(downloadAlbumCoverArtRequest.getAlbumId());
+      AlbumFolderEntity album = this.root.getAlbumById(downloadAlbumCoverArtRequest.getAlbumId());
 
       String coverArtPath = album.getCoverArtPath();
 

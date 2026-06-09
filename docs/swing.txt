@@ -1,0 +1,23 @@
+Refactor EditAlbumDialog (a.k.a. JukeANator New) to be more like CDEntryPropertiesDialog (a.k.a. JukeANator Old) as follows:
+
+Item #1: AdminPanel has a list of all albums. At startup time, a separate list of albums needs to be built, called albumsWithInvalidMetadata. 
+These albums are the ones whose ReleaseDate are either blank, or equal to 1950, or whose RecordLabel are blank for equal to Unknown 
+or whose image cover art does not correspond to an actual image of at least 250x250 pixels. When the EditAlbum dialog is displayed, 
+the displayed album will be the one that was selected when the button was clicked, but there will also be "previous" and "next" buttons 
+that go through this list of albums with invalid metadata.
+
+Item #2: EditAlbumDialog needs to have a "Internet Search" section that has user editable text fields for Artist and Album, as well as an
+area to display a 250x250 image of the current album cover art, whose initial values are populated by what is in AlbumDTO.  Sometimes
+the cover art image is either incorrect, that of a default jukebox image, less than desirable image or simply missing altogether.
+There should be a "Search" button that will call searchInternetForAlbumMetadata() on SongLibraryService.  There should be "prev" and
+"next" buttons to flip through the AlbumMetadataDto list.  Each time a new result is displayed, it should update the ReleaseDate
+and RecordLabel text fields, as well as calling displaying the cover art image given by coverArtUrl in the result. 
+There should be 2 buttons for the user to update information regarding these results: one, is to update the album metadata for the given
+album using updateAlbumMetadata() on SongLibraryService and the other is to download the cover art image to the cover art path 
+that is given in AlbumDto.
+
+Item #3: EditAlbumDialog needs to remove the cover art path label/textfield and "Search Cover Art Online", as this functionality is replaced
+by what was just described in item #2
+
+Item #4: EditAlbumDialog needs to remove the "Save" button at the bottom of the screen, as the update methods are in Item #2.  There should 
+still be a "Cancel" button that is centered on the screen however, that dismisses the dialog without making any changes.
