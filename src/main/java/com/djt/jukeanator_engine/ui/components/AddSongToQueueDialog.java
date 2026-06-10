@@ -135,7 +135,7 @@ public class AddSongToQueueDialog extends JDialog {
       }
     });
 
-    requestFocusInWindow();
+    requestFocusInWindow();    
   }
 
   private JPanel buildBorderPanel() {

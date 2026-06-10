@@ -89,36 +89,36 @@ public class SongQueueController implements SongQueueService {
 
   @Override
   @PostMapping("/moveSongUpInQueue")
-  public Integer moveSongUpInQueue(ChangeSongQueueRequest changeSongQueueRequest) {
+  public Integer moveSongUpInQueue(@RequestBody ChangeSongQueueRequest changeSongQueueRequest) {
 
     return songQueueService.moveSongUpInQueue(changeSongQueueRequest);
   }
 
   @Override
   @PostMapping("/moveSongDownInQueue")
-  public Integer moveSongDownInQueue(ChangeSongQueueRequest changeSongQueueRequest) {
+  public Integer moveSongDownInQueue(@RequestBody ChangeSongQueueRequest changeSongQueueRequest) {
 
     return songQueueService.moveSongDownInQueue(changeSongQueueRequest);
   }
 
   @Override
   @PostMapping("/removeSongDownFromQueue")
-  public Integer removeSongDownFromQueue(ChangeSongQueueRequest changeSongQueueRequest) {
+  public Integer removeSongDownFromQueue(
+      @RequestBody ChangeSongQueueRequest changeSongQueueRequest) {
 
     return songQueueService.removeSongDownFromQueue(changeSongQueueRequest);
   }
 
-
   @Override
   @PostMapping("/saveQueueAsPlaylist")
-  public Integer saveQueueAsPlaylist(String filename) {
+  public Integer saveQueueAsPlaylist(@RequestBody String filename) {
 
     return songQueueService.saveQueueAsPlaylist(filename);
   }
 
   @Override
   @PostMapping("/loadPlaylistIntoQueue")
-  public Integer loadPlaylistIntoQueue(String filename) {
+  public Integer loadPlaylistIntoQueue(@RequestBody String filename) {
 
     return songQueueService.loadPlaylistIntoQueue(filename);
   }

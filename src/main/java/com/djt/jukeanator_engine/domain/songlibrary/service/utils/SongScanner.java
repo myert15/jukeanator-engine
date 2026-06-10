@@ -62,14 +62,17 @@ public final class SongScanner {
   }
 
   /**
-   * 
    * @param scanPath
    * @return
    * @throws IOException
    */
   public RootFolderEntity scanFileSystemForSongs(String scanPath) throws IOException {
 
-    File file = new File(scanPath);
+    // FIX: Clean up invisible whitespace trailing paths to prevent Linux mounting discrepancies
+    if (scanPath != null) {
+      scanPath = scanPath.strip();
+    }
+    File file = new File(scanPath).getCanonicalFile();
 
     String rootPrefix = "";
     String filePath = file.getAbsolutePath();
@@ -219,8 +222,7 @@ public final class SongScanner {
 
       if (!hasValidCoverArt || (requiresMetadata && !hasValidMetadata)) {
 
-        List<AlbumMetadataDto> albumMetadataResults =
-            searchInternetForAlbumMetadata(album);
+        List<AlbumMetadataDto> albumMetadataResults = searchInternetForAlbumMetadata(album);
 
         if (!hasValidCoverArt && !albumMetadataResults.isEmpty()) {
 
@@ -242,18 +244,15 @@ public final class SongScanner {
   }
 
   public void downloadCoverArt(String coverArtPath, String coverArtUrl) {
-
     this.coverArtDownloader.downloadCoverArt(coverArtPath, coverArtUrl);
   }
 
-  public List<AlbumMetadataDto> searchInternetForAlbumMetadata(
-      AlbumFolderEntity album) {
-
+  public List<AlbumMetadataDto> searchInternetForAlbumMetadata(AlbumFolderEntity album) {
     return searchInternetForAlbumMetadata(album.getParentFolder().getName(), album.getName(), 1);
   }
 
-  public List<AlbumMetadataDto> searchInternetForAlbumMetadata(String artistName,
-      String albumName, int limit) {
+  public List<AlbumMetadataDto> searchInternetForAlbumMetadata(String artistName, String albumName,
+      int limit) {
 
     List<AlbumMetadataDto> albumMetadataResults = this.musicBrainzClientWrapper
         .searchForAlbumMetadata(artistName, albumName, this.useGenre, limit);
@@ -271,54 +270,37 @@ public final class SongScanner {
   private void process(FolderEntity parentFolder) {
 
     List<String> songFilenames = new ArrayList<>();
-
     File parentFile = new File(parentFolder.getNaturalIdentity());
 
-    //
     // IGNORE ENTIRE SUBTREE IF ignore.me EXISTS
-    //
     File ignoreMarker = new File(parentFile, IGNORE_MARKER_FILENAME);
     if (ignoreMarker.exists() && ignoreMarker.isFile()) {
-
       System.out
           .println("Ignoring folder subtree due to ignore.me: " + parentFile.getAbsolutePath());
-
       return;
     }
 
     File[] children = parentFile.listFiles();
 
     if (children != null) {
-
       for (File child : children) {
-
         boolean isHidden = child.isHidden();
 
         if (!isHidden && child.isDirectory()) {
-
           try {
-
-            //
             // SKIP CHILD DIRECTORY IF IT CONTAINS ignore.me
-            //
             File childIgnoreMarker = new File(child, IGNORE_MARKER_FILENAME);
-
             if (childIgnoreMarker.exists() && childIgnoreMarker.isFile()) {
-
               System.out
                   .println("Ignoring folder subtree due to ignore.me: " + child.getAbsolutePath());
-
               continue;
             }
 
             FolderEntity childFolder = new FolderEntity(parentFolder, child.getName());
-
             parentFolder.addChildFolder(childFolder);
-
             process(childFolder);
 
           } catch (EntityAlreadyExistsException eaee) {
-
             throw new SongLibraryException(eaee.getMessage(), eaee);
           }
 
@@ -328,32 +310,35 @@ public final class SongScanner {
           songFilenames.add(child.getName());
         }
       }
-
     } else {
-
       System.err.println("parentFile.listFiles() was null for: " + parentFile.getAbsolutePath());
     }
 
     if (!songFilenames.isEmpty()) {
-
       parentFolder.getParentFolder().convertChildFolderToAlbumFolder(parentFolder, songFilenames);
     }
   }
 
+  // FIX: Using lastIndexOf('.') isolates ".mp3" from multi-dotted names like "Y.M.C.A..mp3"
   private String getFileExtension(File file) {
-
+    if (file == null) {
+      return "";
+    }
     String extension = "";
     String filename = file.getName().toLowerCase();
-    int index = filename.indexOf('.');
+    int index = filename.lastIndexOf('.');
     if (index > 0) {
       extension = filename.substring(index);
     }
     return extension;
   }
 
+  // FIX: Targets actual Unicode system control blocks while preserving international character sets
+  // safely
   private String stripNonPrintableCharacters(String input) {
-
-    // Retain only printable characters and horizontal whitespace
-    return input.replaceAll("[^\\p{Print}]", "");
+    if (input == null) {
+      return "";
+    }
+    return input.replaceAll("[\\p{Cc}\\p{Cf}\\p{Co}\\p{Cn}]", "").strip();
   }
 }

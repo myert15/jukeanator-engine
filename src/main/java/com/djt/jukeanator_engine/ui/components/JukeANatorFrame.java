@@ -1,10 +1,9 @@
 package com.djt.jukeanator_engine.ui.components;
 
 import java.awt.BorderLayout;
-import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
@@ -21,12 +20,9 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
@@ -57,7 +53,6 @@ public class JukeANatorFrame extends JFrame {
   private static final int POPULARITY_THRESHOLD_3 = 50;
 
   // COLORS
-  private static final Color ACCENT_BLUE = new Color(0, 210, 255);
   private static final Color TEXT_PRIMARY = Color.WHITE;
   private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
 
@@ -86,21 +81,10 @@ public class JukeANatorFrame extends JFrame {
 
   // ADMIN TAB
   private AdminPanel adminPanel;
-  
-  // QUEUE TAB
-  private final CardLayout queueCardLayout = new CardLayout();
-  private final JPanel queueRootPanel = new JPanel(queueCardLayout);
-  private final JPanel queueDetailsPanel = new JPanel(new BorderLayout());
-  private final JLabel queueDetailsCoverArt = new JLabel();
-  private final JLabel queueDetailsSong = new JLabel();
-  private final JLabel queueDetailsArtist = new JLabel();
-  private final JLabel queueDetailsAlbum = new JLabel();
-  private final DefaultListModel<SongQueueEntryDto> queueListModel = new DefaultListModel<>();
-  private final JList<SongQueueEntryDto> queueList = new JList<>(queueListModel);
 
 
   // NOW PLAYING
-  private SongQueueEntryDto nowPlayingSong;
+  private List<SongQueueEntryDto> currentQueue = new java.util.ArrayList<>();
   private final JLabel albumArtLabel = new JLabel();
   private final JLabel songLabel = new JLabel("", SwingConstants.LEFT);
   private final JLabel artistLabel = new JLabel("", SwingConstants.LEFT);
@@ -347,17 +331,14 @@ public class JukeANatorFrame extends JFrame {
     genrePanel = buildGenresPanel();
     tabs.addTab("GENRES", genrePanel);
 
-    tabs.addTab("QUEUE", buildQueuePanel());
-    
     adminPanel = buildAdminPanel();
     tabs.addTab("ADMIN", adminPanel);
 
     tabs.setTabComponentAt(0, new JukeboxTabComponent("HOME", "⌂", new Color(255, 120, 120)));
-    tabs.setTabComponentAt(1, new JukeboxTabComponent("SEARCH", "⌕", new Color(0, 220, 255)));
+    tabs.setTabComponentAt(1, new JukeboxTabComponent("SEARCH", "🔍", new Color(0, 220, 255)));
     tabs.setTabComponentAt(2, new JukeboxTabComponent("HOT HERE", "🔥", new Color(255, 80, 120)));
     tabs.setTabComponentAt(3, new JukeboxTabComponent("GENRES", "▣", Color.WHITE));
-    tabs.setTabComponentAt(4, new JukeboxTabComponent("QUEUE", "♫", new Color(0, 255, 180)));
-    tabs.setTabComponentAt(5, new JukeboxTabComponent("ADMIN", "⚙", new Color(255, 220, 0)));
+    tabs.setTabComponentAt(4, new JukeboxTabComponent("ADMIN", "⚙", new Color(255, 220, 0)));
 
     return tabs;
   }
@@ -470,260 +451,15 @@ public class JukeANatorFrame extends JFrame {
         POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H,
         enableAlbumSelection);
   }
-  
+
   // ============================================================
   // ADMIN PANEL
   // ============================================================
   private AdminPanel buildAdminPanel() {
 
     return new AdminPanel(this, songLibraryService, songQueueService, songPlayerService,
-        creditManager, imageLoader);
+        creditManager, incrementCreditsKey, imageLoader);
   }
-  
-  // ============================================================
-  // QUEUE PANEL
-  // ============================================================
-  private JPanel buildQueuePanel() {
-
-    //
-    // LIST PANEL
-    //
-    JPanel queueListPanel = new JPanel(new BorderLayout());
-    queueListPanel.setOpaque(false);
-
-    queueList.setOpaque(false);
-    queueList.setForeground(Color.WHITE);
-    queueList.setSelectionBackground(ACCENT_BLUE);
-    queueList.setSelectionForeground(Color.BLACK);
-    queueList.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
-    queueList.setFixedCellHeight(60);
-    queueList.setCellRenderer(new QueueListCellRenderer());
-    queueList.addListSelectionListener(e -> {
-
-      if (!e.getValueIsAdjusting()) {
-
-        SongQueueEntryDto song = queueList.getSelectedValue();
-        if (song != null) {
-          showQueueSongDetails(song);
-        }
-      }
-    });
-    queueListPanel.add(queueList, BorderLayout.CENTER);
-
-    //
-    // DETAILS PANEL
-    //
-    queueDetailsPanel.setOpaque(false);
-
-    //
-    // ROOT
-    //
-    queueRootPanel.setOpaque(false);
-    queueRootPanel.removeAll();
-    queueRootPanel.add(queueListPanel, "LIST");
-    queueRootPanel.add(queueDetailsPanel, "DETAILS");
-
-    queueCardLayout.show(queueRootPanel, "LIST");
-
-    return queueRootPanel;
-  }
-
-  // QUEUE SONG DETAILS
-  private void showQueueSongDetails(SongQueueEntryDto songQueueEntryDto) {
-
-    SongDto song = songQueueEntryDto.getSong();
-
-    queueDetailsPanel.removeAll();
-
-    //
-    // BACK BUTTON
-    //
-    JButton backButton = new JButton("← BACK");
-    backButton.setPreferredSize(new Dimension(180, 60));
-    backButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
-    backButton.setForeground(Color.WHITE);
-    backButton.setBackground(Color.BLACK);
-
-    backButton.addActionListener(e -> {
-
-      queueCardLayout.show(queueRootPanel, "LIST");
-    });
-
-    JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-    topPanel.setOpaque(false);
-    topPanel.add(backButton);
-
-    //
-    // DETAILS CONTENT
-    //
-    JPanel contentPanel = new JPanel();
-    contentPanel.setOpaque(false);
-    contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-    contentPanel.setBorder(new EmptyBorder(40, 40, 40, 40));
-
-    //
-    // COVER ART
-    //
-    queueDetailsCoverArt.setAlignmentX(CENTER_ALIGNMENT);
-    try {
-      if (song.getCoverArtPath() != null) {
-        queueDetailsCoverArt.setIcon(imageLoader.loadImage(song.getCoverArtPath(), 320, 320));
-      } else {
-        queueDetailsCoverArt.setIcon(null);
-      }
-    } catch (Exception e) {
-      queueDetailsCoverArt.setIcon(null);
-    }
-
-    //
-    // SONG INFO
-    //
-    queueDetailsSong.setText(song.getSongName());
-    queueDetailsSong.setForeground(Color.CYAN);
-    queueDetailsSong.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 36));
-    queueDetailsSong.setAlignmentX(CENTER_ALIGNMENT);
-
-    queueDetailsArtist.setText(song.getArtistName());
-    queueDetailsArtist.setForeground(Color.WHITE);
-    queueDetailsArtist.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 28));
-    queueDetailsArtist.setAlignmentX(CENTER_ALIGNMENT);
-
-    queueDetailsAlbum.setText(song.getAlbumName());
-    queueDetailsAlbum.setForeground(TEXT_SECONDARY);
-    queueDetailsAlbum.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 24));
-    queueDetailsAlbum.setAlignmentX(CENTER_ALIGNMENT);
-
-    contentPanel.add(queueDetailsCoverArt);
-    contentPanel.add(Box.createVerticalStrut(30));
-    contentPanel.add(queueDetailsSong);
-    contentPanel.add(Box.createVerticalStrut(15));
-    contentPanel.add(queueDetailsArtist);
-    contentPanel.add(Box.createVerticalStrut(10));
-    contentPanel.add(queueDetailsAlbum);
-
-    //
-    // ASSEMBLE
-    //
-    queueDetailsPanel.add(topPanel, BorderLayout.NORTH);
-    queueDetailsPanel.add(contentPanel, BorderLayout.CENTER);
-
-    queueDetailsPanel.revalidate();
-    queueDetailsPanel.repaint();
-
-    queueCardLayout.show(queueRootPanel, "DETAILS");
-  }
-
-  private class QueueListCellRenderer extends JPanel
-      implements javax.swing.ListCellRenderer<SongQueueEntryDto> {
-
-    private static final long serialVersionUID = 1L;
-
-    private final JLabel cover = new JLabel();
-    private final JLabel title = new JLabel();
-    private final JLabel subtitle = new JLabel();
-    private final JLabel priorityBadge = new JLabel();
-
-    public QueueListCellRenderer() {
-
-      setLayout(new BorderLayout(12, 0));
-      setBorder(new EmptyBorder(8, 10, 8, 10));
-
-      // cover art
-      cover.setPreferredSize(new Dimension(56, 56));
-      cover.setHorizontalAlignment(SwingConstants.CENTER);
-
-      // text
-      JPanel textPanel = new JPanel();
-      textPanel.setOpaque(false);
-      textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
-
-      title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
-      subtitle.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-
-      title.setForeground(Color.WHITE);
-      subtitle.setForeground(TEXT_SECONDARY);
-
-      textPanel.add(title);
-      textPanel.add(subtitle);
-
-      // priority badge
-      priorityBadge.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-      priorityBadge.setHorizontalAlignment(SwingConstants.CENTER);
-      priorityBadge.setPreferredSize(new Dimension(40, 40));
-      priorityBadge.setOpaque(true);
-
-      add(cover, BorderLayout.WEST);
-      add(textPanel, BorderLayout.CENTER);
-      add(priorityBadge, BorderLayout.EAST);
-    }
-
-    @Override
-    public java.awt.Component getListCellRendererComponent(JList<? extends SongQueueEntryDto> list,
-        SongQueueEntryDto value, int index, boolean isSelected, boolean cellHasFocus) {
-
-      // -------------------------
-      // TEXT
-      // -------------------------
-      title.setText(value.getSong().getSongName());
-      subtitle.setText(value.getSong().getArtistName() + " • " + value.getSong().getAlbumName());
-
-      // -------------------------
-      // PRIORITY INDICATOR
-      // -------------------------
-      int p = value.getPriority() == null ? 0 : value.getPriority();
-
-      if (p >= 8) {
-        priorityBadge.setText("🔥");
-        priorityBadge.setBackground(new Color(220, 60, 60));
-        priorityBadge.setForeground(Color.WHITE);
-      } else if (p >= 4) {
-        priorityBadge.setText("⬆");
-        priorityBadge.setBackground(new Color(255, 160, 0));
-        priorityBadge.setForeground(Color.BLACK);
-      } else {
-        priorityBadge.setText("•");
-        priorityBadge.setBackground(new Color(80, 80, 80));
-        priorityBadge.setForeground(Color.WHITE);
-      }
-
-      // -------------------------
-      // COVER ART
-      // -------------------------
-      try {
-        if (value.getSong().getCoverArtPath() != null) {
-          cover.setIcon(imageLoader.loadFilesystemImage(value.getSong().getCoverArtPath(), 56, 56));
-        } else {
-          cover.setIcon(null);
-        }
-      } catch (Exception e) {
-        cover.setIcon(null);
-      }
-
-      // -------------------------
-      // PLAYING NOW + SELECTION HIGHLIGHT
-      // -------------------------
-      boolean isPlaying = nowPlayingSong != null && nowPlayingSong.equals(value);
-
-      if (isPlaying) {
-        setBackground(new Color(0, 210, 255)); // ACCENT_BLUE
-        title.setForeground(Color.BLACK);
-        subtitle.setForeground(Color.BLACK);
-      } else if (isSelected) {
-        setBackground(new Color(40, 40, 50));
-        title.setForeground(Color.WHITE);
-        subtitle.setForeground(TEXT_SECONDARY);
-      } else {
-        setBackground(Color.BLACK);
-        title.setForeground(Color.WHITE);
-        subtitle.setForeground(TEXT_SECONDARY);
-      }
-
-      setOpaque(true);
-      return this;
-    }
-  }
-
-
 
   // ============================================================
   // TOP PANEL
@@ -907,6 +643,17 @@ public class JukeANatorFrame extends JFrame {
 
     panel.setVisible(false); // hidden until a song starts
 
+    // Clicking anywhere on the Now Playing panel opens the Song Queue dialog
+    panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    panel.addMouseListener(new java.awt.event.MouseAdapter() {
+      @Override
+      public void mouseClicked(java.awt.event.MouseEvent e) {
+        SongQueueDialog.show(JukeANatorFrame.this, songPlayerService, currentQueue,
+            songQueueService, creditManager, imageLoader, POPULARITY_THRESHOLD_1,
+            POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3, incrementCreditsKey);
+      }
+    });
+
     return panel;
   }
 
@@ -936,20 +683,14 @@ public class JukeANatorFrame extends JFrame {
   public void setQueue(List<SongQueueEntryDto> queue) {
 
     SwingUtilities.invokeLater(() -> {
-      
+      currentQueue = queue != null ? queue : new java.util.ArrayList<>();
       adminPanel.setQueue(queue);
-
-      queueListModel.clear();
-
-      if (queue != null) {
-        queue.forEach(queueListModel::addElement);
-      }
     });
   }
 
   // NOW PLAYING
   public void setNowPlaying(SongDto songDto) {
-    
+
     SwingUtilities.invokeLater(() -> {
       if (songDto == null) {
         clearNowPlaying();
@@ -965,13 +706,12 @@ public class JukeANatorFrame extends JFrame {
       playStatus.setIcon(
           imageLoader.loadClasspathImage("music_playing.gif", 96, 96, Image.SCALE_DEFAULT));
 
-      // Make the panel visible now that there's something to show.
       nowPlayingPanel.setVisible(true);
     });
   }
 
   private void clearNowPlaying() {
-    
+
     songLabel.setText("");
     artistLabel.setText("");
     albumLabel.setText("");
@@ -979,7 +719,6 @@ public class JukeANatorFrame extends JFrame {
     playStatus.setIcon(null);
     musicPaused = false;
 
-    // Hide the entire panel — but keep its space so the logo stays centred.
     nowPlayingPanel.setVisible(false);
   }
 

@@ -104,7 +104,7 @@ public class AdminPanel extends JPanel {
 
   public AdminPanel(Frame ownerFrame, SongLibraryService songLibraryService,
       SongQueueService songQueueService, SongPlayerService songPlayerService,
-      CreditManager creditManager, ImageLoader imageLoader) {
+      CreditManager creditManager, char incrementCreditsKey, ImageLoader imageLoader) {
 
     this.ownerFrame = ownerFrame;
     this.songLibraryService = songLibraryService;
@@ -130,6 +130,19 @@ public class AdminPanel extends JPanel {
 
     refreshAlbumList();
     setQueue(songQueueService.getQueuedSongs());
+
+    // Hardware Bill Acceptor Key Bindings
+    this.setFocusable(true);
+    this.addKeyListener(new java.awt.event.KeyAdapter() {
+      @Override
+      public void keyTyped(java.awt.event.KeyEvent e) {
+        if (e.getKeyChar() == incrementCreditsKey) {
+          creditManager.addDollar();
+        }
+      }
+    });
+
+    requestFocusInWindow();
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -205,10 +218,8 @@ public class AdminPanel extends JPanel {
     queueList.setForeground(TEXT_PRIMARY);
     queueList.setSelectionBackground(LIST_SEL_BG);
     queueList.setSelectionForeground(Color.WHITE);
-    queueList.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-    queueList.setFixedCellHeight(44);
     queueList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    queueList.setCellRenderer(new QueueCellRenderer());
+    SongTrackCellRenderer.install(queueList, popularityT1, popularityT2, popularityT3);
 
     JPanel queuePane = new JPanel(new BorderLayout(0, 4));
     queuePane.setOpaque(false);
@@ -697,149 +708,7 @@ public class AdminPanel extends JPanel {
     }
   }
 
-  /**
-   * Queue row renderer. Mirrors the track-row style of {@link AlbumViewPanel}: the same three-bar
-   * popularity widget appears on the WEST side of each row, followed by a queue-position badge,
-   * then the song name and artist/album sub-label.
-   *
-   * <p>
-   * The {@link PopularityBarsPanel} inner class is identical to the one in {@link AlbumViewPanel} —
-   * if a shared utility class is introduced in the future both can be migrated to it.
-   */
-  private class QueueCellRenderer extends JPanel
-      implements javax.swing.ListCellRenderer<SongQueueEntryDto> {
-
-    private static final long serialVersionUID = 1L;
-
-    // ── Popularity bar constants (match AlbumViewPanel exactly) ───────────
-    private static final int BAR_WIDTH = 5;
-    private static final int BAR_GAP = 3;
-    private static final int BAR_MAX_H = 18;
-    private static final int[] BAR_HEIGHTS = {8, 13, 18};
-
-    // ── Sub-widgets ───────────────────────────────────────────────────────
-    private final PopularityBarsPanel barsPanel = new PopularityBarsPanel(0);
-    private final JLabel position = new JLabel();
-    private final JLabel song = new JLabel();
-    private final JLabel sub = new JLabel();
-
-    QueueCellRenderer() {
-      setLayout(new BorderLayout(6, 0));
-      setBorder(new EmptyBorder(4, 8, 4, 8));
-
-      // Popularity bars — fixed size matches AlbumViewPanel track rows
-      barsPanel.setPreferredSize(new Dimension(3 * (BAR_WIDTH + BAR_GAP) + 6, BAR_MAX_H + 4));
-      barsPanel.setOpaque(false);
-
-      // Position / priority badge
-      position.setPreferredSize(new Dimension(28, 36));
-      position.setHorizontalAlignment(SwingConstants.CENTER);
-      position.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
-
-      // Text cluster
-      JPanel text = new JPanel(new BorderLayout(0, 1));
-      text.setOpaque(false);
-      song.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-      sub.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
-      text.add(song, BorderLayout.CENTER);
-      text.add(sub, BorderLayout.SOUTH);
-
-      // Left cluster: bars + badge
-      JPanel left = new JPanel(new BorderLayout(4, 0));
-      left.setOpaque(false);
-      left.add(barsPanel, BorderLayout.WEST);
-      left.add(position, BorderLayout.CENTER);
-
-      add(left, BorderLayout.WEST);
-      add(text, BorderLayout.CENTER);
-    }
-
-    @Override
-    public java.awt.Component getListCellRendererComponent(JList<? extends SongQueueEntryDto> list,
-        SongQueueEntryDto entry, int index, boolean isSelected, boolean cellHasFocus) {
-
-      // ── Popularity bars ────────────────────────────────────────────────
-      int plays = entry.getSong().getNumPlays() == null ? 0 : entry.getSong().getNumPlays();
-      int active = barsForPlays(plays, popularityT1, popularityT2, popularityT3);
-      barsPanel.setActiveBars(active);
-
-      // ── Position / priority badge ──────────────────────────────────────
-      position.setText(String.valueOf(index + 1));
-      int p = entry.getPriority() == null ? 0 : entry.getPriority();
-      position.setForeground(p >= 8 ? ACCENT_RED : p >= 4 ? ACCENT_ORANGE : TEXT_MUTED);
-
-      // ── Song / sub text ────────────────────────────────────────────────
-      song.setText(entry.getSong().getSongName());
-      sub.setText(entry.getSong().getArtistName() + "  •  " + entry.getSong().getAlbumName());
-
-      if (isSelected) {
-        setBackground(LIST_SEL_BG);
-        song.setForeground(ACCENT_BLUE);
-        sub.setForeground(Color.WHITE);
-      } else {
-        setBackground(index % 2 == 0 ? LIST_BG : ROW_ALT);
-        song.setForeground(TEXT_PRIMARY);
-        sub.setForeground(TEXT_MUTED);
-      }
-      setOpaque(true);
-      return this;
-    }
-
-    // ── Shared popularity-bar helpers (mirrors AlbumViewPanel.barsForPlays) ─
-    private int barsForPlays(int plays, int t1, int t2, int t3) {
-      if (plays >= t3)
-        return 3;
-      if (plays >= t2)
-        return 2;
-      if (plays >= t1)
-        return 1;
-      return 0;
-    }
-
-    // ── Inner popularity-bars widget ──────────────────────────────────────
-    /**
-     * Identical painting logic to {@code AlbumViewPanel.PopularityBarsPanel}. Extracted here so the
-     * queue renderer is self-contained. If a shared utility class is created later, both can
-     * delegate to it.
-     */
-    private class PopularityBarsPanel extends JPanel {
-      private static final long serialVersionUID = 1L;
-      private int activeBars;
-
-      PopularityBarsPanel(int activeBars) {
-        this.activeBars = activeBars;
-        setOpaque(false);
-      }
-
-      void setActiveBars(int n) {
-        this.activeBars = n;
-      }
-
-      @Override
-      protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        int baseline = getHeight() - 2;
-        for (int i = 0; i < 3; i++) {
-          int barH = BAR_HEIGHTS[i];
-          int x = i * (BAR_WIDTH + BAR_GAP);
-          int y = baseline - barH;
-
-          if (i < activeBars) {
-            int alpha = Math.min(255, 180 + (i * 25));
-            g2.setColor(new Color(ACCENT_GREEN.getRed(), ACCENT_GREEN.getGreen(),
-                ACCENT_GREEN.getBlue(), alpha));
-          } else {
-            g2.setColor(new Color(60, 60, 70, 120));
-          }
-          g2.fillRoundRect(x, y, BAR_WIDTH, barH, 2, 2);
-        }
-        g2.dispose();
-      }
-    }
-  }
+  // QueueCellRenderer removed — replaced by shared SongTrackCellRenderer.
 
   // ─────────────────────────────────────────────────────────────────────────
   // WIDGET HELPERS

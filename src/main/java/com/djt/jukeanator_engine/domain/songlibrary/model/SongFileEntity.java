@@ -7,11 +7,20 @@ import java.util.regex.Pattern;
 public class SongFileEntity extends AbstractFileEntity implements LibraryItem {
   private static final long serialVersionUID = 1L;
 
+  // Matches: ArtistName-TrackNum-SongName.ext
+  // Artist may contain hyphens (e.g. "A-ha"), so the track number field — a 1-to-3 digit
+  // token bounded by literal hyphens — acts as the unambiguous anchor. The non-greedy
+  // artist group (.+?) combined with the greedy song-name group (.+) ensures that any
+  // extra hyphens are consumed by the song name rather than the artist, which is the
+  // safer failure mode.
+  private static final Pattern FILENAME_PATTERN =
+      Pattern.compile("^(.+?)\\s*-\\s*(\\d{1,3})\\s*-\\s*(.+)\\.[a-zA-Z0-9]+$");
+
   private Integer numPlays = Integer.valueOf(0);
   private String artistName;
   private String songName;
   private Integer trackNumber;
-  
+
   private transient GenreFolderEntity parentGenre;
   private transient Year releaseDate;
 
@@ -25,12 +34,12 @@ public class SongFileEntity extends AbstractFileEntity implements LibraryItem {
   public Integer getNumPlays() {
     return numPlays;
   }
-  
+
   @Override
   public GenreFolderEntity getParentGenre() {
 
     if (parentGenre == null) {
-      
+
       FolderEntity parentFolder = this.getParentFolder();
       while (parentFolder instanceof RootFolderEntity == false) {
 
@@ -42,24 +51,24 @@ public class SongFileEntity extends AbstractFileEntity implements LibraryItem {
         }
       }
       if (parentGenre == null) {
-        parentGenre = new GenreFolderEntity(parentFolder, "None");  
+        parentGenre = new GenreFolderEntity(parentFolder, "None");
       }
     }
     return parentGenre;
   }
-  
+
   @Override
   public String getTitle() {
     return getSongName();
   }
-  
+
   @Override
   public Year getReleaseDate() {
-    
+
     if (releaseDate == null) {
-      releaseDate = ((AlbumFolderEntity) this.getParentFolder()).getReleaseDate();  
+      releaseDate = ((AlbumFolderEntity) this.getParentFolder()).getReleaseDate();
     }
-    return releaseDate;    
+    return releaseDate;
   }
 
   public void setNumPlays(Integer numPlays) {
@@ -99,51 +108,33 @@ public class SongFileEntity extends AbstractFileEntity implements LibraryItem {
     return this.trackNumber;
   }
 
-  public static String extractArtistName(String filename) {
+  public static Integer extractTrackNumber(String filename) {
+    if (filename == null || filename.isBlank()) {
+      return null;
+    }
 
-    String artist = "";
-
-    Pattern pattern = Pattern.compile("^(.*?)\\s*-\\s*(\\d+)\\s*-\\s*(.*?)\\.mp3$");
-    Matcher m = pattern.matcher(filename);
+    Matcher m = FILENAME_PATTERN.matcher(filename.trim());
     if (m.matches()) {
-
-      artist = m.group(1);
+      try {
+        return Integer.valueOf(m.group(2));
+      } catch (NumberFormatException e) {
+        return null;
+      }
     }
-    
-    if (artist.equals("")) {
-      artist = "Unknown";
-    }
+    return null;
+  }
 
-    return artist;
+  public static String extractArtistName(String filename) {
+    if (filename == null || filename.isBlank())
+      return "Unknown";
+    Matcher m = FILENAME_PATTERN.matcher(filename.trim());
+    return (m.matches()) ? m.group(1).trim() : "Unknown";
   }
 
   public static String extractSongName(String filename) {
-
-    String song = "";
-
-    Pattern pattern = Pattern.compile("^(.*?)\\s*-\\s*(\\d+)\\s*-\\s*(.*?)\\.mp3$");
-    Matcher m = pattern.matcher(filename);
-    if (m.matches()) {
-
-      song = m.group(3);
-    }
-
-    if (song.equals("")) {
-      song = "Unknown";
-    }
-    
-    return song;
-  }
-
-  public static Integer extractTrackNumber(String filename) {
-    
-    Pattern pattern = Pattern.compile("^[^-]+-(\\d{1,3})-.*\\.mp3$");
-    Matcher matcher = pattern.matcher(filename);
-
-    if (matcher.matches()) {
-      return Integer.parseInt(matcher.group(1));
-    }
-    return Integer.valueOf(0);
+    if (filename == null || filename.isBlank())
+      return "Unknown";
+    Matcher m = FILENAME_PATTERN.matcher(filename.trim());
+    return (m.matches()) ? m.group(3).trim() : "Unknown";
   }
 }
-

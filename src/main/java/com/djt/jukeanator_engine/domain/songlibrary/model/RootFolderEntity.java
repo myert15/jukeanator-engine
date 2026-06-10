@@ -15,12 +15,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import com.djt.jukeanator_engine.domain.common.exception.EntityDoesNotExistException;
+import com.djt.jukeanator_engine.domain.common.utils.OperatingSystemDetector;
+import com.djt.jukeanator_engine.domain.common.utils.OperatingSystemDetector.OSType;
 
 public class RootFolderEntity extends FolderEntity {
   private static final long serialVersionUID = 1L;
 
-  private static final String CD_STATS_FILE = "/mnt/readyNAS/Rock_On_Third/CDStats_linux.txt";
+  private static final String CD_STATS_FILE_PREFIX = "CDStats";
+  private static final String CD_STATS_FILE_SUFFIX = ".TXT";
 
   private String rootPrefix;
 
@@ -36,11 +41,9 @@ public class RootFolderEntity extends FolderEntity {
   public RootFolderEntity() {}
 
   /**
-   * Windows: C:\Users\Admin\Music rootPrefix is: C:\
+   * Windows: C:\Users\Admin\Music rootPrefix is: C:\ Linux: /Users/Admin/Music rootPrefix is: /
+   * * @param rootPrefix
    * 
-   * Linux: /Users/Admin/Music rootPrefix is: /
-   * 
-   * @param rootPrefix
    * @param name
    */
   public RootFolderEntity(String rootPrefix, String name) {
@@ -58,22 +61,17 @@ public class RootFolderEntity extends FolderEntity {
     Set<FolderEntity> foldersToPrune = new TreeSet<>();
 
     for (FolderEntity childFolder : getChildFolders()) {
-
       if (childFolder.getChildFolders().isEmpty()
           && childFolder instanceof AlbumFolderEntity == false) {
 
         System.out.println("Pruning candidate: " + childFolder.getName());
         foldersToPrune.add(childFolder);
-
       } else {
-
         childFolder.pruneNonAlbumContainingChildFolders(foldersToPrune);
-
       }
     }
 
     if (!foldersToPrune.isEmpty()) {
-
       for (FolderEntity folderToPrune : foldersToPrune) {
 
         System.out.println("Pruning: " + folderToPrune.getNaturalIdentity());
@@ -103,15 +101,10 @@ public class RootFolderEntity extends FolderEntity {
     Set<AlbumFolderEntity> allAlbums = new TreeSet<>();
 
     for (FolderEntity childFolder : getChildFolders()) {
-
       if (childFolder instanceof AlbumFolderEntity) {
-
         allAlbums.add((AlbumFolderEntity) childFolder);
-
       } else {
-
         childFolder.getAllAlbums(allAlbums);
-
       }
     }
 
@@ -199,33 +192,58 @@ public class RootFolderEntity extends FolderEntity {
       }
 
       for (SongFileEntity song : album.getChildSongs()) {
-        String songKey = albumId.toString() + song.getPersistentIdentity().toString();
-        if (!this.songsMap.containsKey(songKey)) {
-          this.songsMap.put(songKey, song);
-        }
+        this.songsMap.put(buildSongKey(albumId, song.getPersistentIdentity()), song);
       }
     }
   }
 
-  public void restoreSongNumPlays() {
+  public void restoreSongNumPlays(String scanPath) {
+
+    String cdStatsPathName = null;
+    OSType osType = OperatingSystemDetector.getOperatingSystem();
+    if (osType == OSType.WINDOWS) {
+      cdStatsPathName = scanPath + File.separator + CD_STATS_FILE_PREFIX + CD_STATS_FILE_SUFFIX;
+    } else if (osType == OSType.MACOS) {
+      cdStatsPathName =
+          scanPath + File.separator + CD_STATS_FILE_PREFIX + "_mac" + CD_STATS_FILE_SUFFIX;
+    } else {
+      cdStatsPathName =
+          scanPath + File.separator + CD_STATS_FILE_PREFIX + "_linux" + CD_STATS_FILE_SUFFIX;
+    }
+
+    Path statsFile = Path.of(cdStatsPathName);
+    if (!Files.exists(statsFile)) {
+      cdStatsPathName = scanPath + File.separator + CD_STATS_FILE_PREFIX + CD_STATS_FILE_SUFFIX;
+      statsFile = Path.of(cdStatsPathName);
+      if (!Files.exists(statsFile)) {
+        System.err.println("CD stats file does not exist: " + cdStatsPathName);
+        return;
+      }
+    }
 
     if (this.songsMap == null) {
       initialize();
     }
 
-    Path statsFile = Path.of(CD_STATS_FILE);
-
-    if (!Files.exists(statsFile)) {
-      System.err.println("CD stats file does not exist: " + CD_STATS_FILE);
-      return;
-    }
-
+    // FIX: Populate a case-insensitive dictionary map for keys to eliminate
+    // readyNAS vs ReadyNAS mount discrepancies.
     Map<String, SongFileEntity> songsByPath = new HashMap<>();
+    Map<String, SongFileEntity> songsByName = new HashMap<>();
     for (SongFileEntity song : this.songsMap.values()) {
 
-      String naturalIdentity = normalizeSongPath(song.getNaturalIdentity());
-      songsByPath.put(naturalIdentity, song);
+      String songPathname = song.getNaturalIdentity().toLowerCase();
+      songsByPath.put(songPathname, song);
+
+      String songName = song.getName().toLowerCase();
+      songsByName.put(songName, song); // Used as a fallback
     }
+
+    // Line format (after trim): "<numPlays> <ignored> <ignored> <songPath> [optional extras]"
+    // Splitting on whitespace with limit=4 keeps the path (which may contain spaces) intact in
+    // the fourth token, while any trailing tokens beyond the path are automatically discarded.
+    // The old single-regex approach broke on paths that contain spaces (e.g. "Top Gun").
+    // Added \s* at the start to catch leading spaces/indentations in log files
+    Pattern statsLinePattern = Pattern.compile("^\\s*(\\d+)(?:\\s+\\S+){2}\\s+(.+)$");
 
     int restoredCount = 0;
     try (BufferedReader reader = Files.newBufferedReader(statsFile, StandardCharsets.UTF_8)) {
@@ -238,69 +256,70 @@ public class RootFolderEntity extends FolderEntity {
           continue;
         }
 
-        // Split into at most 4 parts:
-        // plays, ignored, ignored, full song path
-        String[] parts = line.split("\\s+", 4);
-
-        if (parts.length < 4) {
+        Matcher matcher = statsLinePattern.matcher(line);
+        if (!matcher.matches()) {
           System.err.println("Skipping malformed CD stats line: " + line);
           continue;
         }
 
         try {
-
-          int numPlays = Integer.parseInt(parts[0]);
+          int numPlays = Integer.parseInt(matcher.group(1));
           if (numPlays > 0) {
-            String songPath = normalizeSongPath(parts[3]);
-            SongFileEntity song = songsByPath.get(songPath);
+            String songPath = matcher.group(2).strip();
+
+            SongFileEntity song = songsByPath.get(songPath.toLowerCase());
             if (song != null) {
+
               song.setNumPlays(numPlays);
+
+            } else {
+
+              // Fallback strategy: If path maps changed completely, try to resolve by filename
+              // alone
+              int lastSlash = songPath.lastIndexOf('/');
+              if (lastSlash != -1) {
+
+                String songNameOnly = songPath.substring(lastSlash + 1).toLowerCase();
+                song = songsByName.get(songNameOnly);
+                if (song != null) {
+
+                  song.setNumPlays(numPlays);
+
+                } else {
+                  System.err.println("Could not find song: " + songPath);
+                }
+              }
+
             }
           }
           restoredCount++;
 
         } catch (NumberFormatException e) {
-
           System.err.println("Could not parse num plays from line: " + line);
-
         } catch (Exception e) {
-
           System.err.println("Could not restore song stats from line: " + line);
           e.printStackTrace();
         }
       }
-      System.out.println("Restored num plays for " + restoredCount + " songs.");
+      System.out
+          .println("Restored num plays processing completed for " + restoredCount + " log lines.");
 
     } catch (IOException e) {
-
-      System.err.println("Failed to restore song num plays from: " + CD_STATS_FILE);
+      System.err.println("Failed to restore song num plays from CD Stats file: " + cdStatsPathName);
       e.printStackTrace();
     }
   }
 
   public void resetSongStatistics() {
-
     if (this.songsMap == null) {
       initialize();
     }
-
     for (SongFileEntity song : this.songsMap.values()) {
-
       song.setNumPlays(0);
     }
   }
 
-  private String normalizeSongPath(String path) {
-
-    if (path == null) {
-      return "";
-    }
-
-    return path.replace('\\', '/').trim().toLowerCase();
-  }
-
   public GenreFolderEntity getGenreById(Integer id) throws EntityDoesNotExistException {
-
     GenreFolderEntity entity = genresMap.get(id);
     if (entity != null) {
       return entity;
@@ -309,7 +328,6 @@ public class RootFolderEntity extends FolderEntity {
   }
 
   public ArtistFolderEntity getArtistById(Integer id) throws EntityDoesNotExistException {
-
     ArtistFolderEntity entity = artistsMap.get(id);
     if (entity != null) {
       return entity;
@@ -318,7 +336,6 @@ public class RootFolderEntity extends FolderEntity {
   }
 
   public AlbumFolderEntity getAlbumById(Integer id) throws EntityDoesNotExistException {
-
     AlbumFolderEntity entity = albumsMap.get(id);
     if (entity != null) {
       return entity;
@@ -329,7 +346,7 @@ public class RootFolderEntity extends FolderEntity {
   public SongFileEntity getSongById(Integer albumId, Integer songId)
       throws EntityDoesNotExistException {
 
-    String songKey = albumId.toString() + songId.toString();
+    String songKey = buildSongKey(albumId, songId);
     SongFileEntity entity = songsMap.get(songKey);
     if (entity != null) {
       return entity;
@@ -344,7 +361,7 @@ public class RootFolderEntity extends FolderEntity {
       initializeSongsByPathMap();
     }
 
-    SongFileEntity entity = songsMap.get(songPathname);
+    SongFileEntity entity = songsByPathMap.get(songPathname);
     if (entity != null) {
       return entity;
     }
@@ -352,14 +369,17 @@ public class RootFolderEntity extends FolderEntity {
   }
 
   private void initializeSongsByPathMap() {
-
-    songsByPathMap = new HashMap<>();
-
+    this.songsByPathMap = new HashMap<>();
     for (SongFileEntity song : this.songsMap.values()) {
       String songPathname = song.getNaturalIdentity();
-      if (!this.songsMap.containsKey(songPathname)) {
-        this.songsMap.put(songPathname, song);
+      if (songPathname != null && !this.songsByPathMap.containsKey(songPathname)) {
+        this.songsByPathMap.put(songPathname, song);
       }
     }
+  }
+
+  private String buildSongKey(Integer albumId, Integer songId) {
+
+    return albumId.toString() + "__" + songId.toString();
   }
 }

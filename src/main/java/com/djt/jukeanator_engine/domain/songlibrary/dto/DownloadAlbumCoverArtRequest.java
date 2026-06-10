@@ -5,9 +5,9 @@ public class DownloadAlbumCoverArtRequest {
   private Integer albumId;
   private String coverArtUrl;
 
-  public DownloadAlbumCoverArtRequest(Integer albumId, String scanPath) {
+  public DownloadAlbumCoverArtRequest(Integer albumId, String coverArtUrl) {
     this.albumId = albumId;
-    this.coverArtUrl = scanPath;
+    this.coverArtUrl = coverArtUrl;
   }
 
   public Integer getAlbumId() {

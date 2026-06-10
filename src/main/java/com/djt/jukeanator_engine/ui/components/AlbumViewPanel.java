@@ -38,17 +38,15 @@ public class AlbumViewPanel extends JPanel {
   // ── Palette ───────────────────────────────────────────────────────────────
   private static final Color BG_ROW_HOVER = new Color(255, 255, 255, 25);
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
-  private static final Color ACCENT_GREEN = new Color(60, 210, 80);
   private static final Color ACCENT_EXPLICIT = new Color(220, 60, 60);
   private static final Color TEXT_PRIMARY = Color.WHITE;
   private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
   private static final Color SEPARATOR = new Color(50, 50, 65);
 
-  // ── Popularity bar geometry ───────────────────────────────────────────────
-  private static final int BAR_WIDTH = 5;
-  private static final int BAR_GAP = 3;
-  private static final int BAR_MAX_H = 18;
-  private static final int[] BAR_HEIGHTS = {8, 13, 18};
+  // ── Popularity bar geometry — sourced from SongTrackCellRenderer ──────────
+  private static final int BAR_WIDTH = SongTrackCellRenderer.BAR_WIDTH;
+  private static final int BAR_GAP = SongTrackCellRenderer.BAR_GAP;
+  private static final int BAR_MAX_H = SongTrackCellRenderer.BAR_MAX_H;
 
   // ── Track list pagination state ───────────────────────────────────────────
   private int trackOffset = 0;
@@ -494,44 +492,15 @@ public class AlbumViewPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // POPULARITY BAR WIDGET
   // ─────────────────────────────────────────────────────────────────────────
-  private static class PopularityBarsPanel extends JPanel {
-
+  /**
+   * Delegates to {@link SongTrackCellRenderer.PopularityBarsPanel} — the authoritative shared
+   * implementation. The local type alias keeps all existing call-sites unchanged.
+   */
+  private static class PopularityBarsPanel extends SongTrackCellRenderer.PopularityBarsPanel {
     private static final long serialVersionUID = 1L;
-    private final int activeBars;
 
     PopularityBarsPanel(int activeBars) {
-      this.activeBars = activeBars;
-      setOpaque(false);
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-
-      super.paintComponent(g);
-
-      Graphics2D g2 = (Graphics2D) g.create();
-      g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-      int baseline = getHeight() - 2;
-
-      for (int i = 0; i < 3; i++) {
-
-        int barH = BAR_HEIGHTS[i];
-        int x = i * (BAR_WIDTH + BAR_GAP);
-        int y = baseline - barH;
-
-        if (i < activeBars) {
-          int alpha = 180 + (i * 25);
-          g2.setColor(new Color(ACCENT_GREEN.getRed(), ACCENT_GREEN.getGreen(),
-              ACCENT_GREEN.getBlue(), Math.min(alpha, 255)));
-        } else {
-          g2.setColor(new Color(60, 60, 70, 120));
-        }
-
-        g2.fillRoundRect(x, y, BAR_WIDTH, barH, 2, 2);
-      }
-
-      g2.dispose();
+      super(activeBars);
     }
   }
 
@@ -583,15 +552,7 @@ public class AlbumViewPanel extends JPanel {
   // MISC HELPERS
   // ─────────────────────────────────────────────────────────────────────────
   private static int barsForPlays(Integer numPlays, int t1, int t2, int t3) {
-
-    int plays = (numPlays == null) ? 0 : numPlays;
-    if (plays >= t3)
-      return 3;
-    if (plays >= t2)
-      return 2;
-    if (plays >= t1)
-      return 1;
-    return 0;
+    return SongTrackCellRenderer.barsForPlays(numPlays == null ? 0 : numPlays, t1, t2, t3);
   }
 
   private static void repaintRowChildren(java.awt.Container c) {

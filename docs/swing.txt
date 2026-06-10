@@ -70,3 +70,57 @@ download cover art should download the displayed search result cover art image u
 
 
 
+Refactor JukeANatorFrame, AdminPanel and AlbumViewPanel as follows:
+
+Item #1: The song track listing with green popularity bars is duplicated between AdminPanel and AlbumViewPanel, so create a common Song Track Renderer
+that is used by both
+
+Item #2: Remove the "Queue" tab from the JTabbedPanel in JukeANatorFrame.
+
+Item #3: Change the "Now Playing Panel" in JukeANatorFrame so that if you click anywhere on the panel, that it will bring up a SongQueueDialog that, similar to
+AddSongToQueueDialog in that it times out after 2 minutes, but display wise, it will a read only panel of information about the now playing song.  
+Underneath it, will be a list of queued songs (up to 5 queued songs will be displayed, rendered the same as in Item #1, that is, with green bar
+popularity indicators.  Add buttons for "Move Song Up", "Move Song Down" and "Remove Song".  Each of these buttons will be rendered like the 
+"Play Song" buttons on AddSongToQueueDialog, in that there will be a cost, in credits, to perform these operations, of which will be 2 times the value of 
+the selected song's priority.  The buttons are to be rendered like "Play Song" in that if there's not enough credits, they will have the red border with
+the add credits warning.  CreditManager will need to be passed to this new dialog, along with implementing the keyboard listener in order to modify the
+CreditManager when the increment dollars keystroke is detected, again just like the add song to queue dialog.
+
+
+ 
+
+
+
+Do the following:
+
+Item #1: Change SongQueueDialog to display the Now Playing Song, which can be retrieved by calling SongPlayerService.getNowPlayingSong()
+
+Item #2: Make the dialog taller so that there is no need to show a scroll bar.
+
+Item #3: Gray out the buttons completely if a song is not selected for the song queue.  Do the current behavior of either operation or show add credits with red border for when there is a song selected.
+
+Item #4.  If the first song is selected, then gray out the "Move Up" button
+
+
+
+
+
+For Java 21, refine SongLibraryServiceImpl.getMusicBySearch() to be more like a traditional "fuzzy search" in that calculateSearchResultWeight() assigns weights as follows:
+- Matched Leading Letter: +10 
+- Consecutive Match: +5
+- Unmatched Letter: -1
+- Complete Match: +20
+  
+These matching criteria work together as follows:
+- Matched Leading Letter: Algorithms heavily prioritize matches that start with the same letter as the search query. This increases the confidence that the results share the same context.
+- Consecutive Match: Sequences of letters typed in the exact correct order (e.g., contiguous blocks) receive significant scoring bonuses over scattered or fragmented characters.
+- Unmatched Letter: These represent errors, typos, or omitted characters. Algorithms penalize unmatched letters by calculating an "edit distance" (like insertions, deletions, or substitutions) to determine how far the query strays from the target word.
+- Complete Match: A perfect 100% alignment where the search query is character-for-character identical to the target string, resulting in an edit distance of 0.
+
+Use the attached Levenshtein Distance search algorithm example for guidance
+
+
+
+
+ 
+

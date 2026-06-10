@@ -55,7 +55,7 @@ public final class SongLibraryServiceImpl
   private String scanPath;
   private SongLibraryRepository songLibraryRepository;
   private SongScanner songScanner;
-  private Integer searchResultSize = Integer.valueOf(50);
+  private Integer searchResultSize;
 
   private RootFolderEntity root;
   private boolean isInitialized;
@@ -98,15 +98,11 @@ public final class SongLibraryServiceImpl
       throw new SongLibraryException("SongLibraryService has not been initialized yet!");
     }
 
-    requireNonNull(searchFor, "searchFor cannot be null");
-
-    final String normalizedSearch = searchFor.trim().toLowerCase();
-
-    if (normalizedSearch.isEmpty()) {
+    if (searchFor == null || searchFor.strip().isEmpty()) {
       return new SearchResultDto(List.of(), List.of(), List.of());
     }
 
-    return getMusic(null, normalizedSearch, SortOrder.POPULARITY);
+    return getMusic(null, searchFor.strip().toLowerCase(), SortOrder.POPULARITY);
   }
 
   @Override
@@ -131,30 +127,15 @@ public final class SongLibraryServiceImpl
    * Central query worker for all music-retrieval service methods.
    *
    * <p>
-   * Filtering rules:
-   * <ul>
-   * <li>When {@code genreName} is non-null, all items in that genre are included regardless of play
-   * count (zero-play items are valid genre members).</li>
-   * <li>When {@code searchFor} is non-null, only items whose title matches the search term are
-   * included; play count is irrelevant.</li>
-   * <li>When both are null (global popularity browse), only items with at least one play are
-   * included.</li>
-   * </ul>
-   *
-   * <p>
    * Sort order:
    * <ul>
    * <li>{@link SortOrder#POPULARITY} — highest play count first; search results additionally weight
-   * exact/prefix/suffix/contains matches above raw popularity.</li>
+   * exact/prefix/suffix/contains matches above raw popularity. If weights match, higher play counts
+   * break the tie.</li>
    * <li>{@link SortOrder#TITLE} — ascending alphabetical on {@link LibraryItem#getTitle()}.</li>
    * <li>{@link SortOrder#RELEASE_DATE} — most recent first on {@link LibraryItem#getReleaseDate()},
    * nulls last.</li>
    * </ul>
-   *
-   * @param genreName genre filter; {@code null} means all genres.
-   * @param searchFor pre-normalized (trimmed, lower-cased) search term; {@code null} means no text
-   *        filter.
-   * @param sortOrder how to order the results.
    */
   private SearchResultDto getMusic(String genreName, String searchFor, SortOrder sortOrder) {
 
@@ -164,7 +145,6 @@ public final class SongLibraryServiceImpl
 
     // ── Filters ───────────────────────────────────────────────────────────
 
-    // Play-count guard: skip unplayed items only on the global popularity browse.
     java.util.function.Predicate<LibraryItem> hasPlays =
         (genreName != null || searchFor != null) ? item -> true
             : item -> item.getNumPlays() != null && item.getNumPlays() > 0;
@@ -190,17 +170,18 @@ public final class SongLibraryServiceImpl
 
       case POPULARITY -> {
         if (searchFor != null) {
-          // Search: primary sort is match quality, secondary is play count.
+          // Rule: Primary sort is match quality (descending).
+          // Secondary tiebreaker sort is play count (descending, pushing nulls/unplayed to the
+          // bottom).
           yield Comparator
               .comparingInt(
                   (LibraryItem item) -> calculateSearchResultWeight(item.getTitle(), searchFor))
-              .thenComparing(LibraryItem::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
-              .reversed();
+              .reversed().thenComparing(LibraryItem::getNumPlays,
+                  Comparator.nullsLast(Comparator.reverseOrder()));
         }
         // Plain popularity browse: highest play count first.
-        yield Comparator
-            .comparing(LibraryItem::getNumPlays, Comparator.nullsFirst(Integer::compareTo))
-            .reversed();
+        yield Comparator.comparing(LibraryItem::getNumPlays,
+            Comparator.nullsLast(Comparator.reverseOrder()));
       }
     };
 
@@ -219,37 +200,100 @@ public final class SongLibraryServiceImpl
         SongLibraryMapper.toArtistDtoList(artists), SongLibraryMapper.toAlbumDtoList(albums));
   }
 
+  /**
+   * Calculates a heuristic fuzzy match weight for a library item title against a search query.
+   * Includes structural word boundary recognition (separator_bonus logic) to ensure inner word
+   * matches are prioritized over unaligned character prefixes.
+   */
   private int calculateSearchResultWeight(String value, String normalizedSearch) {
 
-    if (value == null) {
-      return Integer.valueOf(0);
+    if (value == null || normalizedSearch == null || normalizedSearch.isEmpty()) {
+      return 0;
     }
 
-    String normalizedValue = value.toLowerCase().trim();
+    String normalizedValue = value.toLowerCase().strip();
 
-    // Full word match (highest priority)
-    for (String word : normalizedValue.split("\\s+")) {
-      if (word.equals(normalizedSearch)) {
-        return Integer.valueOf(4);
-      }
+    
+    // Complete Match Bonus (+1000)
+    if (normalizedValue.equals(normalizedSearch)) {
+      return 1000;
     }
 
-    // Starts with
-    if (normalizedValue.startsWith(normalizedSearch)) {
-      return Integer.valueOf(3);
-    }
-
-    // Ends with
-    if (normalizedValue.endsWith(normalizedSearch)) {
-      return Integer.valueOf(2);
-    }
-
-    // Contains
+    
+    // Substring Match Bonus (+750)
     if (normalizedValue.contains(normalizedSearch)) {
-      return Integer.valueOf(1);
+      return 750;
+    }
+    
+    
+    // Full Words Match (+500)
+    boolean foundAllWords = true;
+    String[] normalizedSearchWords = normalizedSearch.split(" ");
+    for (String normalizedSearchWord: normalizedSearchWords) {
+      
+      if (!normalizedValue.contains(normalizedSearchWord)) {
+        foundAllWords = false;
+        break;
+      }      
+    }
+    if (foundAllWords) {
+      return 500;
+    }
+    
+    
+    // Levenshtein search algorithm
+    int score = 0;
+    int valueIdx = 0;
+    int searchIdx = 0;
+    int valLen = normalizedValue.length();
+    int searchLen = normalizedSearch.length();
+
+    int lastMatchedValueIdx = -2;
+
+    // Linear Alignment Scanning
+    while (searchIdx < searchLen && valueIdx < valLen) {
+      char searchChar = normalizedSearch.charAt(searchIdx);
+      char valueChar = normalizedValue.charAt(valueIdx);
+
+      if (searchChar == valueChar) {
+
+        // Matched Leading Letter (+10)
+        if (searchIdx == 0 && valueIdx == 0) {
+          score += 10;
+        }
+
+        // Word Boundary Bonus (+30) - Tracks spaces separating keywords
+        if (searchIdx == 0 && valueIdx > 0) {
+          char previousChar = normalizedValue.charAt(valueIdx - 1);
+          if (previousChar == ' ') {
+            score += 30;
+          }
+        }
+
+        // Consecutive Match (+5)
+        if (valueIdx == lastMatchedValueIdx + 1) {
+          score += 5;
+        }
+
+        lastMatchedValueIdx = valueIdx;
+        searchIdx++;
+      } else {
+        // Unmatched Letter Penalty (-1)
+        score -= 1;
+      }
+      valueIdx++;
     }
 
-    return Integer.valueOf(0);
+    // Guard: Query string was not fully sequentially matched
+    if (searchIdx < searchLen) {
+      return 0;
+    }
+
+    // Trailing unmatched character truncation penalty
+    int remainingUnmatched = valLen - valueIdx;
+    score -= remainingUnmatched;
+
+    return Math.max(0, score);
   }
 
   @Override
@@ -351,7 +395,7 @@ public final class SongLibraryServiceImpl
       // Scan the file system for songs
       this.scanPath = scanRequest.getScanPath();
       this.root = songScanner.scanFileSystemForSongs(this.scanPath);
-      this.root.restoreSongNumPlays();
+      this.root.restoreSongNumPlays(this.scanPath);
 
       // Store the song library
       if (this.songLibraryRepository instanceof SongLibraryRepositoryFileSystemImpl) {

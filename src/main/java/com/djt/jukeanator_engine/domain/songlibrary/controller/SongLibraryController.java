@@ -142,14 +142,15 @@ public class SongLibraryController implements SongLibraryService {
   @Override
   @PostMapping("/albums/{albumId}/updateAlbumMetadata")
   public AlbumMetadataDto updateAlbumMetadata(@PathVariable Integer albumId,
-      AlbumMetadataDto albumMetadata) {
+      @RequestBody AlbumMetadataDto albumMetadata) {
 
     return songLibraryService.updateAlbumMetadata(albumId, albumMetadata);
   }
 
   @Override
   @PostMapping("/downloadAlbumCoverArt")
-  public String downloadAlbumCoverArt(DownloadAlbumCoverArtRequest downloadAlbumCoverArtRequest) {
+  public String downloadAlbumCoverArt(
+      @RequestBody DownloadAlbumCoverArtRequest downloadAlbumCoverArtRequest) {
 
     return songLibraryService.downloadAlbumCoverArt(downloadAlbumCoverArtRequest);
   }
