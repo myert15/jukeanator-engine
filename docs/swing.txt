@@ -224,6 +224,28 @@ AlbumDetailCard/AlbumViewCard are currently implemented, when it times out, it p
 If you need further clarification, please ask before going down an ill-advised path.
 
 
+Here are the answers to the questions above.  Let me know if you need further clarification:
+QUESTION 1: For the frame-level card system, should AddSongToQueueCard and SongQueueCard overlay the entire bottom 90% (tabs + content), or just the tab 
+            content area? In other words, do the tabs themselves stay visible as a chrome bar, or is everything replaced while those cards are showing?
+ANSWER 1:   AddSongToQueueCard and SongQueueCard should overlay the entire bottom 90%.  When the user presses cancel, or they perform a queue operation
+            but the remaining number of credits is zero, then like a timeout, whatever was showing prior to the SongQueueCard should be shown.          
+
+
+QUESTION 2: When AddSongToQueueCard is dismissed (timeout or cancel), which tab/card should be restored? Should each caller pass a "return destination" 
+            callback, or should the frame always just flip back to showing the tabs (which will be in whatever state they were in since they aren't destroyed)?
+ANSWER 2:   Whatever tab was previously showing before the SongQueueCard should be restored, and in whatever state they were in before switching to the SongQueueCard
+            
+QUESTION 3: EditAlbumCard uses JOptionPane dialogs internally (search feedback, success/error messages). Should those stay as JOptionPane popups 
+            (they're modal on the frame, not separate windows per se), or do those also need to be inlined somehow?
+ANSWER 3:   Any JOptionPane popups/prompts should be removed in favor of an inline solution, as the goal is to keep the keyboard focus on the JFram
+            so that it will receive keyboard events at all time (and not lose focus at any time because of any JDialog popups) 
+
+
+QUESTION 4: When SongQueueCard is shown as a panel at the frame level, the queue data it was passed was a snapshot at open time. Currently it takes a 
+            List<SongQueueEntryDto> — should the frame pass its currentQueue reference, or do you want the panel to receive a fresh copy on each show?
+ANSWER 4:   Have the frame pass its currentQueue reference.
+
+
 
 
 Gemini
