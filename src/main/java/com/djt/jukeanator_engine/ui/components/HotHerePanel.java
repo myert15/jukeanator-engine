@@ -143,11 +143,17 @@ public class HotHerePanel extends JPanel implements TabNavigator {
   }
 
   /**
-   * Resets the Hot Here tab to its default popularity view. Called whenever the user switches to
-   * this tab.
+   * Resets the Hot Here tab to its default view: returns to the content card and scrolls all three
+   * result columns back to their first page. Does NOT re-query the service — the existing results
+   * data is kept intact so that the event-driven popularity update path remains the sole source of
+   * refreshed data.
    */
   public void resetToDefaultView() {
-    refreshMusicByPopularityResults();
+    artistsOffset = 0;
+    albumsOffset = 0;
+    songsOffset = 0;
+    rebuildColumnsPanel();
+    cardLayout.show(rootPanel, CARD_CONTENT);
   }
 
   // ─────────────────────────────────────────────────────────────────────────

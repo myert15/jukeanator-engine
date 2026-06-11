@@ -50,10 +50,6 @@ public class AdminPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
-  // ── Button icons ──────────────────────────────────────────────────────────
-  private static final String SHUFFLE_ICON = new String(Character.toChars(0x1F500));
-  // Plus sign: ➕ U+271A
-
   // ── Palette ───────────────────────────────────────────────────────────────
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
   private static final Color ACCENT_GOLD = new Color(255, 200, 0);
@@ -82,6 +78,7 @@ public class AdminPanel extends JPanel {
   private final CreditManager creditManager;
   private final ImageLoader imageLoader;
   private final Frame ownerFrame;
+  private final char incrementCreditsKey;
 
   // ── Album list ────────────────────────────────────────────────────────────
   private final DefaultListModel<AlbumDto> albumListModel = new DefaultListModel<>();
@@ -112,6 +109,7 @@ public class AdminPanel extends JPanel {
     this.songPlayerService = songPlayerService;
     this.creditManager = creditManager;
     this.imageLoader = imageLoader;
+    this.incrementCreditsKey = incrementCreditsKey;
 
     setLayout(new BorderLayout(0, 0));
     setOpaque(false);
@@ -207,9 +205,21 @@ public class AdminPanel extends JPanel {
     albumList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     albumList.setCellRenderer(new AlbumCellRenderer());
 
+    // Intercept the hardware bill-acceptor key on the album list so focus
+    // on the list doesn't swallow it before the panel's own KeyListener fires.
+    albumList.addKeyListener(new java.awt.event.KeyAdapter() {
+      @Override
+      public void keyTyped(java.awt.event.KeyEvent e) {
+        if (e.getKeyChar() == incrementCreditsKey) {
+          creditManager.addDollar();
+          e.consume(); // prevent list from using it for type-ahead navigation
+        }
+      }
+    });
+
     JPanel albumPane = new JPanel(new BorderLayout(0, 4));
     albumPane.setOpaque(false);
-    albumPane.add(sectionHeader("JUKEBOX LIST", ACCENT_BLUE), BorderLayout.NORTH);
+    albumPane.add(buildAlbumSectionHeader(), BorderLayout.NORTH);
     albumPane.add(darkScrollPane(albumList), BorderLayout.CENTER);
 
     // ── Queue list ────────────────────────────────────────────────────────
@@ -220,6 +230,17 @@ public class AdminPanel extends JPanel {
     queueList.setSelectionForeground(Color.WHITE);
     queueList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     SongTrackCellRenderer.install(queueList, popularityT1, popularityT2, popularityT3);
+
+    // Same credit-key intercept for when focus is on the queue list
+    queueList.addKeyListener(new java.awt.event.KeyAdapter() {
+      @Override
+      public void keyTyped(java.awt.event.KeyEvent e) {
+        if (e.getKeyChar() == incrementCreditsKey) {
+          creditManager.addDollar();
+          e.consume();
+        }
+      }
+    });
 
     JPanel queuePane = new JPanel(new BorderLayout(0, 4));
     queuePane.setOpaque(false);
@@ -238,7 +259,9 @@ public class AdminPanel extends JPanel {
 
     JPanel strip = buildButtonStrip();
 
+    strip.add(Box.createVerticalGlue());
     strip.add(sideButton("Queue\nAlbum", ACCENT_GREEN, e -> doAddAlbumToQueue()));
+    strip.add(Box.createVerticalGlue());
     strip.add(sideButton("Edit\nAlbum", ACCENT_GOLD, e -> doEditAlbum()));
     strip.add(sideButton("Reset\nStats", ACCENT_ORANGE, e -> doResetStats()));
     strip.add(sideButton("Rescan\nLibrary", ACCENT_VIOLET, e -> doRescan()));
@@ -261,36 +284,23 @@ public class AdminPanel extends JPanel {
   private JPanel buildQueueButtons() {
 
     JPanel strip = buildButtonStrip();
-
-    // ── Playback ──────────────────────────────────────────────────────────
+    strip.add(Box.createVerticalGlue());
     strip.add(sideButton("▶▶\nNext", ACCENT_GREEN, e -> doPlayNextTrack()));
     strip.add(sideButton("❚❚\nPause", ACCENT_BLUE, e -> doPause()));
     strip.add(sideButton("▶\nPlay", ACCENT_GREEN, e -> doPlaySelected()));
-
-    strip.add(verticalSpacer(8));
-
-    // ── Position ──────────────────────────────────────────────────────────
+    strip.add(Box.createVerticalGlue());
     strip.add(sideButton("▲\nMove Up", ACCENT_BLUE, e -> doMoveUp()));
     strip.add(sideButton("▼\nMove Dn", ACCENT_BLUE, e -> doMoveDown()));
     strip.add(sideButton("✕\nRemove", ACCENT_RED, e -> doRemoveSong()));
-
-    strip.add(verticalSpacer(8));
-
-    // ── Queue management ──────────────────────────────────────────────────
+    strip.add(verticalSpacer(20));
     strip.add(sideButton("🗑\nFlush", ACCENT_RED, e -> doFlushQueue()));
-    strip.add(sideButton(SHUFFLE_ICON + "\nShuffle", ACCENT_VIOLET, e -> doRandomizeQueue()));
-
-    strip.add(verticalSpacer(8));
-
-    // ── Credits ───────────────────────────────────────────────────────────
-    strip.add(sideButton("＋\nCredits", ACCENT_GREEN, e -> doIncrementCredits()));
-    strip.add(sideButton("－\nCredits", ACCENT_ORANGE, e -> doDecrementCredits()));
-
-    strip.add(Box.createVerticalGlue());
-
-    // ── Playlist I/O ──────────────────────────────────────────────────────
+    strip.add(sideButton("🔀\nShuffle", ACCENT_VIOLET, e -> doRandomizeQueue()));
+    strip.add(verticalSpacer(20));
     strip.add(sideButton("📂\nLoad Playlist", ACCENT_GOLD, e -> doLoadPlaylist()));
     strip.add(sideButton("💾\nSave Playlist", ACCENT_GOLD, e -> doSavePlaylist()));
+    strip.add(Box.createVerticalGlue());
+    strip.add(sideButton("➕\nCredits", ACCENT_GREEN, e -> doIncrementCredits()));
+    strip.add(sideButton("➖\nCredits", ACCENT_ORANGE, e -> doDecrementCredits()));
 
     JPanel wrapper = new JPanel(new BorderLayout());
     wrapper.setOpaque(false);
@@ -713,6 +723,104 @@ public class AdminPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // WIDGET HELPERS
   // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Builds the "JUKEBOX LIST" section header that includes a compact filter text field on the
+   * right. Typing in the field scrolls the album list to the first entry whose display name starts
+   * with the entered text (case-insensitive).
+   */
+  private JPanel buildAlbumSectionHeader() {
+    JPanel header = new JPanel(new BorderLayout(8, 0)) {
+      private static final long serialVersionUID = 1L;
+
+      @Override
+      protected void paintComponent(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setColor(new Color(8, 8, 14));
+        g2.fillRect(0, 0, getWidth(), getHeight());
+        g2.setColor(ACCENT_BLUE);
+        g2.fillRect(0, getHeight() - 2, getWidth(), 2);
+        g2.dispose();
+        super.paintComponent(g);
+      }
+    };
+    header.setOpaque(false);
+    header.setBorder(new EmptyBorder(6, 10, 6, 10));
+
+    JLabel lbl = new JLabel("JUKEBOX LIST");
+    lbl.setForeground(ACCENT_BLUE);
+    lbl.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+    header.add(lbl, BorderLayout.WEST);
+
+    // ── Filter field ─────────────────────────────────────────────────────
+    javax.swing.JTextField filterField = new javax.swing.JTextField();
+    filterField.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+    filterField.setForeground(TEXT_PRIMARY);
+    filterField.setBackground(new Color(18, 20, 30));
+    filterField.setCaretColor(ACCENT_BLUE);
+    filterField.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createLineBorder(SEPARATOR, 1), new EmptyBorder(2, 6, 2, 6)));
+    filterField.setPreferredSize(new Dimension(160, 24));
+    filterField.setMaximumSize(new Dimension(160, 24));
+    filterField.setToolTipText("Filter — jumps to first match");
+
+    // Jump to the first album whose display name starts with the filter text
+    filterField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+      private void jumpToMatch() {
+        String filter = filterField.getText().trim().toLowerCase();
+        if (filter.isEmpty())
+          return;
+        for (int i = 0; i < albumListModel.getSize(); i++) {
+          AlbumDto album = albumListModel.getElementAt(i);
+          String display = AlbumGridPanel
+              .albumDisplayName(album.getAlbumName(), album.getGenreName()).toLowerCase();
+          if (display.startsWith(filter)) {
+            albumList.setSelectedIndex(i);
+            albumList.ensureIndexIsVisible(i);
+            return;
+          }
+        }
+      }
+
+      @Override
+      public void insertUpdate(javax.swing.event.DocumentEvent e) {
+        jumpToMatch();
+      }
+
+      @Override
+      public void removeUpdate(javax.swing.event.DocumentEvent e) {
+        jumpToMatch();
+      }
+
+      @Override
+      public void changedUpdate(javax.swing.event.DocumentEvent e) {
+        jumpToMatch();
+      }
+    });
+
+    // Intercept the credit key so it is not consumed as typed text
+    filterField.addKeyListener(new java.awt.event.KeyAdapter() {
+      @Override
+      public void keyTyped(java.awt.event.KeyEvent e) {
+        if (e.getKeyChar() == incrementCreditsKey) {
+          creditManager.addDollar();
+          e.consume();
+        }
+      }
+    });
+
+    JPanel filterWrapper = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
+    filterWrapper.setOpaque(false);
+    JLabel filterLbl = new JLabel("Filter: ");
+    filterLbl.setForeground(TEXT_MUTED);
+    filterLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+    filterWrapper.add(filterLbl);
+    filterWrapper.add(filterField);
+    header.add(filterWrapper, BorderLayout.EAST);
+
+    return header;
+  }
+
   /**
    * Vertical BoxLayout strip with uniform top padding — the structural container for both the WEST
    * and EAST button columns.

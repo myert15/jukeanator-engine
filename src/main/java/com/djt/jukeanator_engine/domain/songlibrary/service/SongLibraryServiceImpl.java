@@ -394,6 +394,7 @@ public final class SongLibraryServiceImpl
 
       // Scan the file system for songs
       this.scanPath = scanRequest.getScanPath();
+      this.root.storeSongNumPlays(this.scanPath);
       this.root = songScanner.scanFileSystemForSongs(this.scanPath);
       this.root.restoreSongNumPlays(this.scanPath);
 

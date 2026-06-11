@@ -10,7 +10,6 @@ import java.awt.RenderingHints;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
 
@@ -35,8 +34,6 @@ public class SongTrackCellRenderer extends JPanel
   // ── Palette ───────────────────────────────────────────────────────────────
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
   private static final Color ACCENT_GREEN = new Color(60, 210, 80);
-  private static final Color ACCENT_RED = new Color(220, 60, 60);
-  private static final Color ACCENT_ORANGE = new Color(255, 140, 0);
   private static final Color TEXT_PRIMARY = Color.WHITE;
   private static final Color TEXT_MUTED = new Color(160, 165, 180);
   private static final Color LIST_BG = new Color(10, 12, 18);
@@ -50,7 +47,6 @@ public class SongTrackCellRenderer extends JPanel
 
   // ── Sub-widgets ───────────────────────────────────────────────────────────
   private final PopularityBarsPanel barsPanel;
-  private final JLabel position = new JLabel();
   private final JLabel song = new JLabel();
   private final JLabel sub = new JLabel();
 
@@ -73,11 +69,6 @@ public class SongTrackCellRenderer extends JPanel
     barsPanel.setPreferredSize(new Dimension(3 * (BAR_WIDTH + BAR_GAP) + 6, BAR_MAX_H + 4));
     barsPanel.setOpaque(false);
 
-    // Position / priority badge
-    position.setPreferredSize(new Dimension(28, 36));
-    position.setHorizontalAlignment(SwingConstants.CENTER);
-    position.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
-
     // Text cluster
     JPanel text = new JPanel(new BorderLayout(0, 1));
     text.setOpaque(false);
@@ -86,13 +77,7 @@ public class SongTrackCellRenderer extends JPanel
     text.add(song, BorderLayout.CENTER);
     text.add(sub, BorderLayout.SOUTH);
 
-    // Left cluster: bars + badge
-    JPanel left = new JPanel(new BorderLayout(4, 0));
-    left.setOpaque(false);
-    left.add(barsPanel, BorderLayout.WEST);
-    left.add(position, BorderLayout.CENTER);
-
-    add(left, BorderLayout.WEST);
+    add(barsPanel, BorderLayout.WEST);
     add(text, BorderLayout.CENTER);
   }
 
@@ -104,11 +89,6 @@ public class SongTrackCellRenderer extends JPanel
     int plays = entry.getSong().getNumPlays() == null ? 0 : entry.getSong().getNumPlays();
     int active = barsForPlays(plays, t1, t2, t3);
     barsPanel.setActiveBars(active);
-
-    // ── Position / priority badge ──────────────────────────────────────────
-    position.setText(String.valueOf(index + 1));
-    int p = entry.getPriority() == null ? 0 : entry.getPriority();
-    position.setForeground(p >= 8 ? ACCENT_RED : p >= 4 ? ACCENT_ORANGE : TEXT_MUTED);
 
     // ── Song / sub text ────────────────────────────────────────────────────
     song.setText(entry.getSong().getSongName());

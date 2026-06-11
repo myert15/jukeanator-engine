@@ -2,6 +2,7 @@ package com.djt.jukeanator_engine.domain.songlibrary.model;
 
 import static java.util.Objects.requireNonNull;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -9,14 +10,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import com.djt.jukeanator_engine.domain.common.exception.EntityDoesNotExistException;
 import com.djt.jukeanator_engine.domain.common.utils.OperatingSystemDetector;
 import com.djt.jukeanator_engine.domain.common.utils.OperatingSystemDetector.OSType;
@@ -40,12 +40,6 @@ public class RootFolderEntity extends FolderEntity {
 
   public RootFolderEntity() {}
 
-  /**
-   * Windows: C:\Users\Admin\Music rootPrefix is: C:\ Linux: /Users/Admin/Music rootPrefix is: /
-   * * @param rootPrefix
-   * 
-   * @param name
-   */
   public RootFolderEntity(String rootPrefix, String name) {
     super(null, name);
     requireNonNull(rootPrefix, "rootPrefix cannot be null");
@@ -199,18 +193,7 @@ public class RootFolderEntity extends FolderEntity {
 
   public void restoreSongNumPlays(String scanPath) {
 
-    String cdStatsPathName = null;
-    OSType osType = OperatingSystemDetector.getOperatingSystem();
-    if (osType == OSType.WINDOWS) {
-      cdStatsPathName = scanPath + File.separator + CD_STATS_FILE_PREFIX + CD_STATS_FILE_SUFFIX;
-    } else if (osType == OSType.MACOS) {
-      cdStatsPathName =
-          scanPath + File.separator + CD_STATS_FILE_PREFIX + "_mac" + CD_STATS_FILE_SUFFIX;
-    } else {
-      cdStatsPathName =
-          scanPath + File.separator + CD_STATS_FILE_PREFIX + "_linux" + CD_STATS_FILE_SUFFIX;
-    }
-
+    String cdStatsPathName = buildCdStatsPathname(scanPath);
     Path statsFile = Path.of(cdStatsPathName);
     if (!Files.exists(statsFile)) {
       cdStatsPathName = scanPath + File.separator + CD_STATS_FILE_PREFIX + CD_STATS_FILE_SUFFIX;
@@ -225,26 +208,18 @@ public class RootFolderEntity extends FolderEntity {
       initialize();
     }
 
-    // FIX: Populate a case-insensitive dictionary map for keys to eliminate
-    // readyNAS vs ReadyNAS mount discrepancies.
     Map<String, SongFileEntity> songsByPath = new HashMap<>();
-    Map<String, SongFileEntity> songsByName = new HashMap<>();
     for (SongFileEntity song : this.songsMap.values()) {
 
       String songPathname = song.getNaturalIdentity().toLowerCase();
       songsByPath.put(songPathname, song);
-
-      String songName = song.getName().toLowerCase();
-      songsByName.put(songName, song); // Used as a fallback
     }
 
-    // Line format (after trim): "<numPlays> <ignored> <ignored> <songPath> [optional extras]"
-    // Splitting on whitespace with limit=4 keeps the path (which may contain spaces) intact in
-    // the fourth token, while any trailing tokens beyond the path are automatically discarded.
-    // The old single-regex approach broke on paths that contain spaces (e.g. "Top Gun").
-    // Added \s* at the start to catch leading spaces/indentations in log files
-    Pattern statsLinePattern = Pattern.compile("^\\s*(\\d+)(?:\\s+\\S+){2}\\s+(.+)$");
-
+    // NEW FORMAT
+    // <numPlays> <songPath>
+    //
+    // OLD FORMAT
+    // <numPlays> <ignored> <ignored> <songPath>
     int restoredCount = 0;
     try (BufferedReader reader = Files.newBufferedReader(statsFile, StandardCharsets.UTF_8)) {
 
@@ -256,40 +231,26 @@ public class RootFolderEntity extends FolderEntity {
           continue;
         }
 
-        Matcher matcher = statsLinePattern.matcher(line);
-        if (!matcher.matches()) {
-          System.err.println("Skipping malformed CD stats line: " + line);
-          continue;
-        }
-
         try {
-          int numPlays = Integer.parseInt(matcher.group(1));
-          if (numPlays > 0) {
-            String songPath = matcher.group(2).strip();
 
+          int scanPathIndex = line.indexOf(scanPath);
+          if (scanPathIndex < 0) {
+            System.err.println("scanPath: [" + scanPath + "] does not exist in: [" + line + "]");
+            continue;
+          }
+
+          String prefix = line.substring(0, scanPathIndex);
+          String[] parts = prefix.split(" ");
+
+          int numPlays = Integer.parseInt(parts[0].trim());
+          if (numPlays > 0) {
+
+            String songPath = line.substring(scanPathIndex).trim();
             SongFileEntity song = songsByPath.get(songPath.toLowerCase());
             if (song != null) {
-
               song.setNumPlays(numPlays);
-
             } else {
-
-              // Fallback strategy: If path maps changed completely, try to resolve by filename
-              // alone
-              int lastSlash = songPath.lastIndexOf('/');
-              if (lastSlash != -1) {
-
-                String songNameOnly = songPath.substring(lastSlash + 1).toLowerCase();
-                song = songsByName.get(songNameOnly);
-                if (song != null) {
-
-                  song.setNumPlays(numPlays);
-
-                } else {
-                  System.err.println("Could not find song: " + songPath);
-                }
-              }
-
+              System.err.println("Could not find song: " + songPath);
             }
           }
           restoredCount++;
@@ -308,6 +269,54 @@ public class RootFolderEntity extends FolderEntity {
       System.err.println("Failed to restore song num plays from CD Stats file: " + cdStatsPathName);
       e.printStackTrace();
     }
+  }
+
+  public void storeSongNumPlays(String scanPath) {
+
+    String cdStatsPathName = buildCdStatsPathname(scanPath);
+
+    List<SongFileEntity> songs = new ArrayList<>(this.songsMap.values());
+
+    songs.sort(
+        Comparator.comparing(SongFileEntity::getNaturalIdentity, String.CASE_INSENSITIVE_ORDER));
+
+    Path statsFile = Path.of(cdStatsPathName);
+
+    try (BufferedWriter writer = Files.newBufferedWriter(statsFile, StandardCharsets.UTF_8)) {
+
+      for (SongFileEntity song : songs) {
+
+        String songPath = song.getNaturalIdentity();
+        if (songPath == null || songPath.isBlank()) {
+          continue;
+        }
+
+        writer.write(song.getNumPlays() + " " + songPath);
+        writer.newLine();
+      }
+
+      System.out.println("Stored num plays for " + songs.size() + " songs to " + cdStatsPathName);
+
+    } catch (IOException e) {
+      System.err.println("Failed to store song num plays to CD Stats file: " + cdStatsPathName);
+      e.printStackTrace();
+    }
+  }
+
+  private String buildCdStatsPathname(String scanPath) {
+
+    String cdStatsPathName = null;
+    OSType osType = OperatingSystemDetector.getOperatingSystem();
+    if (osType == OSType.WINDOWS) {
+      cdStatsPathName = scanPath + File.separator + CD_STATS_FILE_PREFIX + CD_STATS_FILE_SUFFIX;
+    } else if (osType == OSType.MACOS) {
+      cdStatsPathName =
+          scanPath + File.separator + CD_STATS_FILE_PREFIX + "_mac" + CD_STATS_FILE_SUFFIX;
+    } else {
+      cdStatsPathName =
+          scanPath + File.separator + CD_STATS_FILE_PREFIX + "_linux" + CD_STATS_FILE_SUFFIX;
+    }
+    return cdStatsPathName;
   }
 
   public void resetSongStatistics() {

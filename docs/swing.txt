@@ -117,7 +117,8 @@ Item #1: Change SongQueueDialog to display the Now Playing Song, which can be re
 
 Item #2: Make the dialog taller so that there is no need to show a scroll bar.
 
-Item #3: Gray out the buttons completely if a song is not selected for the song queue.  Do the current behavior of either operation or show add credits with red border for when there is a song selected.
+Item #3: Gray out the buttons completely if a song is not selected for the song queue.  Do the current behavior of either operation or show 
+add credits with red border for when there is a song selected.
 
 Item #4.  If the first song is selected, then gray out the "Move Up" button
 
@@ -158,5 +159,53 @@ filter.
 
 Item #4, For the Admin Panel, center the action buttons on the left/WEST and right/EAST vertically along the panel
 
- 
 
+
+ 
+Do the following to RootFolderEntity:
+ 
+Item #1, Refactor the restoreSongNumPlays() method in RootFolderEntity to be able to parse two types of lines:
+    Option 1: This is the current method that is of the form: <numPlays> <ignored> <ignored> <songPath> [optional extras]
+    Option 2: This is the new method to support: <numPlays> <songPath>
+    
+Item #2: Write a new method called storeSongNumPlays() that takes all of the values of the songsMap HashMap, adds them to an ArrayList,
+sorts them by SongFileEntity.getNaturalIdentity(), then writes to the same file as determined by restoreSongNumPlays() using the Option 2
+format of restoreSongNumPlays(), which is: <numPlays> <songPath>
+
+
+
+
+For the attached screenshot of the SongQueueDialog, do the following:
+
+Item #1: The "QUEUED SONGS" label does not have enough padding on top/NORTH, as the bottom of the now playing song panel is almost
+appearing on top of this label.  Add a 15 pixel padding between them.
+
+Item #2: Make the CANCEL button shorter and rename to "Cancel".
+
+Item #3: Change the track list renderer to NOT show the index of the song in whatever list is being shown in, as it is confusing 
+to the user, that might think that it is the track number.
+
+Item #4: For the "HOT HERE" panel, the resetToDefaultView() is incorrect in two ways:  One, it should not be querying the
+SongLibraryService.getMusicByPopularity(), as an event handler is in place to get updates for these results.  Two, if the 
+user scrolls down to the next page on any of the artist/album/song result columns, "resetToDefaultView()" doesn't show the
+first page of each of these columns.  In fact, this method should ONLY be doing this part.
+
+
+
+
+
+
+
+
+
+
+
+
+Modify SongQueueDialog to have the buttons for "Move Song Up", "Move Song Down" and "Remove Song" be rendered like the 
+"Play Song" buttons on AddSongToQueueDialog, in that there will be a cost, in credits, to perform these operations, of which will be 2 times the value of 
+the selected song's priority.  The buttons are to be rendered like "Play Song" in that if there's not enough credits, they will have the red border with
+the add credits warning.  If enough credits are entered, then they should be rendered as "active".  There is a 3rd state, which is completely grayed
+out (with no cost/warning label) if a song is not selected.
+
+
+ 

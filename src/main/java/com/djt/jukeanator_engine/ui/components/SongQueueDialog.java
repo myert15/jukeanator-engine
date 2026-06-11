@@ -301,6 +301,8 @@ public class SongQueueDialog extends JDialog {
   private JPanel buildQueueSection() {
     JPanel section = new JPanel(new BorderLayout(0, 8));
     section.setOpaque(false);
+    // Extra top margin separates this section visually from Now Playing
+    section.setBorder(new EmptyBorder(15, 0, 0, 0));
 
     // Header
     JLabel header = new JLabel("QUEUED SONGS");
@@ -366,8 +368,11 @@ public class SongQueueDialog extends JDialog {
     buttons.add(moveDownButton);
     buttons.add(removeButton);
 
-    // Cancel button
-    JButton cancel = createCancelButton("CANCEL");
+    // Cancel button — narrower and shorter than the action buttons, centred
+    JButton cancel = createCancelButton("Cancel");
+    cancel.setPreferredSize(new Dimension(200, 52));
+    cancel.setMinimumSize(new Dimension(200, 52));
+    cancel.setMaximumSize(new Dimension(200, 52));
     JPanel cancelRow = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 0, 0));
     cancelRow.setOpaque(false);
     cancelRow.add(cancel);
