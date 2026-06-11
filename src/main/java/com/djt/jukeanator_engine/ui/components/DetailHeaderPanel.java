@@ -28,6 +28,9 @@ public class DetailHeaderPanel extends JPanel {
   private static final Color TEXT_SECONDARY = AlbumGridPanel.TEXT_SECONDARY;
   private static final Color COLOR_BORDER = new Color(60, 60, 80);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONSTRUCTOR
+  // ─────────────────────────────────────────────────────────────────────────
   public DetailHeaderPanel(String buttonText, Runnable onBack, Icon image, String fallbackText,
       String title, String subtitle) {
     this(buttonText, onBack, image, fallbackText, title, subtitle, null);

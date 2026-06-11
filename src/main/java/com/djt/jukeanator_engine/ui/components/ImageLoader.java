@@ -54,12 +54,12 @@ public class ImageLoader {
     }
     return loadImage(imageUrl, width, height, Image.SCALE_SMOOTH);
   }
-  
+
   public ImageIcon loadClasspathImage(String resourceName, int width, int height) {
-    
+
     return this.loadClasspathImage(resourceName, width, height, Image.SCALE_SMOOTH);
   }
-  
+
   public ImageIcon loadClasspathImage(String resourceName, int width, int height, int scaling) {
 
     if (resourceName == null || resourceName.isBlank()) {
@@ -99,7 +99,7 @@ public class ImageLoader {
   }
 
   public static Image createTransparentImage(Image srcImage, boolean filterAbove, int threshold) {
-    
+
     RGBImageFilter filter = new RGBImageFilter() {
       @Override
       public final int filterRGB(int x, int y, int rgb) {
@@ -109,12 +109,12 @@ public class ImageLoader {
 
         if (filterAbove) {
           if (r >= threshold && g >= threshold && b >= threshold) {
-            return 0x00FFFFFF & rgb; 
-          }          
+            return 0x00FFFFFF & rgb;
+          }
         } else {
           if (r <= threshold && g <= threshold && b <= threshold) {
-            return 0x00FFFFFF & rgb; 
-          }          
+            return 0x00FFFFFF & rgb;
+          }
         }
         return rgb;
       }
@@ -123,7 +123,7 @@ public class ImageLoader {
     ImageProducer ip = new FilteredImageSource(srcImage.getSource(), filter);
     return Toolkit.getDefaultToolkit().createImage(ip);
   }
-  
+
   private record CacheKey(URL url, int width, int height) {
     CacheKey {
       Objects.requireNonNull(url);

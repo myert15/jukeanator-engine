@@ -70,7 +70,6 @@ public class JukeANatorFrame extends JFrame {
 
   // SEARCH TAB
   private final boolean enableTypeAheadSearch;
-  private final boolean enableAlbumSelection;
   private SearchPanel searchPanel;
 
   // HOT HERE TAB
@@ -102,7 +101,9 @@ public class JukeANatorFrame extends JFrame {
   private final int tenDollarBonusCredits;
 
 
+  // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
+  // ─────────────────────────────────────────────────────────────────────────
   public JukeANatorFrame(JukeANatorUserInterfaceProperties jukeANatorUserInterfaceProperties,
       SongLibraryService songLibraryService, SongQueueService songQueueService,
       SongPlayerService songPlayerService) {
@@ -121,7 +122,6 @@ public class JukeANatorFrame extends JFrame {
     this.tenDollarBonusCredits = this.jukeANatorUserInterfaceProperties.getTenDollarBonusCredits();
 
     this.enableTypeAheadSearch = this.jukeANatorUserInterfaceProperties.isEnableTypeAheadSearch();
-    this.enableAlbumSelection = false;
 
     this.creditManager = new CreditManager(numCredits, creditsPerDollar, fiveDollarBonusCredits,
         tenDollarBonusCredits);
@@ -426,8 +426,7 @@ public class JukeANatorFrame extends JFrame {
 
     return new HomePanel(incrementCreditsKey, creditManager, songLibraryService, songQueueService,
         imageLoader, priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
-        POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H,
-        enableAlbumSelection);
+        POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H);
   }
 
   // ============================================================
@@ -438,7 +437,7 @@ public class JukeANatorFrame extends JFrame {
     return new SearchPanel(incrementCreditsKey, creditManager, songLibraryService, songQueueService,
         imageLoader, priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
         POPULARITY_THRESHOLD_3, enableTypeAheadSearch, HOME_GRID_COLS, HOME_GRID_ROWS,
-        HOME_TILE_ART_W, HOME_TILE_ART_H, enableAlbumSelection);
+        HOME_TILE_ART_W, HOME_TILE_ART_H);
   }
 
   // ============================================================
@@ -449,7 +448,7 @@ public class JukeANatorFrame extends JFrame {
     return new HotHerePanel(incrementCreditsKey, creditManager, songLibraryService,
         songQueueService, imageLoader, priorityCostMultiplier, POPULARITY_THRESHOLD_1,
         POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS,
-        HOME_TILE_ART_W, HOME_TILE_ART_H, enableAlbumSelection);
+        HOME_TILE_ART_W, HOME_TILE_ART_H);
   }
 
   // ============================================================
@@ -459,8 +458,7 @@ public class JukeANatorFrame extends JFrame {
 
     return new GenrePanel(incrementCreditsKey, creditManager, songLibraryService, songQueueService,
         imageLoader, priorityCostMultiplier, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
-        POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H,
-        enableAlbumSelection);
+        POPULARITY_THRESHOLD_3, HOME_GRID_COLS, HOME_GRID_ROWS, HOME_TILE_ART_W, HOME_TILE_ART_H);
   }
 
   // ============================================================

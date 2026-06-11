@@ -14,18 +14,6 @@ public class ArtistDetailPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * @param artist The artist to display (must have albums list populated).
-   * @param imageLoader Shared loader.
-   * @param gridCols Album grid columns per page.
-   * @param gridRows Album grid rows per page.
-   * @param artW Tile art pixel width.
-   * @param artH Tile art pixel height.
-   * @param backLabel Text on the back button, e.g. "← BACK" or "← HOME".
-   * @param onBack Runnable executed when the back button is pressed.
-   * @param onAlbumClicked Called when the user selects an album tile.
-   */
   public ArtistDetailPanel(ArtistDto artist, ImageLoader imageLoader, int gridCols, int gridRows,
       int artW, int artH, String backLabel, Runnable onBack,
       AlbumGridPanel.AlbumClickListener onAlbumClicked) {

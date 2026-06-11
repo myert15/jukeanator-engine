@@ -107,8 +107,9 @@ public class SongQueueDialog extends JDialog {
   private final JLabel timeoutLabel = new JProgressLabel();
   private final JProgressBar timeoutBar = new JProgressBar(0, TIMEOUT_SECONDS);
 
-  // ── Constructor ───────────────────────────────────────────────────────────
-
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONSTRUCTOR
+  // ─────────────────────────────────────────────────────────────────────────
   public SongQueueDialog(Frame owner, SongPlayerService songPlayerService,
       List<SongQueueEntryDto> queue, SongQueueService songQueueService, CreditManager creditManager,
       ImageLoader imageLoader, int popularityT1, int popularityT2, int popularityT3,

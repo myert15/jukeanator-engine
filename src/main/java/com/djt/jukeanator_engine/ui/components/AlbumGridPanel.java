@@ -67,16 +67,6 @@ public class AlbumGridPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * @param albums Full album list to paginate across.
-   * @param imageLoader Shared loader.
-   * @param cols Number of tile columns per page.
-   * @param rows Number of tile rows per page.
-   * @param artW Pixel width of each album art image.
-   * @param artH Pixel height of each album art image.
-   * @param listener Called when the user taps/clicks an album tile.
-   */
   public AlbumGridPanel(List<AlbumDto> albums, ImageLoader imageLoader, int cols, int rows,
       int artW, int artH, AlbumClickListener listener) {
 

@@ -85,6 +85,9 @@ public class AddSongToQueueDialog extends JDialog {
   private final JLabel timeoutLabel = new JLabel();
   private final JProgressBar timeoutBar = new JProgressBar(0, TIMEOUT_SECONDS);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONSTRUCTOR
+  // ─────────────────────────────────────────────────────────────────────────
   public AddSongToQueueDialog(Frame owner, SongDto song, ImageLoader imageLoader,
       int priorityCostMultiplier, SongQueueService songQueueService, CreditManager creditManager,
       char incrementCreditsKey) {
@@ -135,7 +138,7 @@ public class AddSongToQueueDialog extends JDialog {
       }
     });
 
-    requestFocusInWindow();    
+    requestFocusInWindow();
   }
 
   private JPanel buildBorderPanel() {

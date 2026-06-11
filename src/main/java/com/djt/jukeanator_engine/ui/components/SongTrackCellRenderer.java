@@ -50,6 +50,9 @@ public class SongTrackCellRenderer extends JPanel
   private final JLabel song = new JLabel();
   private final JLabel sub = new JLabel();
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONSTRUCTOR
+  // ─────────────────────────────────────────────────────────────────────────
   /**
    * @param t1 Minimum plays for 1 bar.
    * @param t2 Minimum plays for 2 bars.

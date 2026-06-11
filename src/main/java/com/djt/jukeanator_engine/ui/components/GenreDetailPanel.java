@@ -85,6 +85,9 @@ public class GenreDetailPanel extends JPanel {
     void onArtistClicked(ArtistDto artist);
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONSTRUCTOR
+  // ─────────────────────────────────────────────────────────────────────────
   public GenreDetailPanel(GenreDto genre, SearchResultDto results, ImageLoader imageLoader,
       SongQueueService songQueueService, int priorityCostMultiplier, String backLabel,
       Runnable onBack, AlbumGridPanel.AlbumClickListener onAlbumClicked,

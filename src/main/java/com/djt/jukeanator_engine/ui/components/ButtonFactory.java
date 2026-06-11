@@ -18,7 +18,7 @@ public final class ButtonFactory {
   private static final Color NB_GRAD_BOTTOM = new Color(0, 80, 130);
   private static final Color NB_HOVER_TOP = new Color(0, 190, 240);
   private static final Color NB_HOVER_BOTTOM = new Color(0, 100, 160);
-  
+
   public static JButton createNavigationButton(String text) {
 
     JButton button = new JButton(text) {

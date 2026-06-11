@@ -99,6 +99,9 @@ public class AdminPanel extends JPanel {
   // ── Invalid Metadata Tracking Cache (Item #1) ─────────────────────────────
   private final List<AlbumDto> albumsWithInvalidMetadata = new ArrayList<>();
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONSTRUCTOR
+  // ─────────────────────────────────────────────────────────────────────────
   public AdminPanel(Frame ownerFrame, SongLibraryService songLibraryService,
       SongQueueService songQueueService, SongPlayerService songPlayerService,
       CreditManager creditManager, char incrementCreditsKey, ImageLoader imageLoader) {
@@ -341,7 +344,7 @@ public class AdminPanel extends JPanel {
         JOptionPane.showMessageDialog(this, "Please select an album first.", "No Selection",
             JOptionPane.WARNING_MESSAGE);
         return;
-      }      
+      }
     }
 
     EditAlbumDialog dialog =

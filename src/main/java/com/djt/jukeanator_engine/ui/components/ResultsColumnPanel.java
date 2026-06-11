@@ -26,8 +26,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 
 /**
- * Shared factory for the "ARTISTS / ALBUMS / SONGS" three-column result layout used by both
- * {@link SearchPanel} and {@link HotHerePanel}.
+ * Shared factory for the "ARTISTS / ALBUMS / SONGS" three-column result layout
  */
 public final class ResultsColumnPanel {
 
@@ -45,7 +44,6 @@ public final class ResultsColumnPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // FACTORY METHOD
   // ─────────────────────────────────────────────────────────────────────────
-
   /**
    * Builds a paginated column view panel. * @param onOffsetChanged Callback accepting the newly
    * calculated integer offset when navigating pages.

@@ -98,6 +98,9 @@ public class EditAlbumDialog extends JDialog {
   private JButton btnUpdateMeta;
   private JButton btnDownloadArt;
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONSTRUCTOR
+  // ─────────────────────────────────────────────────────────────────────────
   public EditAlbumDialog(Frame owner, SongLibraryService songLibraryService, AlbumDto selectedAlbum,
       List<AlbumDto> invalidAlbumsList) {
     super(owner, "Edit Album Metadata", true);

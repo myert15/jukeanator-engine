@@ -65,16 +65,11 @@ public class AlbumViewPanel extends JPanel {
     void onSongClicked(SongDto song);
   }
 
-  // ── Album-click callback ───────────────────────────────────────────────────
-  public interface AlbumClickListener {
-    void onAlbumClicked(AlbumDto album);
-  }
-
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
   public AlbumViewPanel(AlbumDto album, ImageLoader imageLoader, int threshold1, int threshold2,
-      int threshold3, SongClickListener songClickListener, AlbumClickListener albumClickListener) {
+      int threshold3, SongClickListener songClickListener) {
 
     setLayout(new BorderLayout(0, 0));
     setOpaque(false);
@@ -82,7 +77,7 @@ public class AlbumViewPanel extends JPanel {
     // giving the same screen margins as the genre details view.
     setBorder(new EmptyBorder(0, 10, 0, 10));
 
-    add(buildSidebar(album, imageLoader, albumClickListener), BorderLayout.WEST);
+    add(buildSidebar(album, imageLoader), BorderLayout.WEST);
     add(buildTrackList(album, threshold1, threshold2, threshold3, songClickListener),
         BorderLayout.CENTER);
   }
@@ -90,8 +85,7 @@ public class AlbumViewPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // LEFT SIDEBAR — cover art + album metadata
   // ─────────────────────────────────────────────────────────────────────────
-  private JPanel buildSidebar(AlbumDto album, ImageLoader imageLoader,
-      AlbumClickListener albumClickListener) {
+  private JPanel buildSidebar(AlbumDto album, ImageLoader imageLoader) {
 
     JPanel sidebar = new JPanel(new GridBagLayout());
     sidebar.setOpaque(false);
@@ -124,31 +118,6 @@ public class AlbumViewPanel extends JPanel {
       cover.setText("♫");
       cover.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 64));
       cover.setForeground(new Color(80, 80, 100));
-    }
-
-    cover.setBorder(BorderFactory.createLineBorder(new Color(50, 50, 65), 1));
-
-    if (albumClickListener != null) {
-
-      cover.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-      cover.addMouseListener(new java.awt.event.MouseAdapter() {
-
-        @Override
-        public void mouseEntered(java.awt.event.MouseEvent e) {
-          cover.setBorder(BorderFactory.createLineBorder(ACCENT_BLUE, 3));
-        }
-
-        @Override
-        public void mouseExited(java.awt.event.MouseEvent e) {
-          cover.setBorder(null);
-        }
-
-        @Override
-        public void mouseClicked(java.awt.event.MouseEvent e) {
-          albumClickListener.onAlbumClicked(album);
-        }
-      });
     }
 
     // ── Metadata ──────────────────────────────────────────────────────────

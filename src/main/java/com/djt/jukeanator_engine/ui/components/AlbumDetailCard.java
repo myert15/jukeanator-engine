@@ -32,10 +32,13 @@ public class AlbumDetailCard extends JPanel {
   private final JLabel timeoutLabel = new JLabel();
   private final JProgressBar timeoutBar = new JProgressBar(0, TIMEOUT_SECONDS);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONSTRUCTOR
+  // ─────────────────────────────────────────────────────────────────────────
   public AlbumDetailCard(Frame owner, AlbumDto album, ImageLoader imageLoader,
       SongQueueService songQueueService, int priorityCostMultiplier, int threshold1, int threshold2,
-      int threshold3, TabNavigator navigator, CreditManager creditManager, char incrementCreditsKey,
-      boolean enableAlbumSelection) {
+      int threshold3, TabNavigator navigator, CreditManager creditManager,
+      char incrementCreditsKey) {
 
     setLayout(new BorderLayout());
     setOpaque(false);
@@ -47,21 +50,9 @@ public class AlbumDetailCard extends JPanel {
           creditManager, incrementCreditsKey);
     };
 
-    AlbumViewPanel.AlbumClickListener albumClick = clicked -> {
 
-      if (!enableAlbumSelection) {
-        return;
-      }
-
-      secondsRemaining = TIMEOUT_SECONDS;
-      updateTimeout();
-
-      AddAlbumToQueueDialog.show(owner, clicked, imageLoader, priorityCostMultiplier,
-          songQueueService, creditManager, incrementCreditsKey);
-    };
-
-    AlbumViewPanel albumView = new AlbumViewPanel(album, imageLoader, threshold1, threshold2,
-        threshold3, songClick, albumClick);
+    AlbumViewPanel albumView =
+        new AlbumViewPanel(album, imageLoader, threshold1, threshold2, threshold3, songClick);
 
     add(albumView, BorderLayout.CENTER);
     add(buildFooter(navigator), BorderLayout.SOUTH);
