@@ -42,7 +42,7 @@ import com.djt.jukeanator_engine.ui.model.CreditManager;
 // ─────────────────────────────────────────────────────────────────────────
 // CONSTRUCTOR
 // ─────────────────────────────────────────────────────────────────────────
-public class SongQueuePanel extends JDialog {
+public class SongQueueCard extends JDialog {
 
   private static final long serialVersionUID = 1L;
 
@@ -71,7 +71,7 @@ public class SongQueuePanel extends JDialog {
   private static final Color LIST_BG = new Color(10, 12, 18);
   private static final Color SEPARATOR = new Color(40, 44, 60);
 
-  // ── 3-D button palette (mirrors AddSongToQueuePanel) ─────────────────────
+  // ── 3-D button palette (mirrors AddSongToQueueCard) ─────────────────────
   private static final Color BTN3D_FACE_TOP = new Color(28, 45, 72);
   private static final Color BTN3D_FACE_MID = new Color(18, 32, 54);
   private static final Color BTN3D_FACE_BOTTOM = new Color(10, 18, 34);
@@ -113,7 +113,7 @@ public class SongQueuePanel extends JDialog {
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
-  public SongQueuePanel(Frame owner, SongPlayerService songPlayerService,
+  public SongQueueCard(Frame owner, SongPlayerService songPlayerService,
       List<SongQueueEntryDto> queue, SongQueueService songQueueService, CreditManager creditManager,
       ImageLoader imageLoader, int popularityT1, int popularityT2, int popularityT3,
       char incrementCreditsKey) {
@@ -832,7 +832,7 @@ public class SongQueuePanel extends JDialog {
       ImageLoader imageLoader, int popularityT1, int popularityT2, int popularityT3,
       char incrementCreditsKey) {
 
-    SongQueuePanel dialog = new SongQueuePanel(owner, songPlayerService, queue, songQueueService,
+    SongQueueCard dialog = new SongQueueCard(owner, songPlayerService, queue, songQueueService,
         creditManager, imageLoader, popularityT1, popularityT2, popularityT3, incrementCreditsKey);
     dialog.setVisible(true);
   }

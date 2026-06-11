@@ -347,8 +347,8 @@ public class AdminPanel extends JPanel {
       }
     }
 
-    EditAlbumPanel dialog =
-        new EditAlbumPanel(ownerFrame, songLibraryService, selected, albumsWithInvalidMetadata);
+    EditAlbumCard dialog =
+        new EditAlbumCard(ownerFrame, songLibraryService, selected, albumsWithInvalidMetadata);
     dialog.setVisible(true);
     albumList.repaint();
   }

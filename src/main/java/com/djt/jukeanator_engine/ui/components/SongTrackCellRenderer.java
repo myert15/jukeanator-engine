@@ -18,14 +18,14 @@ import com.djt.jukeanator_engine.domain.songqueue.dto.SongQueueEntryDto;
  * queue-position / priority badge, and song name + artist/album sub-label.
  *
  * <p>
- * Used by both {@link AdminPanel} and {@link SongQueuePanel}.
+ * Used by both {@link AdminPanel} and {@link SongQueueCard}.
  */
 public class SongTrackCellRenderer extends JPanel
     implements javax.swing.ListCellRenderer<SongQueueEntryDto> {
 
   private static final long serialVersionUID = 1L;
 
-  // ── Popularity bar geometry (shared with AlbumViewPanel) ─────────────────
+  // ── Popularity bar geometry (shared with AlbumViewCard) ─────────────────
   public static final int BAR_WIDTH = 5;
   public static final int BAR_GAP = 3;
   public static final int BAR_MAX_H = 18;
@@ -125,7 +125,7 @@ public class SongTrackCellRenderer extends JPanel
   /**
    * Three staggered vertical bars painted in {@code ACCENT_GREEN}, identical to the
    * {@code PopularityBarsPanel} previously duplicated in {@code AdminPanel} and
-   * {@code AlbumViewPanel}.
+   * {@code AlbumViewCard}.
    */
   public static class PopularityBarsPanel extends JPanel {
 

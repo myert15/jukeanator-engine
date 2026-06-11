@@ -26,7 +26,7 @@ import javax.swing.border.EmptyBorder;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 
-public class AlbumViewPanel extends JPanel {
+public class AlbumViewCard extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
@@ -68,7 +68,7 @@ public class AlbumViewPanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
-  public AlbumViewPanel(AlbumDto album, ImageLoader imageLoader, int threshold1, int threshold2,
+  public AlbumViewCard(AlbumDto album, ImageLoader imageLoader, int threshold1, int threshold2,
       int threshold3, SongClickListener songClickListener) {
 
     setLayout(new BorderLayout(0, 0));

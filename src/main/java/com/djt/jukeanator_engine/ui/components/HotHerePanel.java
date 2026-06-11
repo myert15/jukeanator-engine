@@ -206,7 +206,7 @@ public class HotHerePanel extends JPanel implements TabNavigator {
       case "SONGS" -> {
         if (item instanceof SongDto song) {
           Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
-          AddSongToQueuePanel.show(owner, song, imageLoader, priorityCostMultiplier,
+          AddSongToQueueCard.show(owner, song, imageLoader, priorityCostMultiplier,
               songQueueService, creditManager, incrementCreditsKey);
         }
       }

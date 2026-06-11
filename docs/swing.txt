@@ -204,7 +204,26 @@ out (with no cost/warning label) if a song is not selected.
 
 
 Rework the attached UI Code, where the main JFrame is in JukeANatorFrame, so that no JDialogs are ever instantiated.  Right now, there are 3
-JDialog based classes: AddSongToQueuePanel, EditAlbumPanel and SongQueuePanel
+JDialog based classes: AddSongToQueuePanel, EditAlbumPanel and SongQueuePanel.  The general strategy is this: Similar to GenrePanel where there
+is an initial landing panel, then a "details" panel, the main content area, which is everything below the topPanel that has the credits label, 
+jukebox logo image and now playing song panel, is a JTabbedPane with tabs for Home, Search, Hot Here, Genres and Admin, will have a card layout
+that will have hidden cards for:  
+- AlbumDetailCard
+- AddSongToQueuePanel
+- EditAlbumPanel
+- SongQueuePanel
+
+These cards will then be shown, based on the current source code implementation.  For example, the EditAlbumPanel is only used by AdminPanel, but the
+AlbumViewPanel and AddSongToQueuePanels are used by Home, Search, Hot Here and Genres.  The SongQueuePanel, since it is used by the topPanel, 
+is, by proxy, available anywhere (however, it should be DISABLED when the AdminPanel is being displayed, as the AdminPanel has song queue
+functionality already).
+
+As such, the current "timeout" behavior will, instead of dismissing the JDialog, "pop" back to the calling panel.  For example, if the AlbumViewPanel
+
+
+
+For any of these panels
+that have the ability to display an AlbumViewPanel, 
 
 
 

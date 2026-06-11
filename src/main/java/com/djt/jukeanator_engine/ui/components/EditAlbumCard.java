@@ -44,7 +44,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
 // ─────────────────────────────────────────────────────────────────────────
 // CONSTRUCTOR
 // ─────────────────────────────────────────────────────────────────────────
-public class EditAlbumPanel extends JDialog {
+public class EditAlbumCard extends JDialog {
 
   private static final long serialVersionUID = 1L;
 
@@ -100,7 +100,7 @@ public class EditAlbumPanel extends JDialog {
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
-  public EditAlbumPanel(Frame owner, SongLibraryService songLibraryService, AlbumDto selectedAlbum,
+  public EditAlbumCard(Frame owner, SongLibraryService songLibraryService, AlbumDto selectedAlbum,
       List<AlbumDto> invalidAlbumsList) {
     super(owner, "Edit Album Metadata", true);
     this.songLibraryService = songLibraryService;

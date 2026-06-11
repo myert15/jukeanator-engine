@@ -43,16 +43,16 @@ public class AlbumDetailCard extends JPanel {
     setLayout(new BorderLayout());
     setOpaque(false);
 
-    AlbumViewPanel.SongClickListener songClick = song -> {
+    AlbumViewCard.SongClickListener songClick = song -> {
       secondsRemaining = TIMEOUT_SECONDS;
       updateTimeout();
-      AddSongToQueuePanel.show(owner, song, imageLoader, priorityCostMultiplier, songQueueService,
+      AddSongToQueueCard.show(owner, song, imageLoader, priorityCostMultiplier, songQueueService,
           creditManager, incrementCreditsKey);
     };
 
 
-    AlbumViewPanel albumView =
-        new AlbumViewPanel(album, imageLoader, threshold1, threshold2, threshold3, songClick);
+    AlbumViewCard albumView =
+        new AlbumViewCard(album, imageLoader, threshold1, threshold2, threshold3, songClick);
 
     add(albumView, BorderLayout.CENTER);
     add(buildFooter(navigator), BorderLayout.SOUTH);
