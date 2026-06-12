@@ -666,8 +666,9 @@ public class SearchPanel extends JPanel implements TabNavigator {
       case "SONGS" -> {
         if (item instanceof SongDto song) {
           Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
-          AddSongToQueueCard.show(owner, song, imageLoader, priorityCostMultiplier,
-              songQueueService, creditManager, incrementCreditsKey);
+          if (owner instanceof JukeANatorFrame frame) {
+            frame.showAddSongToQueueCard(song);
+          }
         }
       }
     }

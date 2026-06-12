@@ -6,13 +6,10 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
-import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.RenderingHints;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import javax.swing.BorderFactory;
@@ -22,7 +19,6 @@ import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -42,7 +38,7 @@ import com.djt.jukeanator_engine.ui.model.CreditManager;
 // ─────────────────────────────────────────────────────────────────────────
 // CONSTRUCTOR
 // ─────────────────────────────────────────────────────────────────────────
-public class SongQueueCard extends JDialog {
+public class SongQueueCard extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
@@ -86,9 +82,10 @@ public class SongQueueCard extends JDialog {
 
   // ── Dependencies ──────────────────────────────────────────────────────────
   private final SongPlayerService songPlayerService;
-  private final List<SongQueueEntryDto> queue;
+  private List<SongQueueEntryDto> queue;
   private final SongQueueService songQueueService;
   private final CreditManager creditManager;
+  private final Runnable onDismiss;
   private final ImageLoader imageLoader;
   private final int popularityT1;
   private final int popularityT2;
@@ -113,12 +110,10 @@ public class SongQueueCard extends JDialog {
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
-  public SongQueueCard(Frame owner, SongPlayerService songPlayerService,
-      List<SongQueueEntryDto> queue, SongQueueService songQueueService, CreditManager creditManager,
-      ImageLoader imageLoader, int popularityT1, int popularityT2, int popularityT3,
-      char incrementCreditsKey) {
-
-    super(owner, "Song Queue", true /* modal */);
+  public SongQueueCard(SongPlayerService songPlayerService, List<SongQueueEntryDto> queue,
+      SongQueueService songQueueService, CreditManager creditManager, ImageLoader imageLoader,
+      int popularityT1, int popularityT2, int popularityT3, char incrementCreditsKey,
+      Runnable onDismiss) {
 
     this.songPlayerService = songPlayerService;
     this.queue = queue;
@@ -128,24 +123,13 @@ public class SongQueueCard extends JDialog {
     this.popularityT1 = popularityT1;
     this.popularityT2 = popularityT2;
     this.popularityT3 = popularityT3;
+    this.onDismiss = onDismiss;
 
-    setUndecorated(true);
-    setBackground(BG_DARK);
-    // Reduced height: Now Playing card + 5 queue rows + action buttons, minimal spacing
-    setSize(900, 660);
-    setLocationRelativeTo(owner);
-    setResizable(false);
-
-    addWindowListener(new WindowAdapter() {
-      @Override
-      public void windowClosing(WindowEvent e) {
-        dismiss();
-      }
-    });
-
-    getContentPane().setBackground(BG_DARK);
-    getContentPane().setLayout(new BorderLayout());
-    getContentPane().add(buildBorderPanel());
+    setOpaque(false);
+    setLayout(new java.awt.GridBagLayout());
+    JPanel sized = buildBorderPanel();
+    sized.setPreferredSize(new Dimension(900, 660));
+    add(sized);
 
     countdownTimer = new Timer(1000, e -> {
       secondsRemaining--;
@@ -165,8 +149,30 @@ public class SongQueueCard extends JDialog {
         }
       }
     });
+  }
 
+  /** Updates the live queue reference — call before {@link #onShown()} if it may have changed. */
+  public void setQueue(List<SongQueueEntryDto> queue) {
+    this.queue = queue;
+  }
+
+  /** Called whenever this card is shown — rebuilds the queue list, restarts the countdown. */
+  public void onShown() {
+    secondsRemaining = TIMEOUT_SECONDS;
+    updateTimeout();
+    if (!countdownTimer.isRunning()) {
+      countdownTimer.start();
+    }
+    refreshQueueListModel();
     requestFocusInWindow();
+  }
+
+  @Override
+  protected void paintComponent(Graphics g) {
+    // Dim the underlying tab content so this overlay reads as modal
+    g.setColor(new Color(0, 0, 0, 160));
+    g.fillRect(0, 0, getWidth(), getHeight());
+    super.paintComponent(g);
   }
 
   // ── Layout ────────────────────────────────────────────────────────────────
@@ -316,12 +322,7 @@ public class SongQueueCard extends JDialog {
     section.add(header, BorderLayout.NORTH);
 
     // Populate model (up to MAX_QUEUE_VISIBLE entries)
-    if (queue != null) {
-      int limit = Math.min(queue.size(), MAX_QUEUE_VISIBLE);
-      for (int i = 0; i < limit; i++) {
-        queueListModel.addElement(queue.get(i));
-      }
-    }
+    refreshQueueListModel();
 
     SongTrackCellRenderer.install(queueList, popularityT1, popularityT2, popularityT3);
     queueList.setOpaque(true);
@@ -391,12 +392,6 @@ public class SongQueueCard extends JDialog {
     // Hook credit listener so buttons update when credits change
     creditListener = this::updateButtonStates;
     creditManager.addListener(creditListener);
-    addWindowListener(new java.awt.event.WindowAdapter() {
-      @Override
-      public void windowClosed(java.awt.event.WindowEvent e) {
-        creditManager.removeListener(creditListener);
-      }
-    });
 
     updateButtonStates();
 
@@ -476,7 +471,13 @@ public class SongQueueCard extends JDialog {
   /** Deducts the credit cost for the given entry and returns {@code true} on success. */
   private boolean deductCostFor(SongQueueEntryDto entry) {
     int cost = computeCost(entry);
-    return creditManager.deductCredits(cost);
+    boolean success = creditManager.deductCredits(cost);
+    if (success && creditManager.getCredits() <= 0) {
+      // Per spec: a successful queue operation that exhausts credits behaves like a timeout —
+      // pop back to whatever was showing before this card.
+      SwingUtilities.invokeLater(this::dismiss);
+    }
+    return success;
   }
 
   /** Cost = 2 × entry's priority (minimum 1). */
@@ -488,6 +489,8 @@ public class SongQueueCard extends JDialog {
   // ── Button state / label refresh ─────────────────────────────────────────
 
   private void updateButtonStates() {
+    if (moveUpButton == null || moveDownButton == null || removeButton == null)
+      return; // buttons not yet constructed (initial population during buildQueueSection)
     SongQueueEntryDto selected = queueList.getSelectedValue();
     int currentCredits = creditManager.getCredits();
     int idx = queueList.getSelectedIndex();
@@ -566,9 +569,26 @@ public class SongQueueCard extends JDialog {
     timeoutLabel.setText("Closes in " + secondsRemaining + "s");
   }
 
+  /**
+   * Rebuilds the queue list model from the (live) queue reference — used at construction and
+   * onShown().
+   */
+  private void refreshQueueListModel() {
+    queueListModel.clear();
+    if (queue != null) {
+      int limit = Math.min(queue.size(), MAX_QUEUE_VISIBLE);
+      for (int i = 0; i < limit; i++) {
+        queueListModel.addElement(queue.get(i));
+      }
+    }
+    updateButtonStates();
+  }
+
   private void dismiss() {
     countdownTimer.stop();
-    SwingUtilities.invokeLater(this::dispose);
+    if (onDismiss != null) {
+      SwingUtilities.invokeLater(onDismiss);
+    }
   }
 
   // ── Button factories ──────────────────────────────────────────────────────
@@ -825,15 +845,11 @@ public class SongQueueCard extends JDialog {
     private static final long serialVersionUID = 1L;
   }
 
-  // ── Static show helper ────────────────────────────────────────────────────
-
-  public static void show(Frame owner, SongPlayerService songPlayerService,
-      List<SongQueueEntryDto> queue, SongQueueService songQueueService, CreditManager creditManager,
-      ImageLoader imageLoader, int popularityT1, int popularityT2, int popularityT3,
-      char incrementCreditsKey) {
-
-    SongQueueCard dialog = new SongQueueCard(owner, songPlayerService, queue, songQueueService,
-        creditManager, imageLoader, popularityT1, popularityT2, popularityT3, incrementCreditsKey);
-    dialog.setVisible(true);
+  /** Must be called when this card is permanently discarded so listeners don't leak. */
+  public void teardown() {
+    countdownTimer.stop();
+    if (creditListener != null) {
+      creditManager.removeListener(creditListener);
+    }
   }
 }

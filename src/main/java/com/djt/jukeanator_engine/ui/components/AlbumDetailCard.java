@@ -46,8 +46,9 @@ public class AlbumDetailCard extends JPanel {
     AlbumViewCard.SongClickListener songClick = song -> {
       secondsRemaining = TIMEOUT_SECONDS;
       updateTimeout();
-      AddSongToQueueCard.show(owner, song, imageLoader, priorityCostMultiplier, songQueueService,
-          creditManager, incrementCreditsKey);
+      if (owner instanceof JukeANatorFrame frame) {
+        frame.showAddSongToQueueCard(song);
+      }
     };
 
 

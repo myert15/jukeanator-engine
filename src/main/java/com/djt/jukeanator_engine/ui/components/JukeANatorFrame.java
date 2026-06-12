@@ -1,6 +1,7 @@
 package com.djt.jukeanator_engine.ui.components;
 
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -29,6 +30,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
@@ -80,6 +82,21 @@ public class JukeANatorFrame extends JFrame {
 
   // ADMIN TAB
   private AdminPanel adminPanel;
+
+  // ── OVERLAY CARD SYSTEM (replaces former JDialog popups) ───────────────────
+  private static final String CARD_TABS = "TABS";
+  private static final String CARD_ADD_SONG = "ADD_SONG";
+  private static final String CARD_SONG_QUEUE = "SONG_QUEUE";
+  private static final String CARD_EDIT_ALBUM = "EDIT_ALBUM";
+
+  private final CardLayout overlayCardLayout = new CardLayout();
+  private final JPanel overlayRoot = new JPanel(overlayCardLayout);
+  private JTabbedPane contentPanelTabs;
+
+  private AddSongToQueueCard addSongToQueueCard;
+  private SongQueueCard songQueueCard;
+  private EditAlbumCard editAlbumCard;
+
 
 
   // NOW PLAYING
@@ -184,8 +201,16 @@ public class JukeANatorFrame extends JFrame {
     //
     // BOTTOM 90%
     //
-    JTabbedPane contentPanelTabs = buildContentPanelTabs();
-    getContentPane().add(contentPanelTabs, BorderLayout.CENTER);
+    contentPanelTabs = buildContentPanelTabs();
+
+    overlayRoot.setOpaque(false);
+    overlayRoot.add(contentPanelTabs, CARD_TABS);
+    overlayRoot.add(placeholder(), CARD_ADD_SONG);
+    overlayRoot.add(placeholder(), CARD_SONG_QUEUE);
+    overlayRoot.add(placeholder(), CARD_EDIT_ALBUM);
+    overlayCardLayout.show(overlayRoot, CARD_TABS);
+
+    getContentPane().add(overlayRoot, BorderLayout.CENTER);
 
     //
     // CREDIT MANAGER AND KEYBOARD LISTENER
@@ -657,9 +682,7 @@ public class JukeANatorFrame extends JFrame {
     panel.addMouseListener(new java.awt.event.MouseAdapter() {
       @Override
       public void mouseClicked(java.awt.event.MouseEvent e) {
-        SongQueueCard.show(JukeANatorFrame.this, songPlayerService, currentQueue,
-            songQueueService, creditManager, imageLoader, POPULARITY_THRESHOLD_1,
-            POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3, incrementCreditsKey);
+        showSongQueueCard();
       }
     });
 
@@ -729,6 +752,94 @@ public class JukeANatorFrame extends JFrame {
     musicPaused = false;
 
     nowPlayingPanel.setVisible(false);
+  }
+
+  // ============================================================
+  // OVERLAY CARD SYSTEM (replaces former JDialog popups)
+  // ============================================================
+
+  private JPanel placeholder() {
+    JPanel p = new JPanel();
+    p.setOpaque(false);
+    return p;
+  }
+
+  /** Returns to the TABS card — the previously-active tab/state is preserved as-is. */
+  private void hideOverlay() {
+    overlayCardLayout.show(overlayRoot, CARD_TABS);
+    requestFocusInWindow();
+  }
+
+  private void replaceOverlayCard(String name, JPanel newPanel) {
+    for (int i = overlayRoot.getComponentCount() - 1; i >= 0; i--) {
+      if (name.equals(overlayRoot.getComponent(i).getName())) {
+        overlayRoot.remove(i);
+        break;
+      }
+    }
+    newPanel.setName(name);
+    overlayRoot.add(newPanel, name);
+    overlayRoot.revalidate();
+  }
+
+  /**
+   * Shows the "Add Song to Queue" overlay for the given song. Available from Home, Search, Hot
+   * Here, and Genres.
+   */
+  public void showAddSongToQueueCard(SongDto song) {
+
+    if (addSongToQueueCard != null) {
+      addSongToQueueCard.teardown();
+    }
+
+    addSongToQueueCard = new AddSongToQueueCard(song, imageLoader, priorityCostMultiplier,
+        songQueueService, creditManager, incrementCreditsKey, this::hideOverlay);
+
+    replaceOverlayCard(CARD_ADD_SONG, addSongToQueueCard);
+    overlayCardLayout.show(overlayRoot, CARD_ADD_SONG);
+    addSongToQueueCard.onShown();
+  }
+
+  /**
+   * Shows the Song Queue overlay. Used by the Now Playing panel. Disabled while the Admin tab is
+   * active, since AdminPanel already has song-queue functionality.
+   */
+  public void showSongQueueCard() {
+
+    if (contentPanelTabs.getSelectedComponent() == adminPanel) {
+      return; // disabled on Admin tab
+    }
+
+    if (songQueueCard == null) {
+      songQueueCard = new SongQueueCard(songPlayerService, currentQueue, songQueueService,
+          creditManager, imageLoader, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
+          POPULARITY_THRESHOLD_3, incrementCreditsKey, this::hideOverlay);
+      replaceOverlayCard(CARD_SONG_QUEUE, songQueueCard);
+    }
+
+    songQueueCard.setQueue(currentQueue);
+    overlayCardLayout.show(overlayRoot, CARD_SONG_QUEUE);
+    songQueueCard.onShown();
+  }
+
+  /**
+   * Shows the Edit Album overlay. Used only by AdminPanel.
+   *
+   * @param onAlbumUpdated callback invoked after a successful metadata update, so AdminPanel can
+   *        refresh its album list.
+   */
+  public void showEditAlbumCard(AlbumDto selectedAlbum, List<AlbumDto> invalidAlbumsList,
+      Runnable onAlbumUpdated) {
+
+    if (editAlbumCard == null) {
+      editAlbumCard = new EditAlbumCard(songLibraryService, selectedAlbum, invalidAlbumsList,
+          this::hideOverlay, onAlbumUpdated);
+      replaceOverlayCard(CARD_EDIT_ALBUM, editAlbumCard);
+    } else {
+      editAlbumCard.editAlbum(selectedAlbum, invalidAlbumsList);
+    }
+
+    overlayCardLayout.show(overlayRoot, CARD_EDIT_ALBUM);
   }
 
   // TOGGLE MUSIC PLAY STATE ICON

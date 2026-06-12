@@ -6,7 +6,6 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Frame;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -28,9 +27,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
@@ -44,7 +41,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
 // ─────────────────────────────────────────────────────────────────────────
 // CONSTRUCTOR
 // ─────────────────────────────────────────────────────────────────────────
-public class EditAlbumCard extends JDialog {
+public class EditAlbumCard extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
@@ -57,7 +54,7 @@ public class EditAlbumCard extends JDialog {
   private static final Color GRAD_BOTTOM = new Color(22, 32, 43);
 
   private final SongLibraryService songLibraryService;
-  private final List<AlbumDto> invalidAlbumsList;
+  private List<AlbumDto> invalidAlbumsList;
   private int currentAlbumIndex = -1;
   private AlbumDto currentAlbum;
 
@@ -97,23 +94,72 @@ public class EditAlbumCard extends JDialog {
   private JButton btnUpdateMeta;
   private JButton btnDownloadArt;
 
+  // Inline status banner (replaces JOptionPane popups)
+  private JLabel lblGlobalStatus;
+  private static final Color STATUS_INFO = new Color(120, 200, 255);
+  private static final Color STATUS_WARN = new Color(255, 190, 60);
+  private static final Color STATUS_ERROR = new Color(230, 90, 90);
+  private static final Color STATUS_SUCCESS = new Color(110, 220, 130);
+
+  // Called when the Cancel button is pressed — pops back to the AdminPanel.
+  private final Runnable onDismiss;
+  // Called after a metadata update succeeds, so AdminPanel can refresh its album list.
+  private final Runnable onAlbumUpdated;
+
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
-  public EditAlbumCard(Frame owner, SongLibraryService songLibraryService, AlbumDto selectedAlbum,
-      List<AlbumDto> invalidAlbumsList) {
-    super(owner, "Edit Album Metadata", true);
+  public EditAlbumCard(SongLibraryService songLibraryService, AlbumDto selectedAlbum,
+      List<AlbumDto> invalidAlbumsList, Runnable onDismiss, Runnable onAlbumUpdated) {
     this.songLibraryService = songLibraryService;
     this.invalidAlbumsList = invalidAlbumsList;
     this.currentAlbum = selectedAlbum;
+    this.onDismiss = onDismiss;
+    this.onAlbumUpdated = onAlbumUpdated;
 
     if (invalidAlbumsList != null && selectedAlbum != null) {
       this.currentAlbumIndex = invalidAlbumsList.indexOf(selectedAlbum);
     }
 
-    setResizable(false);
+    setOpaque(false);
+    setLayout(new java.awt.GridBagLayout());
     initLayout();
     populateAlbumData();
+  }
+
+  /**
+   * Re-targets this card at a (possibly different) selected album, e.g. when re-shown from the
+   * Admin panel. Resets all transient search state and refreshes the displayed fields.
+   */
+  public void editAlbum(AlbumDto selectedAlbum, List<AlbumDto> invalidAlbumsList) {
+    this.invalidAlbumsList = invalidAlbumsList;
+    this.currentAlbum = selectedAlbum;
+    if (invalidAlbumsList != null && selectedAlbum != null) {
+      this.currentAlbumIndex = invalidAlbumsList.indexOf(selectedAlbum);
+    } else {
+      this.currentAlbumIndex = -1;
+    }
+    setStatus(null, STATUS_INFO);
+    populateAlbumData();
+  }
+
+  @Override
+  protected void paintComponent(Graphics g) {
+    // Dim the underlying tab content so this overlay reads as modal
+    g.setColor(new Color(0, 0, 0, 160));
+    g.fillRect(0, 0, getWidth(), getHeight());
+    super.paintComponent(g);
+  }
+
+  private void setStatus(String message, Color color) {
+    if (lblGlobalStatus == null)
+      return;
+    if (message == null || message.isBlank()) {
+      lblGlobalStatus.setText(" ");
+    } else {
+      lblGlobalStatus.setText(message);
+    }
+    lblGlobalStatus.setForeground(color);
   }
 
   private void initLayout() {
@@ -326,12 +372,18 @@ public class EditAlbumCard extends JDialog {
     mainPanel.add(centerSplitPanel, BorderLayout.CENTER);
 
     // 3. Global action footer control panel
+    JPanel footerOuter = new JPanel(new BorderLayout(0, 6));
+    footerOuter.setOpaque(false);
+
     JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 10));
     footerPanel.setOpaque(false);
 
     btnUpdateMeta = createStyledButton("Update Metadata", e -> doMetadataUpdate());
     btnDownloadArt = createStyledButton("Download Cover Art", e -> doCoverArtDownload());
-    JButton btnCancel = createStyledButton("Cancel", e -> dispose());
+    JButton btnCancel = createStyledButton("Cancel", e -> {
+      if (onDismiss != null)
+        onDismiss.run();
+    });
 
     btnUpdateMeta.setEnabled(false);
     btnDownloadArt.setEnabled(false);
@@ -339,14 +391,17 @@ public class EditAlbumCard extends JDialog {
     footerPanel.add(btnUpdateMeta);
     footerPanel.add(btnDownloadArt);
     footerPanel.add(btnCancel);
-    mainPanel.add(footerPanel, BorderLayout.SOUTH);
 
-    setContentPane(mainPanel);
-    pack();
+    lblGlobalStatus = new JLabel(" ", SwingConstants.CENTER);
+    lblGlobalStatus.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+    lblGlobalStatus.setForeground(STATUS_INFO);
 
-    // Item #2: Higher dialog parameters definition context
-    setSize(new Dimension(860, 660));
-    setLocationRelativeTo(getOwner());
+    footerOuter.add(footerPanel, BorderLayout.CENTER);
+    footerOuter.add(lblGlobalStatus, BorderLayout.SOUTH);
+    mainPanel.add(footerOuter, BorderLayout.SOUTH);
+
+    mainPanel.setPreferredSize(new Dimension(860, 660));
+    add(mainPanel);
   }
 
   private void populateAlbumData() {
@@ -482,46 +537,43 @@ public class EditAlbumCard extends JDialog {
   }
 
   private void doInternetSearch() {
-    
+
     String artistQuery = tfSearchArtist.getText().trim();
     String albumQuery = tfSearchAlbum.getText().trim();
 
     if (artistQuery.isEmpty() || albumQuery.isEmpty()) {
-      JOptionPane.showMessageDialog(this,
-          "Artist and Album text fields are required fields to query.", "Warning",
-          JOptionPane.WARNING_MESSAGE);
+      setStatus("Artist and Album text fields are required fields to query.", STATUS_WARN);
       return;
     }
 
+    setStatus(null, STATUS_INFO);
     lblSearchStatus.setText("Searching...");
 
     new Thread(() -> {
       try {
-        
+
         List<AlbumMetadataDto> results =
             songLibraryService.searchInternetForAlbumMetadata(artistQuery, albumQuery, 5);
-        
+
         SwingUtilities.invokeLater(() -> {
           this.searchResults = (results != null) ? results : new ArrayList<>();
           if (!searchResults.isEmpty()) {
             this.currentResultIndex = 0;
           } else {
             this.currentResultIndex = -1;
-            JOptionPane.showMessageDialog(this, "No matches found on the web.", "Information",
-                JOptionPane.INFORMATION_MESSAGE);
+            setStatus("No matches found on the web.", STATUS_INFO);
           }
           updateSearchResultUI();
         });
       } catch (Exception ex) {
         SwingUtilities.invokeLater(() -> {
           lblSearchStatus.setText("Search failed.");
-          JOptionPane.showMessageDialog(this, "Error executing lookup: " + ex.getMessage(), "Error",
-              JOptionPane.ERROR_MESSAGE);
+          setStatus("Error executing lookup: " + ex.getMessage(), STATUS_ERROR);
         });
       }
     }).start();
   }
-  
+
   private void doMetadataUpdate() {
 
     if (currentAlbum == null)
@@ -538,16 +590,17 @@ public class EditAlbumCard extends JDialog {
 
       songLibraryService.updateAlbumMetadata(currentAlbum.getAlbumId(), metadata);
 
-      String messageDetails =
-          String.format("Successfully staged values for update:\nYear: %s\nLabel: %s\nExplicit: %b",
-              updatedYear, updatedLabel, updatedExplicit);
+      String messageDetails = String.format("Updated — Year: %s | Label: %s | Explicit: %b",
+          updatedYear, updatedLabel, updatedExplicit);
 
-      JOptionPane.showMessageDialog(this, messageDetails, "Success",
-          JOptionPane.INFORMATION_MESSAGE);
+      setStatus(messageDetails, STATUS_SUCCESS);
+
+      if (onAlbumUpdated != null) {
+        onAlbumUpdated.run();
+      }
 
     } catch (Exception e) {
-      JOptionPane.showMessageDialog(this, "Failed updating record metadata: " + e.getMessage(),
-          "Error", JOptionPane.ERROR_MESSAGE);
+      setStatus("Failed updating record metadata: " + e.getMessage(), STATUS_ERROR);
     }
   }
 
@@ -567,13 +620,10 @@ public class EditAlbumCard extends JDialog {
 
       songLibraryService.downloadAlbumCoverArt(downloadAlbumCoverArtRequest);
 
-      JOptionPane.showMessageDialog(this,
-          "Cover art download request staged via asset URL:\n" + liveArtUrlStr, "Asset Download",
-          JOptionPane.INFORMATION_MESSAGE);
+      setStatus("Cover art download requested via: " + liveArtUrlStr, STATUS_SUCCESS);
 
     } catch (Exception e) {
-      JOptionPane.showMessageDialog(this, "Failed downloading art asset payload: " + e.getMessage(),
-          "Error", JOptionPane.ERROR_MESSAGE);
+      setStatus("Failed downloading art asset payload: " + e.getMessage(), STATUS_ERROR);
     }
   }
 

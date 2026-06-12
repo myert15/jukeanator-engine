@@ -6,13 +6,10 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
-import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.RenderingHints;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.util.concurrent.CompletableFuture;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -20,7 +17,6 @@ import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
@@ -36,7 +32,7 @@ import com.djt.jukeanator_engine.ui.model.CreditManager;
 // ─────────────────────────────────────────────────────────────────────────
 // CONSTRUCTOR
 // ─────────────────────────────────────────────────────────────────────────
-public class AddSongToQueueCard extends JDialog {
+public class AddSongToQueueCard extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
@@ -78,6 +74,7 @@ public class AddSongToQueueCard extends JDialog {
   private final SongQueueService songQueueService;
 
   private final CreditManager creditManager;
+  private final Runnable onDismiss;
   private final int normalPlayCost = 1;
   private JButton normalButton;
   private JButton priorityButton;
@@ -91,35 +88,22 @@ public class AddSongToQueueCard extends JDialog {
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
-  public AddSongToQueueCard(Frame owner, SongDto song, ImageLoader imageLoader,
-      int priorityCostMultiplier, SongQueueService songQueueService, CreditManager creditManager,
-      char incrementCreditsKey) {
-
-    super(owner, "Add Song to Queue", true /* modal */);
+  public AddSongToQueueCard(SongDto song, ImageLoader imageLoader, int priorityCostMultiplier,
+      SongQueueService songQueueService, CreditManager creditManager, char incrementCreditsKey,
+      Runnable onDismiss) {
 
     this.imageLoader = imageLoader;
     this.song = song;
     this.priorityCostMultiplier = priorityCostMultiplier;
     this.songQueueService = songQueueService;
     this.creditManager = creditManager;
+    this.onDismiss = onDismiss;
 
-    setUndecorated(true);
-    setBackground(BG_DARK);
-    setSize(900, 420);
-    setLocationRelativeTo(owner);
-    setResizable(false);
-
-    // Close on Escape / window-close
-    addWindowListener(new WindowAdapter() {
-      @Override
-      public void windowClosing(WindowEvent e) {
-        dismiss();
-      }
-    });
-
-    getContentPane().setBackground(BG_DARK);
-    getContentPane().setLayout(new BorderLayout());
-    getContentPane().add(buildBorderPanel());
+    setOpaque(false);
+    setLayout(new java.awt.GridBagLayout());
+    JPanel sized = buildBorderPanel();
+    sized.setPreferredSize(new Dimension(900, 420));
+    add(sized);
 
     countdownTimer = new Timer(1000, e -> {
       secondsRemaining--;
@@ -130,7 +114,8 @@ public class AddSongToQueueCard extends JDialog {
     });
     countdownTimer.start();
 
-    // Hardware Bill Acceptor Key Bindings
+    // Hardware Bill Acceptor Key Bindings — kept for parity, though the frame-level
+    // key listener already handles credit increments globally.
     this.setFocusable(true);
     this.addKeyListener(new java.awt.event.KeyAdapter() {
       @Override
@@ -140,7 +125,23 @@ public class AddSongToQueueCard extends JDialog {
         }
       }
     });
+  }
 
+  @Override
+  protected void paintComponent(Graphics g) {
+    // Dim the underlying tab content so this overlay reads as modal
+    g.setColor(new Color(0, 0, 0, 160));
+    g.fillRect(0, 0, getWidth(), getHeight());
+    super.paintComponent(g);
+  }
+
+  /** Called whenever this card is shown — restarts the countdown and resets focus. */
+  public void onShown() {
+    secondsRemaining = TIMEOUT_SECONDS;
+    updateTimeout();
+    if (!countdownTimer.isRunning()) {
+      countdownTimer.start();
+    }
     requestFocusInWindow();
   }
 
@@ -285,13 +286,6 @@ public class AddSongToQueueCard extends JDialog {
 
     updateButtonStates();
 
-    this.addWindowListener(new java.awt.event.WindowAdapter() {
-      @Override
-      public void windowClosed(java.awt.event.WindowEvent e) {
-        creditManager.removeListener(creditListener);
-      }
-    });
-
     JButton cancel = createCancelButton("CANCEL");
     JPanel cancelRow = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.CENTER, 0, 0));
     cancelRow.setOpaque(false);
@@ -337,7 +331,9 @@ public class AddSongToQueueCard extends JDialog {
 
   private void dismiss() {
     countdownTimer.stop();
-    SwingUtilities.invokeLater(this::dispose);
+    if (onDismiss != null) {
+      SwingUtilities.invokeLater(onDismiss);
+    }
   }
 
   private void updateButtonStates() {
@@ -578,11 +574,11 @@ public class AddSongToQueueCard extends JDialog {
     return button;
   }
 
-  public static void show(Frame owner, SongDto song, ImageLoader imageLoader,
-      int priorityCostMultiplier, SongQueueService songQueueService, CreditManager creditManager,
-      char incrementCreditsKey) {
-    AddSongToQueueCard dialog = new AddSongToQueueCard(owner, song, imageLoader,
-        priorityCostMultiplier, songQueueService, creditManager, incrementCreditsKey);
-    dialog.setVisible(true);
+  /** Must be called when this card is permanently discarded so listeners don't leak. */
+  public void teardown() {
+    countdownTimer.stop();
+    if (creditListener != null) {
+      creditManager.removeListener(creditListener);
+    }
   }
 }
