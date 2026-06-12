@@ -49,9 +49,14 @@ public class AlbumViewCard extends JPanel {
   private static final int BAR_GAP = SongTrackCellRenderer.BAR_GAP;
   private static final int BAR_MAX_H = SongTrackCellRenderer.BAR_MAX_H;
 
-  // ── Widen Left Columns Allocation Dimensions to prevent clipping ─────────
+  // ── Left Columns Allocation Dimensions to prevent clipping ─────────
   private static final int PLAYS_COLUMN_WIDTH = 64;
   private static final int TRK_NUM_COLUMN_WIDTH = 48;
+
+  // ── Compilation Grid Column Layout Allocation Widths ─────────────────────
+  // Adjusted to give the song text maximum available room for long tracks
+  private static final int COMPILATION_ARTIST_WIDTH = 240;
+  private static final int COMPILATION_SONG_WIDTH = 500;
 
   // ── Track list pagination state ───────────────────────────────────────────
   private int trackOffset = 0;
@@ -205,12 +210,7 @@ public class AlbumViewCard extends JPanel {
     JPanel headerPanel = new JPanel(new BorderLayout(10, 0));
     headerPanel.setBackground(Color.BLACK);
     headerPanel.setBorder(new EmptyBorder(8, 16, 8, 16));
-    headerPanel.setPreferredSize(new Dimension(headerPanel.getPreferredSize().width, 45)); // Same
-                                                                                           // height
-                                                                                           // profile
-                                                                                           // as the
-                                                                                           // footer
-                                                                                           // elements
+    headerPanel.setPreferredSize(new Dimension(headerPanel.getPreferredSize().width, 45));
 
     // Replicating column distribution using sub-panels matching the track rows layout
     JPanel headerLeftCluster = new JPanel(new BorderLayout(6, 0));
@@ -230,21 +230,35 @@ public class AlbumViewCard extends JPanel {
     headerLeftCluster.add(popHeaderLabel, BorderLayout.WEST);
     headerLeftCluster.add(trackHeaderLabel, BorderLayout.CENTER);
 
-    JPanel headerCenterCluster =
-        new JPanel(new java.awt.GridLayout(1, album.isCompilation() ? 2 : 1, 10, 0));
+    // Layout configuration designed to tightly group columns together with a padding EAST section
+    JPanel headerCenterCluster = new JPanel(new BorderLayout(10, 0));
     headerCenterCluster.setOpaque(false);
 
     if (album.isCompilation()) {
+      JPanel textCluster = new JPanel(new BorderLayout(10, 0));
+      textCluster.setOpaque(false);
+
       JLabel artistHeaderLabel = new JLabel("Artist");
       artistHeaderLabel.setForeground(TEXT_SECONDARY);
       artistHeaderLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-      headerCenterCluster.add(artistHeaderLabel);
-    }
+      artistHeaderLabel.setPreferredSize(new Dimension(COMPILATION_ARTIST_WIDTH, 30));
 
-    JLabel songHeaderLabel = new JLabel("Song");
-    songHeaderLabel.setForeground(TEXT_SECONDARY);
-    songHeaderLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
-    headerCenterCluster.add(songHeaderLabel);
+      JLabel songHeaderLabel = new JLabel("Song");
+      songHeaderLabel.setForeground(TEXT_SECONDARY);
+      songHeaderLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+      songHeaderLabel.setPreferredSize(new Dimension(COMPILATION_SONG_WIDTH, 30));
+
+      textCluster.add(artistHeaderLabel, BorderLayout.WEST);
+      textCluster.add(songHeaderLabel, BorderLayout.CENTER);
+
+      headerCenterCluster.add(textCluster, BorderLayout.WEST);
+      headerCenterCluster.add(Box.createHorizontalGlue(), BorderLayout.CENTER);
+    } else {
+      JLabel songHeaderLabel = new JLabel("Song");
+      songHeaderLabel.setForeground(TEXT_SECONDARY);
+      songHeaderLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
+      headerCenterCluster.add(songHeaderLabel, BorderLayout.CENTER);
+    }
 
     headerPanel.add(headerLeftCluster, BorderLayout.WEST);
     headerPanel.add(headerCenterCluster, BorderLayout.CENTER);
@@ -482,21 +496,34 @@ public class AlbumViewCard extends JPanel {
     // ── Split Columns (CENTER) ────────────────────────────────────────────
     // Creates structured grid labels layout depending on whether the album object represents a
     // compilation
-    JPanel columnsPanel =
-        new JPanel(new java.awt.GridLayout(1, album.isCompilation() ? 2 : 1, 10, 0));
+    JPanel columnsPanel = new JPanel(new BorderLayout(10, 0));
     columnsPanel.setOpaque(false);
 
     if (album.isCompilation()) {
+      JPanel textCluster = new JPanel(new BorderLayout(10, 0));
+      textCluster.setOpaque(false);
+
       JLabel artistLabel = new JLabel(song.getArtistName());
       artistLabel.setForeground(TEXT_PRIMARY);
       artistLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 17));
-      columnsPanel.add(artistLabel);
-    }
+      artistLabel.setPreferredSize(new Dimension(COMPILATION_ARTIST_WIDTH, 30));
 
-    JLabel songLabel = new JLabel(song.getSongName());
-    songLabel.setForeground(TEXT_PRIMARY);
-    songLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 17));
-    columnsPanel.add(songLabel);
+      JLabel songLabel = new JLabel(song.getSongName());
+      songLabel.setForeground(TEXT_PRIMARY);
+      songLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 17));
+      songLabel.setPreferredSize(new Dimension(COMPILATION_SONG_WIDTH, 30));
+
+      textCluster.add(artistLabel, BorderLayout.WEST);
+      textCluster.add(songLabel, BorderLayout.CENTER);
+
+      columnsPanel.add(textCluster, BorderLayout.WEST);
+      columnsPanel.add(Box.createHorizontalGlue(), BorderLayout.CENTER);
+    } else {
+      JLabel songLabel = new JLabel(song.getSongName());
+      songLabel.setForeground(TEXT_PRIMARY);
+      songLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 17));
+      columnsPanel.add(songLabel, BorderLayout.CENTER);
+    }
 
     row.add(columnsPanel, BorderLayout.CENTER);
 
