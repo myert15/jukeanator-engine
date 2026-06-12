@@ -37,8 +37,6 @@ public class AddSongToQueueCard extends JPanel {
   private static final long serialVersionUID = 1L;
 
   // ── Colours (match JukeANatorFrame palette) ──────────────────────────────
-  private static final Color BG_DARK = new Color(10, 10, 10);
-  private static final Color BG_PANEL = new Color(22, 22, 28);
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
   private static final Color ACCENT_GOLD = new Color(255, 200, 0);
   private static final Color TEXT_PRIMARY = Color.WHITE;
@@ -159,7 +157,7 @@ public class AddSongToQueueCard extends JPanel {
         g2.dispose();
       }
     };
-    border.setBackground(BG_DARK);
+    border.setOpaque(false);
     border.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
     border.add(buildMainPanel());
     return border;
@@ -167,7 +165,7 @@ public class AddSongToQueueCard extends JPanel {
 
   private JPanel buildMainPanel() {
     JPanel main = new JPanel(new BorderLayout(0, 0));
-    main.setBackground(BG_PANEL);
+    main.setOpaque(false);
     main.setBorder(BorderFactory.createEmptyBorder(24, 28, 20, 28));
 
     main.add(buildInfoRow(song, imageLoader), BorderLayout.NORTH);

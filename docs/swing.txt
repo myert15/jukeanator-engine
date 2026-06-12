@@ -332,7 +332,7 @@ any search for Berlin, should result in a Berlin artist, whose 2 albums are Top 
 DONE 4: When searching for "Pub", "Sgt, Pepper's Lonely Hearts Club Band" shows up as an album result, presumably because of the distance weighting given to
 "Club".  Eliminate, or refine the weighting, so this does not show up in the album results.
 
-5: For Edit Album, allow the user to enter in text for Release Date and Record Label without having to do a search first, and when either/both of these fields
+DONE 5: For Edit Album, allow the user to enter in text for Release Date and Record Label without having to do a search first, and when either/both of these fields
 are non-empty, then enable the "Update Metadata" button
 
 6: For Edit Album, add a cover art URL image to allow the user to specify any URL from the web
@@ -364,6 +364,23 @@ are returned to the search results panel for Search, Hot Here or Genre, rather t
 the entities themselves.  For example, there is "getCoverArtPath()" logic in the ArtistDto that could be eliminated by adding a coverArtPath attribute to ArtistDto
 and then having initialization logic set the same transient attribute on the ArtistFolderEntity.
 
+19: For Edit Album, change artist from Compilations to Various Artists
+
+20: Make re-sizable in Landscape mode, need to expose many private constants that are tied to specific resolution, such as number of listings per page
+
+21: Need to support Portrait mode
+
+22: Need to add UserEntity/DTO and concept of service authentication, with Swing UI being a special "Local User"
+
+23: Need to add concept of multi-tenancy for when deployed to jukeanator.com
+
+24: Need to develop web application
+
+25: Need to develop mobile app
+
+26: Need to explore Stripe APIs and/or payment systems with mobile
+ 
+ 
  
  
  
