@@ -33,6 +33,8 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.DownloadAlbumCoverArtRequest;
@@ -103,19 +105,16 @@ public class EditAlbumCard extends JPanel {
 
   // Called when the Cancel button is pressed — pops back to the AdminPanel.
   private final Runnable onDismiss;
-  // Called after a metadata update succeeds, so AdminPanel can refresh its album list.
-  private final Runnable onAlbumUpdated;
 
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
   public EditAlbumCard(SongLibraryService songLibraryService, AlbumDto selectedAlbum,
-      List<AlbumDto> invalidAlbumsList, Runnable onDismiss, Runnable onAlbumUpdated) {
+      List<AlbumDto> invalidAlbumsList, Runnable onDismiss) {
     this.songLibraryService = songLibraryService;
     this.invalidAlbumsList = invalidAlbumsList;
     this.currentAlbum = selectedAlbum;
     this.onDismiss = onDismiss;
-    this.onAlbumUpdated = onAlbumUpdated;
 
     if (invalidAlbumsList != null && selectedAlbum != null) {
       this.currentAlbumIndex = invalidAlbumsList.indexOf(selectedAlbum);
@@ -160,6 +159,13 @@ public class EditAlbumCard extends JPanel {
       lblGlobalStatus.setText(message);
     }
     lblGlobalStatus.setForeground(color);
+  }
+
+  private void evaluateUpdateMetadataButtonState() {
+    String yearVal = tfResultReleaseDate.getText().trim();
+    String labelVal = tfResultRecordLabel.getText().trim();
+    boolean fieldsNotEmpty = !yearVal.isEmpty() || !labelVal.isEmpty();
+    btnUpdateMeta.setEnabled(fieldsNotEmpty);
   }
 
   private void initLayout() {
@@ -329,7 +335,6 @@ public class EditAlbumCard extends JPanel {
     gbcR.gridx = 1;
     tfResultReleaseDate = new JTextField(15);
     setupTextField(tfResultReleaseDate);
-    tfResultReleaseDate.setEditable(true);
     resultsFormPanel.add(tfResultReleaseDate, gbcR);
 
     gbcR.gridx = 0;
@@ -338,8 +343,26 @@ public class EditAlbumCard extends JPanel {
     gbcR.gridx = 1;
     tfResultRecordLabel = new JTextField(15);
     setupTextField(tfResultRecordLabel);
-    tfResultRecordLabel.setEditable(true);
     resultsFormPanel.add(tfResultRecordLabel, gbcR);
+
+    DocumentListener fieldChangeListener = new DocumentListener() {
+      @Override
+      public void insertUpdate(DocumentEvent e) {
+        evaluateUpdateMetadataButtonState();
+      }
+
+      @Override
+      public void removeUpdate(DocumentEvent e) {
+        evaluateUpdateMetadataButtonState();
+      }
+
+      @Override
+      public void changedUpdate(DocumentEvent e) {
+        evaluateUpdateMetadataButtonState();
+      }
+    };
+    tfResultReleaseDate.getDocument().addDocumentListener(fieldChangeListener);
+    tfResultRecordLabel.getDocument().addDocumentListener(fieldChangeListener);
 
     gbcR.gridx = 0;
     gbcR.gridy = 2;
@@ -487,7 +510,7 @@ public class EditAlbumCard extends JPanel {
       tfResultRecordLabel.setText("");
       chbResultHasExplicit.setSelected(false);
 
-      btnUpdateMeta.setEnabled(false);
+      evaluateUpdateMetadataButtonState();
       btnDownloadArt.setEnabled(false);
       return;
     }
@@ -509,9 +532,9 @@ public class EditAlbumCard extends JPanel {
     String labelVal = tfResultRecordLabel.getText().trim();
     String urlStr = selectedMeta.getCoverArtUrl();
 
+    evaluateUpdateMetadataButtonState();
     boolean hasValidMetadata =
         !yearVal.isEmpty() && !labelVal.isEmpty() && urlStr != null && !urlStr.isBlank();
-    btnUpdateMeta.setEnabled(hasValidMetadata);
     btnDownloadArt.setEnabled(hasValidMetadata);
 
     lblCoverArtCanvas.setIcon(null);
@@ -594,10 +617,6 @@ public class EditAlbumCard extends JPanel {
           updatedYear, updatedLabel, updatedExplicit);
 
       setStatus(messageDetails, STATUS_SUCCESS);
-
-      if (onAlbumUpdated != null) {
-        onAlbumUpdated.run();
-      }
 
     } catch (Exception e) {
       setStatus("Failed updating record metadata: " + e.getMessage(), STATUS_ERROR);

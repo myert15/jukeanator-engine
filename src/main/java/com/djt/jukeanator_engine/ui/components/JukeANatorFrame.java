@@ -824,16 +824,15 @@ public class JukeANatorFrame extends JFrame {
 
   /**
    * Shows the Edit Album overlay. Used only by AdminPanel.
-   *
-   * @param onAlbumUpdated callback invoked after a successful metadata update, so AdminPanel can
-   *        refresh its album list.
+   * 
+   * @param selectedAlbum
+   * @param invalidAlbumsList
    */
-  public void showEditAlbumCard(AlbumDto selectedAlbum, List<AlbumDto> invalidAlbumsList,
-      Runnable onAlbumUpdated) {
+  public void showEditAlbumCard(AlbumDto selectedAlbum, List<AlbumDto> invalidAlbumsList) {
 
     if (editAlbumCard == null) {
       editAlbumCard = new EditAlbumCard(songLibraryService, selectedAlbum, invalidAlbumsList,
-          this::hideOverlay, onAlbumUpdated);
+          this::hideOverlay);
       replaceOverlayCard(CARD_EDIT_ALBUM, editAlbumCard);
     } else {
       editAlbumCard.editAlbum(selectedAlbum, invalidAlbumsList);

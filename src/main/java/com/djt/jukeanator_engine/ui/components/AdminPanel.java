@@ -348,9 +348,8 @@ public class AdminPanel extends JPanel {
     }
 
     if (ownerFrame instanceof JukeANatorFrame frame) {
-      frame.showEditAlbumCard(selected, albumsWithInvalidMetadata, this::refreshAlbumList);
+      frame.showEditAlbumCard(selected, albumsWithInvalidMetadata);
     }
-    albumList.repaint();
   }
 
   private void doResetStats() {
