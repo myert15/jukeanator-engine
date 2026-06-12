@@ -1,6 +1,5 @@
 package com.djt.jukeanator_engine.domain.songlibrary.model;
 
-import static java.util.Objects.requireNonNull;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,13 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import com.djt.jukeanator_engine.domain.common.model.AbstractPersistentEntity;
 
-public final class ArtistFromSongEntity extends AbstractPersistentEntity implements LibraryItem {
+public final class ArtistFromSongEntity extends ArtistFolderEntity {
 
   private static final long serialVersionUID = 1L;
 
-  private final String name;
   private final Set<AlbumFolderEntity> childAlbums = new TreeSet<AlbumFolderEntity>();
 
   private transient List<AlbumFolderEntity> albums;
@@ -22,15 +19,8 @@ public final class ArtistFromSongEntity extends AbstractPersistentEntity impleme
                                              // albums
   private transient Year releaseDate;
 
-  public ArtistFromSongEntity(String name, AlbumFolderEntity album) {
-    super();
-    requireNonNull(name, "name cannot be null");
-    this.name = name;
-    this.childAlbums.add(album);
-  }
-
-  public String getName() {
-    return this.name;
+  public ArtistFromSongEntity(RootFolderEntity root, String name) {
+    super(root, name);
   }
 
   public boolean addAlbum(AlbumFolderEntity album) {
@@ -123,6 +113,6 @@ public final class ArtistFromSongEntity extends AbstractPersistentEntity impleme
   @Override
   public String getNaturalIdentity() {
 
-    return this.name;
+    return getName();
   }
 }

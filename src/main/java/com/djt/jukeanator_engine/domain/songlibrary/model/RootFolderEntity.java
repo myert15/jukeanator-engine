@@ -1,6 +1,5 @@
 package com.djt.jukeanator_engine.domain.songlibrary.model;
 
-import static java.util.Objects.requireNonNull;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -22,32 +21,45 @@ import com.djt.jukeanator_engine.domain.common.utils.OperatingSystemDetector;
 import com.djt.jukeanator_engine.domain.common.utils.OperatingSystemDetector.OSType;
 
 public class RootFolderEntity extends FolderEntity {
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 2L;
 
   private static final String CD_STATS_FILE_PREFIX = "CDStats";
   private static final String CD_STATS_FILE_SUFFIX = ".TXT";
 
-  private String rootPrefix;
+  private Set<ArtistFromSongEntity> artistsFromSongs = new TreeSet<ArtistFromSongEntity>();
 
   private transient Map<Integer, GenreFolderEntity> genresMap;
   private transient Map<GenreFolderEntity, Set<AlbumFolderEntity>> albumsByGenreMap;
   private transient Map<Integer, ArtistFolderEntity> artistsMap;
+  private transient Map<String, ArtistFromSongEntity> artistsFromSongsMap;
   private transient Map<Integer, AlbumFolderEntity> albumsMap;
   private transient Map<String, SongFileEntity> songsMap;
 
   // Used only by SongQueueService.loadPlaylistIntoQueue()
   private transient Map<String, SongFileEntity> songsByPathMap;
 
-  public RootFolderEntity() {}
+  public RootFolderEntity(String scanPath) {
 
-  public RootFolderEntity(String rootPrefix, String name) {
-    super(null, name);
-    requireNonNull(rootPrefix, "rootPrefix cannot be null");
-    this.rootPrefix = rootPrefix;
+    super(null, scanPath);
   }
 
   public String getRootPrefix() {
-    return this.rootPrefix;
+    return getName();
+  }
+
+  public ArtistFromSongEntity getArtistFromSong(String songArtistName) {
+
+    if (this.artistsFromSongsMap == null) {
+      this.artistsFromSongsMap = new HashMap<>();
+    }
+
+    return this.artistsFromSongsMap.get(songArtistName);
+  }
+
+  public ArtistFromSongEntity addArtistFromSong(ArtistFromSongEntity artistFromSong) {
+
+    this.artistsFromSongs.add(artistFromSong);
+    return this.artistsFromSongsMap.put(artistFromSong.getName(), artistFromSong);
   }
 
   public Set<FolderEntity> pruneNonAlbumContainingChildFolders() {
@@ -114,15 +126,7 @@ public class RootFolderEntity extends FolderEntity {
 
   @Override
   public String getNaturalIdentity() {
-
-    StringBuilder sb = new StringBuilder();
-    if (this.rootPrefix != null) {
-      sb.append(this.rootPrefix);
-    } else {
-      sb.append(File.separatorChar);
-    }
-    sb.append(getName());
-    return sb.toString();
+    return getName();
   }
 
   public Collection<GenreFolderEntity> getGenres() {
@@ -153,6 +157,15 @@ public class RootFolderEntity extends FolderEntity {
     this.artistsMap = new HashMap<>();
     this.albumsMap = new HashMap<>();
     this.songsMap = new HashMap<>();
+
+    // Iterate over artistsFromSongs and add to artistsMap
+    for (ArtistFromSongEntity artistFromSong : this.artistsFromSongs) {
+
+      Integer artistId = artistFromSong.getPersistentIdentity();
+      if (!this.artistsMap.containsKey(artistId)) {
+        this.artistsMap.put(artistId, artistFromSong);
+      }
+    }
 
     for (AlbumFolderEntity album : getAllAlbums()) {
 

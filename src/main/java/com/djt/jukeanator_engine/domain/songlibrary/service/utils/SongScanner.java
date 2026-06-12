@@ -12,6 +12,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataDto;
 import com.djt.jukeanator_engine.domain.songlibrary.exception.SongLibraryException;
 import com.djt.jukeanator_engine.domain.songlibrary.model.AlbumFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.ArtistFolderEntity;
+import com.djt.jukeanator_engine.domain.songlibrary.model.ArtistFromSongEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.FolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.GenreFolderEntity;
 import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
@@ -74,17 +75,9 @@ public final class SongScanner {
     }
     File file = new File(scanPath).getCanonicalFile();
 
-    String rootPrefix = "";
-    String filePath = file.getAbsolutePath();
-    String name = null;
-    if (filePath.contains(":")) {
-      rootPrefix = filePath.substring(0, 2);
-      name = filePath.substring(2);
-    } else {
-      name = filePath;
-    }
+    String rootName = file.getAbsolutePath();
 
-    rootFolder = new RootFolderEntity(rootPrefix, name);
+    rootFolder = new RootFolderEntity(rootName);
 
     process(rootFolder);
 
@@ -170,6 +163,16 @@ public final class SongScanner {
         String songArtistName = SongFileEntity.extractArtistName(songFilename);
         if (songArtistName != null && !songArtistName.trim().isBlank()) {
           song.setArtistName(stripNonPrintableCharacters(songArtistName));
+        }
+
+        ArtistFromSongEntity artistFromSong = rootFolder.getArtistFromSong(songArtistName);
+        if (artistFromSong == null) {
+          artistFromSong = new ArtistFromSongEntity(rootFolder, songArtistName);
+          artistFromSong.setPersistentIdentity(artistIndex++);
+          artistFromSong.addAlbum(album);
+          rootFolder.addArtistFromSong(artistFromSong);
+        } else {
+          artistFromSong.addAlbum(album);
         }
 
         String songName = SongFileEntity.extractSongName(songFilename);

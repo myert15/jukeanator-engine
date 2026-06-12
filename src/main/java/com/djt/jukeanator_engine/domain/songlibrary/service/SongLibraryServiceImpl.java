@@ -213,34 +213,34 @@ public final class SongLibraryServiceImpl
 
     String normalizedValue = value.toLowerCase().strip();
 
-    
+
     // Complete Match Bonus (+1000)
     if (normalizedValue.equals(normalizedSearch)) {
       return 1000;
     }
 
-    
+
     // Substring Match Bonus (+750)
     if (normalizedValue.contains(normalizedSearch)) {
       return 750;
     }
-    
-    
+
+
     // Full Words Match (+500)
     boolean foundAllWords = true;
     String[] normalizedSearchWords = normalizedSearch.split(" ");
-    for (String normalizedSearchWord: normalizedSearchWords) {
-      
+    for (String normalizedSearchWord : normalizedSearchWords) {
+
       if (!normalizedValue.contains(normalizedSearchWord)) {
         foundAllWords = false;
         break;
-      }      
+      }
     }
     if (foundAllWords) {
       return 500;
     }
-    
-    
+
+
     // Levenshtein search algorithm
     int score = 0;
     int valueIdx = 0;
@@ -396,14 +396,15 @@ public final class SongLibraryServiceImpl
       this.scanPath = scanRequest.getScanPath();
       this.root.storeSongNumPlays(this.scanPath);
       this.root = songScanner.scanFileSystemForSongs(this.scanPath);
-      this.root.restoreSongNumPlays(this.scanPath);
 
-      // Store the song library
+      // Restore song num plays, persist, then re-initialize the root
+      this.root.restoreSongNumPlays(this.scanPath);
       if (this.songLibraryRepository instanceof SongLibraryRepositoryFileSystemImpl) {
         ((SongLibraryRepositoryFileSystemImpl) this.songLibraryRepository)
             .setBasePath(this.scanPath);
       }
       this.songLibraryRepository.storeAggregateRoot(this.root);
+      this.root.initialize();
 
       // Initialize the song library
       initializeSongLibrary();
@@ -551,7 +552,7 @@ public final class SongLibraryServiceImpl
       log.error("Could not load song library from: " + scanPath
           + ", using empty song library root for now, error: " + ednee.getMessage());
 
-      this.root = new RootFolderEntity();
+      this.root = new RootFolderEntity(this.scanPath);
     }
 
     this.isInitialized = true;
