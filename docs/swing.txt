@@ -323,6 +323,10 @@ DONE 10: Remove song does not work from AdminPanel, nor from SongQueuePanel
 
 DONE 12: For ArtistFromSong entities, do not count songs from different artists from the compilation albums
 
+DONE 13: Add play count to AlbumViewCard
+
+14: When viewing an AlbumViewCard from the Artists detail panel, from either Search, Hot Here or Genre, when the user clicks on the back button, they
+are returned to the search results panel for Search, Hot Here or Genre, rather than the Artists detail panel where they started from, please correct this behavior
  
 
 

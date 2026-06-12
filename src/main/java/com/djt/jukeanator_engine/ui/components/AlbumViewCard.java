@@ -11,6 +11,7 @@ import java.awt.GridBagLayout;
 import java.awt.LinearGradientPaint;
 import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
+import java.text.NumberFormat;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -168,6 +169,14 @@ public class AlbumViewCard extends JPanel {
     meta.add(Box.createVerticalStrut(6));
     meta.add(singleLineMetaLabel(trackCount + " tracks", Font.PLAIN, 13, TEXT_SECONDARY));
 
+    int playCount = album.getNumPlays() == null ? 0 : album.getNumPlays();
+    String formattedPlayCount = NumberFormat.getIntegerInstance().format(playCount);
+    meta.add(Box.createVerticalStrut(6));
+    meta.add(singleLineMetaLabel(formattedPlayCount + " plays",
+        Font.PLAIN,
+        13,
+        TEXT_SECONDARY));
+    
     JPanel content = new JPanel();
     content.setOpaque(false);
     content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
