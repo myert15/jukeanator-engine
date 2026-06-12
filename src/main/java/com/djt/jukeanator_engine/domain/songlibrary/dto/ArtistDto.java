@@ -69,8 +69,16 @@ public class ArtistDto {
     
     int songCount = 0;
     for (AlbumDto album: albums) {
-
-      songCount = songCount + album.getSongs().size();
+      
+      if (!album.isCompilation()) {
+        songCount = songCount + album.getSongs().size();  
+      } else {
+        for (SongDto song: album.getSongs()) {
+          if (song.getArtistName().equals(artistName)) {
+            songCount = songCount + 1;    
+          }          
+        }        
+      }      
     }
     return Integer.valueOf(songCount);
   }

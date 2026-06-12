@@ -55,8 +55,8 @@ public class AlbumViewCard extends JPanel {
 
   // ── Compilation Grid Column Layout Allocation Widths ─────────────────────
   // Adjusted to give the song text maximum available room for long tracks
-  private static final int COMPILATION_ARTIST_WIDTH = 240;
-  private static final int COMPILATION_SONG_WIDTH = 500;
+  private static final int COMPILATION_ARTIST_WIDTH = 260;
+  private static final int COMPILATION_SONG_WIDTH = 520;
 
   // ── Track list pagination state ───────────────────────────────────────────
   private int trackOffset = 0;
