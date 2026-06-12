@@ -40,6 +40,11 @@ public class HotHerePanel extends JPanel implements TabNavigator {
   // ── Active detail card ────────────────────────────────────────────────────
   private AlbumDetailCard currentDetailCard;
 
+  // ── Tracks which card to return to when the detail card's BACK button is
+  // pressed — CARD_CONTENT if the album was opened from the result columns,
+  // CARD_ARTIST if it was opened from the artist detail panel. ────────────────
+  private String detailReturnCard = CARD_CONTENT;
+
   // ── Popularity data (loaded once at construction) ─────────────────────────
   private SearchResultDto results;
 
@@ -87,9 +92,16 @@ public class HotHerePanel extends JPanel implements TabNavigator {
     rootPanel.setOpaque(false);
     add(rootPanel, BorderLayout.CENTER);
 
+    contentPanel.setName(CARD_CONTENT);
     rootPanel.add(contentPanel, CARD_CONTENT);
-    rootPanel.add(placeholder(), CARD_ARTIST);
-    rootPanel.add(placeholder(), CARD_DETAIL);
+
+    JPanel artistPlaceholder = placeholder();
+    artistPlaceholder.setName(CARD_ARTIST);
+    rootPanel.add(artistPlaceholder, CARD_ARTIST);
+
+    JPanel detailPlaceholder = placeholder();
+    detailPlaceholder.setName(CARD_DETAIL);
+    rootPanel.add(detailPlaceholder, CARD_DETAIL);
 
     refreshMusicByPopularityResults();
   }
@@ -116,6 +128,11 @@ public class HotHerePanel extends JPanel implements TabNavigator {
     Frame owner = (Frame) SwingUtilities.getWindowAncestor(this);
     AlbumDto full = fetchFull(album);
 
+    // Remember which card was visible before navigating to the detail card so
+    // the BACK button can return the user to the correct screen (the result
+    // columns or the artist detail panel).
+    detailReturnCard = currentVisibleCard();
+
     if (currentDetailCard != null) {
       currentDetailCard.dismiss();
     }
@@ -135,7 +152,7 @@ public class HotHerePanel extends JPanel implements TabNavigator {
       currentDetailCard.dismiss();
       currentDetailCard = null;
     }
-    cardLayout.show(rootPanel, CARD_CONTENT);
+    cardLayout.show(rootPanel, detailReturnCard);
   }
 
   /**
@@ -148,6 +165,7 @@ public class HotHerePanel extends JPanel implements TabNavigator {
     artistsOffset = 0;
     albumsOffset = 0;
     songsOffset = 0;
+    detailReturnCard = CARD_CONTENT;
     rebuildColumnsPanel();
     cardLayout.show(rootPanel, CARD_CONTENT);
   }
@@ -256,6 +274,19 @@ public class HotHerePanel extends JPanel implements TabNavigator {
     rootPanel.add(newPanel, name);
     rootPanel.revalidate();
     rootPanel.repaint();
+  }
+
+  /**
+   * Returns the name of the card currently visible in {@code rootPanel}, falling back to
+   * {@code CARD_CONTENT} if none is marked visible (e.g. before the first layout pass).
+   */
+  private String currentVisibleCard() {
+    for (java.awt.Component c : rootPanel.getComponents()) {
+      if (c.isVisible()) {
+        return c.getName();
+      }
+    }
+    return CARD_CONTENT;
   }
 
   private static <T> List<T> safeList(List<T> list) {

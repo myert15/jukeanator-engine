@@ -38,6 +38,11 @@ public class HomePanel extends JPanel implements TabNavigator {
   // ── Active detail card (tracked so its timer can be stopped) ─────────────
   private AlbumDetailCard currentDetailCard;
 
+  // ── Tracks which card to return to when the detail card's BACK button is
+  // pressed — CARD_GRID if the album was opened from the root grid, CARD_ARTIST
+  // if it was opened from the artist detail panel. ───────────────────────────
+  private String detailReturnCard = CARD_GRID;
+
   // ── Dependencies ──────────────────────────────────────────────────────────
   private final char incrementCreditsKey;
   private final CreditManager creditManager;
@@ -83,9 +88,17 @@ public class HomePanel extends JPanel implements TabNavigator {
 
     // Seed the three cards. ARTIST and DETAIL start as empty placeholders;
     // real content is swapped in on demand via replaceCard().
-    rootPanel.add(buildGridCard(), CARD_GRID);
-    rootPanel.add(placeholder(), CARD_ARTIST);
-    rootPanel.add(placeholder(), CARD_DETAIL);
+    JPanel gridCard = buildGridCard();
+    gridCard.setName(CARD_GRID);
+    rootPanel.add(gridCard, CARD_GRID);
+
+    JPanel artistPlaceholder = placeholder();
+    artistPlaceholder.setName(CARD_ARTIST);
+    rootPanel.add(artistPlaceholder, CARD_ARTIST);
+
+    JPanel detailPlaceholder = placeholder();
+    detailPlaceholder.setName(CARD_DETAIL);
+    rootPanel.add(detailPlaceholder, CARD_DETAIL);
 
     cardLayout.show(rootPanel, CARD_GRID);
   }
@@ -106,6 +119,11 @@ public class HomePanel extends JPanel implements TabNavigator {
 
     AlbumDto full = fetchFull(album);
 
+    // Remember which card was visible before navigating to the detail card so
+    // the BACK button can return the user to the correct screen (the album
+    // grid or the artist detail panel).
+    detailReturnCard = currentVisibleCard();
+
     if (currentDetailCard != null) {
       currentDetailCard.dismiss(); // stop the countdown timer
     }
@@ -120,8 +138,9 @@ public class HomePanel extends JPanel implements TabNavigator {
   }
 
   /**
-   * Stops the detail card's countdown timer and returns to the root grid. Safe to call even when no
-   * detail card is currently active.
+   * Stops the detail card's countdown timer and returns to the previously visible card (either the
+   * root grid or the artist detail panel). Safe to call even when no detail card is currently
+   * active.
    */
   @Override
   public void popToRoot() {
@@ -130,7 +149,7 @@ public class HomePanel extends JPanel implements TabNavigator {
       currentDetailCard.dismiss();
       currentDetailCard = null;
     }
-    cardLayout.show(rootPanel, CARD_GRID);
+    cardLayout.show(rootPanel, detailReturnCard);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -231,6 +250,19 @@ public class HomePanel extends JPanel implements TabNavigator {
     rootPanel.add(newPanel, name);
     rootPanel.revalidate();
     rootPanel.repaint();
+  }
+
+  /**
+   * Returns the name of the card currently visible in {@code rootPanel}, falling back to
+   * {@code CARD_GRID} if none is marked visible (e.g. before the first layout pass).
+   */
+  private String currentVisibleCard() {
+    for (java.awt.Component c : rootPanel.getComponents()) {
+      if (c.isVisible()) {
+        return c.getName();
+      }
+    }
+    return CARD_GRID;
   }
 
   /** Minimal opaque placeholder used to seed card slots before real content arrives. */

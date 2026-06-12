@@ -188,7 +188,7 @@ public class JukeANatorFrame extends JFrame {
         g2.dispose();
       }
     };
-    contentPane.setOpaque(true);
+    contentPane.setOpaque(false);
     setContentPane(contentPane);
 
     //
