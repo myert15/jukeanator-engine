@@ -153,6 +153,14 @@ public class JukeANatorFrame extends JFrame {
   private final int tenDollarBonusCredits;
 
 
+  // SCREENSAVER
+  private final Dimension screenSize = GraphicsEnvironment.getLocalGraphicsEnvironment()
+      .getDefaultScreenDevice().getDefaultConfiguration().getBounds().getSize();
+
+  private final int screenWidth = screenSize.width;
+  private final int screenHeight = screenSize.height;
+  private ScreenSaverWindow screenSaverWindow;
+
   // ─────────────────────────────────────────────────────────────────────────
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
@@ -265,6 +273,29 @@ public class JukeANatorFrame extends JFrame {
         }
       }
     });
+
+    this.screenSaverWindow = new ScreenSaverWindow(this.imageLoader, this.screenWidth,
+        this.screenHeight, this.songLibraryService.getAlbums().size(), this.songPlayerService,
+        this.songLibraryService);
+
+    new IdleMonitor(
+
+        () -> SwingUtilities.invokeLater(() -> {
+
+          if (!this.screenSaverWindow.isVisible()) {
+
+            this.screenSaverWindow.updateContent();
+
+            this.screenSaverWindow.setVisible(true);
+          }
+        }),
+
+        () -> SwingUtilities.invokeLater(() -> {
+
+          if (screenSaverWindow.isVisible()) {
+            screenSaverWindow.setVisible(false);
+          }
+        }));
 
     requestFocusInWindow();
   }
