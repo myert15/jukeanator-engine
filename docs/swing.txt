@@ -356,6 +356,24 @@ that the OWNER/ADMIN will be logging in to see this AdminPanel.
 
 
 
+
+Analyze all UI component classes and do the following:
+
+Item #1: Extract all constants related to Colors to a ColorTheme static utility class with a singleton that will take the place of all hardcoded constants for
+colors that are currently in place.
+
+Item #2: Extract all constants related to screen sizing, pagination sizing, etc. to a LayoutTheme static utility class with a singleton that will take the place 
+of all hardcoded constants for screen sizing, pagination sizing, etc. that are currently in place.
+
+This refactoring would be a first step to enventually support multiple screen resolutions and to have a "Portrait Mode" (as opposed to "Landscape Mode" that is in
+place now) that will render the screen elegantly when the height of the screen resolution is higher than the width.  Right now, the screen resolution for with
+which all this work was done is 1920 wide by 1080 high, which will not always be the case.  Eventually, all these constants will be members that can be loaded
+at startup from properties YML.
+
+
+
+
+
 TODO:
 DONE 1: Albums with songs with duplicate track numbers, no track numbers, use song index in album childSongs list as track number.  Do this at scan time
 
@@ -418,6 +436,8 @@ and then having initialization logic set the same transient attribute on the Art
 25: Need to develop mobile app
 
 26: Need to explore Stripe APIs and/or payment systems with mobile
+
+27: Need to develop a screensaver
  
  
  
