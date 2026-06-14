@@ -81,9 +81,9 @@ public class SongLibraryController implements SongLibraryService {
   }
 
   @Override
-  @GetMapping("/artists/{id}")
-  public ArtistDto getArtistById(@PathVariable Integer id) {
-    return songLibraryService.getArtistById(id);
+  @GetMapping("/artist")
+  public ArtistDto getArtistByName(@RequestParam String artistName) {
+    return songLibraryService.getArtistByName(artistName);
   }
 
   @Override

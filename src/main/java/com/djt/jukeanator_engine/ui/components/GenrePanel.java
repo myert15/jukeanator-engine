@@ -430,11 +430,14 @@ public class GenrePanel extends JPanel implements TabNavigator {
    * return here correctly.
    */
   private void pushArtistFromGenre(ArtistDto artist) {
-    ArtistDto full;
+
+    ArtistDto full = null;
+    String artistName = artist.getArtistName();
     try {
-      full = songLibraryService.getArtistById(artist.getArtistId());
+      full = songLibraryService.getArtistByName(artistName);
     } catch (Exception e) {
-      return;
+      e.printStackTrace();
+      throw new IllegalStateException("Could not get artist: [" + artistName + "]", e);
     }
 
     ArtistDetailPanel panel =

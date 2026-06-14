@@ -414,10 +414,10 @@ public final class SongLibraryServiceImpl
   }
 
   @Override
-  public ArtistDto getArtistById(Integer artistId) {
+  public ArtistDto getArtistByName(String artistName) {
 
     try {
-      return SongLibraryMapper.toArtistDto(root.getArtistById(artistId));
+      return SongLibraryMapper.toArtistDto(root.getArtistByName(artistName));
     } catch (EntityDoesNotExistException e) {
       return null;
     }

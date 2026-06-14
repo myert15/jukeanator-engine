@@ -73,10 +73,10 @@ public interface SongLibraryService {
 
   /**
    * 
-   * @param artistId
+   * @param artistName
    * @return
    */
-  ArtistDto getArtistById(Integer artistId);
+  ArtistDto getArtistByName(String artistName);
 
   /**
    * 
@@ -137,11 +137,12 @@ public interface SongLibraryService {
    * @return
    */
   String downloadAlbumCoverArt(DownloadAlbumCoverArtRequest downloadAlbumCoverArtRequest);
-  
+
   /**
    * 
    * @param authenticateForAdminPanelRequest Contains username and password fields
    * @return True, if authentication was successful for either admin or owner accounts.
    */
-  Boolean authenticateForAdminPanel(AuthenticateForAdminPanelRequest authenticateForAdminPanelRequest);
+  Boolean authenticateForAdminPanel(
+      AuthenticateForAdminPanelRequest authenticateForAdminPanelRequest);
 }

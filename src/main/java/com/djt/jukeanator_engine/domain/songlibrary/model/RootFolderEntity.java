@@ -31,7 +31,7 @@ public class RootFolderEntity extends FolderEntity {
 
   private transient Map<Integer, GenreFolderEntity> genresMap;
   private transient Map<GenreFolderEntity, Set<AlbumFolderEntity>> albumsByGenreMap;
-  private transient Map<Integer, ArtistFolderEntity> artistsMap;
+  private transient Map<String, ArtistFolderEntity> artistsMap;
   private transient Map<String, ArtistFromSongEntity> artistsFromSongsMap;
   private transient Map<Integer, AlbumFolderEntity> albumsMap;
   private transient Map<String, SongFileEntity> songsMap;
@@ -139,9 +139,6 @@ public class RootFolderEntity extends FolderEntity {
     return albumsByGenreMap.get(genre);
   }
 
-  /*
-   * public Collection<ArtistFolderEntity> getArtists() { return artistsMap.values(); }
-   */
   public Collection<ArtistFolderEntity> getArtists() {
 
     Map<String, ArtistFolderEntity> uniqueArtists = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -186,9 +183,9 @@ public class RootFolderEntity extends FolderEntity {
     // Iterate over artistsFromSongs and add to artistsMap
     for (ArtistFromSongEntity artistFromSong : this.artistsFromSongs) {
 
-      Integer artistId = artistFromSong.getPersistentIdentity();
-      if (!this.artistsMap.containsKey(artistId)) {
-        this.artistsMap.put(artistId, artistFromSong);
+      String artistName = artistFromSong.getName();
+      if (!this.artistsMap.containsKey(artistName)) {
+        this.artistsMap.put(artistName, artistFromSong);
       }
     }
 
@@ -217,11 +214,11 @@ public class RootFolderEntity extends FolderEntity {
       // add the "Compilations" artist itself, as any of these
       // albums will be retrievable via the song artist.
       ArtistFolderEntity artist = album.getParentArtist();
-      if (!artist.getName().equals("Compilations")) {
+      String artistName = artist.getName();
+      if (!artistName.equals("Compilations")) {
 
-        Integer artistId = artist.getPersistentIdentity();
-        if (!this.artistsMap.containsKey(artistId)) {
-          this.artistsMap.put(artistId, artist);
+        if (!this.artistsMap.containsKey(artistName)) {
+          this.artistsMap.put(artistName, artist);
         }
       }
 
@@ -381,12 +378,12 @@ public class RootFolderEntity extends FolderEntity {
     throw new EntityDoesNotExistException("Genre with id: [" + id + "] not found.");
   }
 
-  public ArtistFolderEntity getArtistById(Integer id) throws EntityDoesNotExistException {
-    ArtistFolderEntity entity = artistsMap.get(id);
+  public ArtistFolderEntity getArtistByName(String artistName) throws EntityDoesNotExistException {
+    ArtistFolderEntity entity = artistsMap.get(artistName);
     if (entity != null) {
       return entity;
     }
-    throw new EntityDoesNotExistException("Artist with id: [" + id + "] not found.");
+    throw new EntityDoesNotExistException("Artist with name: [" + artistName + "] not found.");
   }
 
   public AlbumFolderEntity getAlbumById(Integer id) throws EntityDoesNotExistException {

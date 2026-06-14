@@ -369,7 +369,7 @@ DONE 8: For KeyboardPanel, add a highlight around either the "ABC" or "123@", de
 
 DONE 10: Remove song does not work from AdminPanel, nor from SongQueuePanel
 
-11: Investigate and eliminate duplicate artists in Hot Here, some of it may be due to case and/or spelling, as artist names are coming from songs too now
+DONE 11: Investigate and eliminate duplicate artists in Hot Here, some of it may be due to case and/or spelling, as artist names are coming from songs too now
 
 DONE 12: For ArtistFromSong entities, do not count songs from different artists from the compilation albums
 
@@ -382,7 +382,7 @@ DONE 15: When viewing albums for an artist, the albums should be sorted by popul
 
 DONE 16: The cover art image for an artist, doesn't show the most popular album for Search, Hot Here and Genre panels
 
-17: For Hot Here, the artists results have not been de-duplicated
+DONE 17: For Hot Here, the artists results have not been de-duplicated
  
 DONE 18: Remove any looping logic in the song library DTOs, that may be performed every time the DTO is instantiated, to the initialization of the song library root on
 the entities themselves.  For example, there is "getCoverArtPath()" logic in the ArtistDto that could be eliminated by adding a coverArtPath attribute to ArtistDto
