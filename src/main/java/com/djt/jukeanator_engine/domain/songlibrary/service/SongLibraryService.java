@@ -4,6 +4,7 @@ import java.util.List;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.AuthenticateForAdminPanelRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.DownloadAlbumCoverArtRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
@@ -136,4 +137,11 @@ public interface SongLibraryService {
    * @return
    */
   String downloadAlbumCoverArt(DownloadAlbumCoverArtRequest downloadAlbumCoverArtRequest);
+  
+  /**
+   * 
+   * @param authenticateForAdminPanelRequest Contains username and password fields
+   * @return True, if authentication was successful for either admin or owner accounts.
+   */
+  Boolean authenticateForAdminPanel(AuthenticateForAdminPanelRequest authenticateForAdminPanelRequest);
 }

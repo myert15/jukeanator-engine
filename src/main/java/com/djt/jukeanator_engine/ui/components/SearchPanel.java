@@ -12,7 +12,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.LinearGradientPaint;
 import java.awt.RenderingHints;
 import java.util.List;
 import javax.swing.BorderFactory;
@@ -38,21 +37,7 @@ public class SearchPanel extends JPanel implements TabNavigator {
   private static final Color ACCENT_BLUE = new Color(0, 210, 255);
   private static final Color TEXT_PRIMARY = Color.WHITE;
 
-  // Key colours — improved AMI 3D style
-  // Face gradient: cool dark-slate that reads as a physical key surface
-  private static final Color KEY_FACE_TOP = new Color(72, 76, 88);
-  private static final Color KEY_FACE_MID = new Color(52, 55, 65);
-  private static final Color KEY_FACE_BOTTOM = new Color(35, 37, 45);
-  // Front "shelf" band — very dark, creates the key-depth illusion
-  private static final Color KEY_SHELF = new Color(18, 18, 22);
-  // Drop-shadow rendered offset below the key body
-  private static final Color KEY_SHADOW = new Color(6, 6, 8);
-  // Specular top-edge highlight and subtle side sheens
-  private static final Color KEY_HIGHLIGHT = new Color(160, 162, 175, 200);
-  private static final Color KEY_SIDE = new Color(100, 102, 115, 80);
-
   // ── Layout constants ──────────────────────────────────────────────────────
-  private static final int KEYBOARD_HEIGHT = 260;
   private static final int SEARCH_BAR_HEIGHT = 90;
   // Number of result rows visible at one time in each column.
   // Tune this value if the screen resolution changes the visible row count.
@@ -69,12 +54,6 @@ public class SearchPanel extends JPanel implements TabNavigator {
   private static final String CARD_ARTIST = "ARTIST";
   private static final String CARD_DETAIL = "DETAIL";
 
-  private enum KeyboardMode {
-    ABC, NUMERIC
-  }
-
-  private KeyboardMode keyboardMode = KeyboardMode.ABC;
-
   private final CardLayout cardLayout = new CardLayout();
   private final JPanel rootPanel = new JPanel(cardLayout);
 
@@ -89,8 +68,8 @@ public class SearchPanel extends JPanel implements TabNavigator {
 
   private final JPanel resultsCard = new JPanel(new BorderLayout());
 
-  private JPanel entryKeyboardWrapper;
-  private JPanel resultsKeyboardWrapper;
+  private KeyboardPanel entryKeyboard;
+  private KeyboardPanel resultsKeyboard;
 
   private AlbumDetailCard currentDetailCard;
 
@@ -250,11 +229,11 @@ public class SearchPanel extends JPanel implements TabNavigator {
     JPanel searchBar = buildSearchBarPanel(false);
     searchBar.setPreferredSize(new Dimension(100, SEARCH_BAR_HEIGHT));
 
-    entryKeyboardWrapper = buildKeyboardWrapper(true);
+    entryKeyboard = buildSearchKeyboard();
 
     root.add(searchBar, BorderLayout.NORTH);
     root.add(heroWrapper, BorderLayout.CENTER);
-    root.add(entryKeyboardWrapper, BorderLayout.SOUTH);
+    root.add(entryKeyboard, BorderLayout.SOUTH);
     return root;
   }
 
@@ -311,283 +290,46 @@ public class SearchPanel extends JPanel implements TabNavigator {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // KEYBOARD WRAPPER
+  // KEYBOARD — delegates to shared KeyboardPanel
   // ─────────────────────────────────────────────────────────────────────────
 
-  private JPanel buildKeyboardWrapper(boolean isEntryCard) {
-    JPanel outerWrapper = new JPanel(new BorderLayout());
-    outerWrapper.setOpaque(false);
-    outerWrapper.setPreferredSize(new Dimension(100, KEYBOARD_HEIGHT));
-    outerWrapper.setMinimumSize(new Dimension(100, KEYBOARD_HEIGHT));
-    outerWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, KEYBOARD_HEIGHT));
-    outerWrapper
-        .setBorder(new EmptyBorder(0, SCREEN_PADDING_HORIZONTAL, 0, SCREEN_PADDING_HORIZONTAL));
-
-    JPanel frostedBodyPanel = new JPanel(new BorderLayout()) {
-      private static final long serialVersionUID = 1L;
+  /**
+   * Builds a {@link KeyboardPanel} wired to the search buffer so that every key press appends to
+   * (or modifies) the current query and, when type-ahead is enabled, immediately triggers a search.
+   */
+  private KeyboardPanel buildSearchKeyboard() {
+    return new KeyboardPanel(new KeyboardPanel.KeyboardListener() {
+      @Override
+      public void onCharacter(String ch) {
+        searchBuffer.append(ch);
+        syncSearchLabel();
+        if (enableTypeAheadSearch)
+          executeSearch();
+      }
 
       @Override
-      protected void paintComponent(Graphics g) {
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(new Color(255, 255, 255, 30));
-        g2.fillRect(0, 0, getWidth(), getHeight());
-        g2.dispose();
-        super.paintComponent(g);
+      public void onBackspace() {
+        if (searchBuffer.length() > 0) {
+          searchBuffer.deleteCharAt(searchBuffer.length() - 1);
+          syncSearchLabel();
+          if (enableTypeAheadSearch)
+            executeSearch();
+        }
       }
-    };
-    frostedBodyPanel.setOpaque(false);
 
-    JPanel centreShell = new JPanel(new GridBagLayout());
-    centreShell.setOpaque(false);
-    centreShell.add(buildKeyboardPanel());
+      @Override
+      public void onClear() {
+        resetSearch();
+      }
 
-    frostedBodyPanel.add(centreShell, BorderLayout.CENTER);
-    outerWrapper.add(frostedBodyPanel, BorderLayout.CENTER);
-
-    return outerWrapper;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // KEYBOARD LAYOUT TRACKING
-  // ─────────────────────────────────────────────────────────────────────────
-
-  private JPanel buildKeyboardPanel() {
-    JPanel p = new JPanel(new GridLayout(3, 1, 10, 10));
-    p.setOpaque(false);
-    p.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-    if (keyboardMode == KeyboardMode.ABC) {
-      p.add(buildAbcRow1());
-      p.add(buildAbcRow2());
-      p.add(buildAbcRow3());
-    } else {
-      p.add(buildNumRow1());
-      p.add(buildNumRow2());
-      p.add(buildNumRow3());
-    }
-    return p;
-  }
-
-  private JPanel buildAbcRow1() {
-    JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-    row.setOpaque(false);
-    for (char c : "QWERTYUIOP".toCharArray())
-      row.add(letterKey(String.valueOf(c)));
-
-    JButton clear = styledKey("CLEAR", new Dimension(140, 60));
-    clear.addActionListener(e -> resetSearch());
-    row.add(clear);
-
-    row.add(buildBackspaceButton());
-    return row;
-  }
-
-  private JPanel buildAbcRow2() {
-    JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-    row.setOpaque(false);
-    for (char c : "ASDFGHJKL".toCharArray())
-      row.add(letterKey(String.valueOf(c)));
-
-    row.add(letterKey("'"));
-    row.add(buildModeToggleButton("123@", KeyboardMode.NUMERIC));
-    row.add(buildModeToggleButton("ABC", KeyboardMode.ABC));
-    return row;
-  }
-
-  private JPanel buildAbcRow3() {
-    JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-    row.setOpaque(false);
-    for (char c : "ZXCVBNM,.".toCharArray())
-      row.add(letterKey(String.valueOf(c)));
-
-    JButton space = styledKey("SPACE", new Dimension(420, 60));
-    space.addActionListener(e -> {
-      searchBuffer.append(' ');
-      syncSearchLabel();
-      if (enableTypeAheadSearch)
-        executeSearch();
-    });
-    row.add(space);
-    return row;
-  }
-
-  private JPanel buildNumRow1() {
-    JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-    row.setOpaque(false);
-    for (String s : new String[] {"1", "2", "3", "4", "5", "6", "7", "8", "9", "0"})
-      row.add(letterKey(s));
-
-    JButton clear = styledKey("CLEAR", new Dimension(140, 60));
-    clear.addActionListener(e -> resetSearch());
-    row.add(clear);
-
-    row.add(buildBackspaceButton());
-    return row;
-  }
-
-  private JPanel buildNumRow2() {
-    JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-    row.setOpaque(false);
-    for (String s : new String[] {"!", "@", "#", "$", "%", "^", "&", "*", "\"", "'"})
-      row.add(letterKey(s));
-
-    row.add(buildModeToggleButton("123@", KeyboardMode.NUMERIC));
-    row.add(buildModeToggleButton("ABC", KeyboardMode.ABC));
-    return row;
-  }
-
-  private JPanel buildNumRow3() {
-    JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-    row.setOpaque(false);
-    for (String s : new String[] {"(", ")", "[", "]", "/", "\\", "?", ":", ";"})
-      row.add(letterKey(s));
-
-    JButton space = styledKey("SPACE", new Dimension(420, 60));
-    space.addActionListener(e -> {
-      searchBuffer.append(' ');
-      syncSearchLabel();
-      if (enableTypeAheadSearch)
-        executeSearch();
-    });
-    row.add(space);
-    return row;
-  }
-
-  private JButton buildBackspaceButton() {
-    JButton back = styledKey("⌫", new Dimension(100, 60));
-    back.addActionListener(e -> {
-      if (searchBuffer.length() > 0) {
-        searchBuffer.deleteCharAt(searchBuffer.length() - 1);
+      @Override
+      public void onSpace() {
+        searchBuffer.append(' ');
         syncSearchLabel();
         if (enableTypeAheadSearch)
           executeSearch();
       }
     });
-    return back;
-  }
-
-  private JButton buildModeToggleButton(String label, KeyboardMode targetMode) {
-    JButton btn = styledKey(label, new Dimension(140, 60));
-    if ((targetMode == KeyboardMode.ABC && keyboardMode == KeyboardMode.ABC)
-        || (targetMode == KeyboardMode.NUMERIC && keyboardMode == KeyboardMode.NUMERIC)) {
-      btn.setBackground(new Color(0, 160, 200));
-    }
-    btn.addActionListener(e -> {
-      if (keyboardMode != targetMode) {
-        keyboardMode = targetMode;
-        refreshKeyboardWrappers();
-      }
-    });
-    return btn;
-  }
-
-  private void refreshKeyboardWrappers() {
-    swapKeyboardInWrapper(entryKeyboardWrapper);
-    swapKeyboardInWrapper(resultsKeyboardWrapper);
-  }
-
-  private void swapKeyboardInWrapper(JPanel wrapper) {
-    if (wrapper == null)
-      return;
-
-    JPanel frostedBody = (JPanel) wrapper.getComponent(0);
-    frostedBody.removeAll();
-
-    JPanel centreShell = new JPanel(new GridBagLayout());
-    centreShell.setOpaque(false);
-    centreShell.add(buildKeyboardPanel());
-    frostedBody.add(centreShell, BorderLayout.CENTER);
-
-    wrapper.repaint();
-    wrapper.revalidate();
-  }
-
-  private JButton letterKey(String text) {
-    JButton btn = styledKey(text, new Dimension(70, 60));
-    btn.addActionListener(e -> {
-      searchBuffer.append(text);
-      syncSearchLabel();
-      if (enableTypeAheadSearch)
-        executeSearch();
-    });
-    return btn;
-  }
-
-  private JButton styledKey(String text, Dimension size) {
-    JButton btn = new JButton(text) {
-      private static final long serialVersionUID = 1L;
-
-      @Override
-      protected void paintComponent(Graphics g) {
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-            RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-
-        int w = getWidth();
-        int h = getHeight();
-        int arc = 7;
-
-        // Reserve bottom pixels for the shadow; the visible key sits in [0, visH)
-        int shadowH = 4;
-        int visH = h - shadowH;
-
-        // ── Drop-shadow slab ──────────────────────────────────────────────
-        g2.setColor(KEY_SHADOW);
-        g2.fillRoundRect(1, shadowH, w - 2, visH, arc, arc);
-
-        // ── Shelf band (bottom ~25 % of visible key) ──────────────────────
-        int shelfH = Math.round(visH * 0.25f);
-        int faceH = visH - shelfH;
-
-        g2.setColor(KEY_SHELF);
-        g2.fillRoundRect(1, faceH, w - 2, shelfH + arc / 2, arc, arc);
-
-        // ── Face gradient ─────────────────────────────────────────────────
-        boolean pressed = model.isArmed();
-        Color fTop = pressed ? KEY_FACE_BOTTOM : KEY_FACE_TOP;
-        Color fMid = KEY_FACE_MID;
-        Color fBot = pressed ? KEY_FACE_TOP : KEY_FACE_BOTTOM;
-        g2.setPaint(new LinearGradientPaint(0, 0, 0, faceH, new float[] {0f, 0.55f, 1f},
-            new Color[] {fTop, fMid, fBot}));
-        g2.fillRoundRect(1, 0, w - 2, faceH + arc / 2, arc, arc);
-
-        // ── Specular top-edge highlight ────────────────────────────────────
-        g2.setColor(KEY_HIGHLIGHT);
-        g2.setStroke(new java.awt.BasicStroke(1.2f));
-        g2.drawLine(arc, 1, w - arc - 1, 1);
-
-        // ── Side-edge sheens ──────────────────────────────────────────────
-        g2.setColor(KEY_SIDE);
-        g2.setStroke(new java.awt.BasicStroke(1f));
-        g2.drawLine(1, 2, 1, faceH - 2);
-        g2.drawLine(w - 2, 2, w - 2, faceH - 2);
-
-        // ── Label — vertically centred in faceH ───────────────────────────
-        g2.setFont(getFont());
-        java.awt.FontMetrics fm = g2.getFontMetrics();
-        int tx = (w - fm.stringWidth(getText())) / 2;
-        int ty = (faceH - fm.getHeight()) / 2 + fm.getAscent();
-        g2.setColor(pressed ? ACCENT_BLUE : TEXT_PRIMARY);
-        g2.drawString(getText(), tx, ty);
-
-        g2.dispose();
-      }
-
-      @Override
-      protected void paintBorder(Graphics g) {}
-    };
-
-    btn.setPreferredSize(size);
-    btn.setFocusPainted(false);
-    btn.setContentAreaFilled(false);
-    btn.setBorderPainted(false);
-    btn.setOpaque(false);
-    btn.setForeground(TEXT_PRIMARY);
-    btn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
-    btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-    return btn;
   }
 
   private void executeSearch() {
@@ -665,11 +407,11 @@ public class SearchPanel extends JPanel implements TabNavigator {
           rebuildResultsCard();
         }, item -> handleRowClick("SONGS", item)));
 
-    resultsKeyboardWrapper = buildKeyboardWrapper(false);
+    resultsKeyboard = buildSearchKeyboard();
 
     resultsCard.add(buildSearchBarPanel(true), BorderLayout.NORTH);
     resultsCard.add(columnsLayoutContainer, BorderLayout.CENTER);
-    resultsCard.add(resultsKeyboardWrapper, BorderLayout.SOUTH);
+    resultsCard.add(resultsKeyboard, BorderLayout.SOUTH);
     resultsCard.revalidate();
     resultsCard.repaint();
   }

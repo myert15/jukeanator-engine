@@ -88,6 +88,7 @@ public class JukeANatorFrame extends JFrame {
   private static final String CARD_ADD_SONG = "ADD_SONG";
   private static final String CARD_SONG_QUEUE = "SONG_QUEUE";
   private static final String CARD_EDIT_ALBUM = "EDIT_ALBUM";
+  private static final String CARD_LOGIN = "LOGIN";
 
   private final CardLayout overlayCardLayout = new CardLayout();
   private final JPanel overlayRoot = new JPanel(overlayCardLayout) {
@@ -118,9 +119,15 @@ public class JukeANatorFrame extends JFrame {
   };
   private JTabbedPane contentPanelTabs;
 
+  // Guards the tab ChangeListener against spurious resets that fire when the
+  // overlay card system shows or hides — neither action is a genuine tab switch.
+  private boolean overlayTransitionInProgress = false;
+  private int lastSelectedTabIndex = -1;
+
   private AddSongToQueueCard addSongToQueueCard;
   private SongQueueCard songQueueCard;
   private EditAlbumCard editAlbumCard;
+  private LoginToAdminPanelCard loginToAdminPanelCard;
 
 
 
@@ -232,6 +239,7 @@ public class JukeANatorFrame extends JFrame {
     overlayRoot.add(placeholder(), CARD_ADD_SONG);
     overlayRoot.add(placeholder(), CARD_SONG_QUEUE);
     overlayRoot.add(placeholder(), CARD_EDIT_ALBUM);
+    overlayRoot.add(placeholder(), CARD_LOGIN);
     overlayCardLayout.show(overlayRoot, CARD_TABS);
 
     getContentPane().add(overlayRoot, BorderLayout.CENTER);
@@ -403,9 +411,26 @@ public class JukeANatorFrame extends JFrame {
     tabs.setTabComponentAt(3, new JukeboxTabComponent("GENRES", "▣", Color.WHITE));
     tabs.setTabComponentAt(4, new JukeboxTabComponent("ADMIN", "⚙", new Color(255, 220, 0)));
 
-    // Reset each tab to its default state when the user switches to it
+    // Admin tab is invisible by default — access is gated by LoginToAdminPanelCard.
+    // A zero-size transparent component keeps the tab structure intact while hiding it visually.
+    tabs.setEnabledAt(4, false);
+    JPanel invisibleTabHeader = new JPanel();
+    invisibleTabHeader.setOpaque(false);
+    invisibleTabHeader.setPreferredSize(new Dimension(0, 0));
+    tabs.setTabComponentAt(4, invisibleTabHeader);
+
+    // Reset each tab to its default state when the user switches to it.
+    // Suppress resets triggered by the overlay card system showing/hiding
+    // (both transitions make the JTabbedPane hidden/visible, which spuriously
+    // fires this listener even though the selected index hasn't changed).
     tabs.addChangeListener(e -> {
-      switch (tabs.getSelectedIndex()) {
+      if (overlayTransitionInProgress)
+        return;
+      int selected = tabs.getSelectedIndex();
+      if (selected == lastSelectedTabIndex)
+        return;
+      lastSelectedTabIndex = selected;
+      switch (selected) {
         case 1 -> searchPanel.resetToDefaultView();
         case 2 -> hotHerePanel.resetToDefaultView();
         case 3 -> genrePanel.resetToDefaultView();
@@ -604,6 +629,15 @@ public class JukeANatorFrame extends JFrame {
 
     creditsPanel.add(locationLogo, BorderLayout.WEST);
     creditsPanel.add(creditsTextPanel, BorderLayout.CENTER);
+
+    // Clicking the credits panel opens the admin login card.
+    creditsPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    creditsPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+      @Override
+      public void mouseClicked(java.awt.event.MouseEvent e) {
+        showLoginToAdminPanelCard();
+      }
+    });
 
     //
     // CENTER : BANNER WITH LOGO
@@ -804,7 +838,9 @@ public class JukeANatorFrame extends JFrame {
 
   /** Returns to the TABS card — the previously-active tab/state is preserved as-is. */
   private void hideOverlay() {
+    overlayTransitionInProgress = true;
     overlayCardLayout.show(overlayRoot, CARD_TABS);
+    overlayTransitionInProgress = false;
     requestFocusInWindow();
   }
 
@@ -836,7 +872,9 @@ public class JukeANatorFrame extends JFrame {
     addSongToQueueCard.setOpaque(false);
 
     replaceOverlayCard(CARD_ADD_SONG, addSongToQueueCard);
+    overlayTransitionInProgress = true;
     overlayCardLayout.show(overlayRoot, CARD_ADD_SONG);
+    overlayTransitionInProgress = false;
     addSongToQueueCard.onShown();
   }
 
@@ -860,7 +898,9 @@ public class JukeANatorFrame extends JFrame {
     songQueueCard.setOpaque(false);
 
     songQueueCard.setQueue(currentQueue);
+    overlayTransitionInProgress = true;
     overlayCardLayout.show(overlayRoot, CARD_SONG_QUEUE);
+    overlayTransitionInProgress = false;
     songQueueCard.onShown();
   }
 
@@ -880,7 +920,42 @@ public class JukeANatorFrame extends JFrame {
       editAlbumCard.editAlbum(selectedAlbum, invalidAlbumsList);
     }
 
+    overlayTransitionInProgress = true;
     overlayCardLayout.show(overlayRoot, CARD_EDIT_ALBUM);
+    overlayTransitionInProgress = false;
+  }
+
+  /**
+   * Shows the Admin Login overlay when the user clicks the Credits panel.
+   *
+   * <p>
+   * On successful authentication, the Admin tab is made visible and selected. On Cancel or timeout,
+   * the overlay is dismissed and the previously active tab / state is preserved.
+   */
+  public void showLoginToAdminPanelCard() {
+
+    if (loginToAdminPanelCard != null) {
+      loginToAdminPanelCard.dismiss();
+    }
+
+    loginToAdminPanelCard = new LoginToAdminPanelCard(songLibraryService,
+        /* onSuccess */ () -> SwingUtilities.invokeLater(() -> {
+          hideOverlay();
+          // Restore the Admin tab header and switch to it
+          contentPanelTabs.setEnabledAt(4, true);
+          contentPanelTabs.setTabComponentAt(4,
+              new JukeboxTabComponent("ADMIN", "⚙", new Color(255, 220, 0)));
+          contentPanelTabs.setSelectedIndex(4);
+          lastSelectedTabIndex = 4;
+        }), /* onDismiss */ this::hideOverlay);
+
+    loginToAdminPanelCard.setOpaque(false);
+
+    replaceOverlayCard(CARD_LOGIN, loginToAdminPanelCard);
+    overlayTransitionInProgress = true;
+    overlayCardLayout.show(overlayRoot, CARD_LOGIN);
+    overlayTransitionInProgress = false;
+    loginToAdminPanelCard.onShown();
   }
 
   // TOGGLE MUSIC PLAY STATE ICON

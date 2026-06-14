@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ArtistDto;
+import com.djt.jukeanator_engine.domain.songlibrary.dto.AuthenticateForAdminPanelRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.DownloadAlbumCoverArtRequest;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.ScanRequest;
@@ -153,5 +154,12 @@ public class SongLibraryController implements SongLibraryService {
       @RequestBody DownloadAlbumCoverArtRequest downloadAlbumCoverArtRequest) {
 
     return songLibraryService.downloadAlbumCoverArt(downloadAlbumCoverArtRequest);
+  }
+
+  @Override
+  @PostMapping("/authenticateForAdminPanel")
+  public Boolean authenticateForAdminPanel(
+      @RequestBody AuthenticateForAdminPanelRequest authenticateForAdminPanelRequest) {
+    return songLibraryService.authenticateForAdminPanel(authenticateForAdminPanelRequest);
   }
 }

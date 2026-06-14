@@ -411,11 +411,9 @@ public class GenrePanel extends JPanel implements TabNavigator {
       results = new SearchResultDto();
     }
 
-    GenreDetailPanel detailPanel = new GenreDetailPanel(genre, results, imageLoader,
-        songQueueService, priorityCostMultiplier, "← BACK", () -> {
-          cardLayout.show(rootPanel, CARD_GENRES);
-        }, album -> pushAlbumDetail(album), artist -> pushArtistFromGenre(artist),
-        songLibraryService, creditManager, incrementCreditsKey);
+    GenreDetailPanel detailPanel = new GenreDetailPanel(genre, results, imageLoader, "← BACK",
+        () -> cardLayout.show(rootPanel, CARD_GENRES), album -> pushAlbumDetail(album),
+        artist -> pushArtistFromGenre(artist), songLibraryService);
 
     genreAlbumsSlot.removeAll();
     genreAlbumsSlot.add(detailPanel, BorderLayout.CENTER);

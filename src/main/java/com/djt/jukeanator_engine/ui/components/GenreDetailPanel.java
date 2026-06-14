@@ -24,8 +24,6 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.GenreDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SearchResultDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songlibrary.service.SongLibraryService;
-import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
-import com.djt.jukeanator_engine.ui.model.CreditManager;
 
 public class GenreDetailPanel extends JPanel {
 
@@ -69,13 +67,9 @@ public class GenreDetailPanel extends JPanel {
 
   // ── Dependencies needed for row-click handling ────────────────────────────
   private final ImageLoader imageLoader;
-  private final SongQueueService songQueueService;
-  private final int priorityCostMultiplier;
   private final AlbumGridPanel.AlbumClickListener onAlbumClicked;
   private final ArtistClickListener onArtistClicked;
   private final SongLibraryService songLibraryService;
-  private final CreditManager creditManager;
-  private final char incrementCreditsKey;
 
   // ── Current sort state ────────────────────────────────────────────────────
   private SortMode currentSort = SortMode.POPULARITY;
@@ -89,23 +83,17 @@ public class GenreDetailPanel extends JPanel {
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
   public GenreDetailPanel(GenreDto genre, SearchResultDto results, ImageLoader imageLoader,
-      SongQueueService songQueueService, int priorityCostMultiplier, String backLabel,
-      Runnable onBack, AlbumGridPanel.AlbumClickListener onAlbumClicked,
-      ArtistClickListener onArtistClicked, SongLibraryService songLibraryService,
-      CreditManager creditManager, char incrementCreditsKey) {
+      String backLabel, Runnable onBack, AlbumGridPanel.AlbumClickListener onAlbumClicked,
+      ArtistClickListener onArtistClicked, SongLibraryService songLibraryService) {
 
     setLayout(new BorderLayout(0, 0));
     setOpaque(false);
 
     this.genre = genre;
     this.imageLoader = imageLoader;
-    this.songQueueService = songQueueService;
-    this.priorityCostMultiplier = priorityCostMultiplier;
     this.onAlbumClicked = onAlbumClicked;
     this.onArtistClicked = onArtistClicked;
     this.songLibraryService = songLibraryService;
-    this.creditManager = creditManager;
-    this.incrementCreditsKey = incrementCreditsKey;
 
     SearchResultDto safe = results != null ? results : new SearchResultDto();
     this.artists = safeList(safe.getArtists());

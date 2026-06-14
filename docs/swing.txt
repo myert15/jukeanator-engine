@@ -315,6 +315,32 @@ should show through (just like it is for all the other screens, like HomePanel, 
 
 
 
+Do the following:
+
+Item #1: Extract KeyboardPanel from SearchPanel, so that it can be re-used for a LoginPanel that will be needed to password-protect the AdminPanel.
+
+Item #2: Create a LoginToAdminPanelCard that has a text field for Username and Password that uses this common onscreen keyboard panel.  Underneath these two fields, 
+have a "Login" button and a "Cancel" button.  When the login button is pressed, call this method on songLibraryService: 
+
+Boolean authenticateForAdminPanel(String username, String password);
+
+If the return value is true, then that means that the AdminPanel can be accessed.
+
+Item #3, Corresponding to Item #3, Change AdminPanel behavior as follows: Change the "Admin" tab to be invisible by default.  On the credits panel, add a 
+mouse listener, so that when the panel is clicked, that this LoginToAdminPanelCard is displayed to user as is done with AddSongToQueueCard and SongQueueCard.
+There will be a 120 second timeout so that after a login attempt, or timeout, that the previous screen is returned to.  When authenticateForAdminPanel() returns
+true, then the AdminPanel should be switched to.
+
+Item #4 Render any area outside the textfields and keyboard panel, the same as AddSongToQueueCard in that there is a screen gradient painted
+
+Long story short: The admin panel tab is to be invisible, when the user clicks on credits panel, they get a login card.  If successful, then switch to the 
+admin panel, if not, or the card times out, then the tab/panel showing before the credits panel click is shown.
+
+
+
+
+
+
 
 
 TODO:
