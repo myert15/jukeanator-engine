@@ -608,9 +608,11 @@ public class JukeANatorFrame extends JFrame {
     return new QueuePanel(songPlayerService, currentQueue, songQueueService, creditManager,
         imageLoader, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3,
         incrementCreditsKey,
-        /* onDismiss — no-op: closing the Queue "card" inside the tab just stays on the tab */
-        () -> {
-        });
+        /* onDismiss — Cancel button navigates back to HOME (index 1) */
+        () -> SwingUtilities.invokeLater(() -> {
+          contentPanelTabs.setSelectedIndex(1);
+          lastSelectedTabIndex = 1;
+        }));
   }
 
   // ============================================================
