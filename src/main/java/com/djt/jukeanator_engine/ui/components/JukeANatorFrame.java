@@ -80,6 +80,9 @@ public class JukeANatorFrame extends JFrame {
   // GENRE TAB
   private GenrePanel genrePanel;
 
+  // QUEUE TAB
+  private QueuePanel queuePanel;
+
   // ADMIN TAB
   private AdminPanel adminPanel;
 
@@ -390,34 +393,66 @@ public class JukeANatorFrame extends JFrame {
     tabs.setOpaque(false);
     tabs.setBackground(new Color(0, 0, 0, 0));
 
+    // ── Tab index layout ──────────────────────────────────────────────────────
+    // Index 0 : DUMMY (invisible, 0-size — balances hidden ADMIN on the right)
+    // Index 1 : HOME
+    // Index 2 : SEARCH
+    // Index 3 : HOT HERE
+    // Index 4 : GENRES
+    // Index 5 : QUEUE
+    // Index 6 : ADMIN (invisible/disabled — reached only via LoginToAdminPanelCard)
+    //
+    // With TAB_WIDTH=200 and 7 total tabs the centering inset formula gives:
+    // leftInset = (screenWidth - 7*200) / 2
+    // The two invisible tabs (0 and 6) each consume 0 visual pixels but their
+    // slot width is suppressed to zero by a 0x0 preferred-size component, so
+    // the five visible tabs are centred naturally.
+
+    // Index 0 — invisible dummy (left balancer)
+    tabs.addTab("", new JPanel());
+
     homePanel = buildHomePanel();
-    tabs.addTab("HOME", homePanel);
+    tabs.addTab("HOME", homePanel); // index 1
 
     searchPanel = buildSearchPanel();
-    tabs.addTab("SEARCH", searchPanel);
+    tabs.addTab("SEARCH", searchPanel); // index 2
 
     hotHerePanel = buildHotHerePanel();
-    tabs.addTab("HOT HERE", hotHerePanel);
+    tabs.addTab("HOT HERE", hotHerePanel); // index 3
 
     genrePanel = buildGenresPanel();
-    tabs.addTab("GENRES", genrePanel);
+    tabs.addTab("GENRES", genrePanel); // index 4
+
+    queuePanel = buildQueuePanel();
+    tabs.addTab("QUEUE", queuePanel); // index 5
 
     adminPanel = buildAdminPanel();
-    tabs.addTab("ADMIN", adminPanel);
+    tabs.addTab("ADMIN", adminPanel); // index 6
 
-    tabs.setTabComponentAt(0, new JukeboxTabComponent("HOME", "⌂", new Color(255, 120, 120)));
-    tabs.setTabComponentAt(1, new JukeboxTabComponent("SEARCH", "🔍", new Color(0, 220, 255)));
-    tabs.setTabComponentAt(2, new JukeboxTabComponent("HOT HERE", "🔥", new Color(255, 80, 120)));
-    tabs.setTabComponentAt(3, new JukeboxTabComponent("GENRES", "▣", Color.WHITE));
-    tabs.setTabComponentAt(4, new JukeboxTabComponent("ADMIN", "⚙", new Color(255, 220, 0)));
+    // Invisible zero-size header for the left dummy tab (index 0)
+    JPanel dummyTabHeader = new JPanel();
+    dummyTabHeader.setOpaque(false);
+    dummyTabHeader.setPreferredSize(new Dimension(0, 0));
+    tabs.setEnabledAt(0, false);
+    tabs.setTabComponentAt(0, dummyTabHeader);
+
+    tabs.setTabComponentAt(1, new JukeboxTabComponent("HOME", "⌂", new Color(255, 120, 120)));
+    tabs.setTabComponentAt(2, new JukeboxTabComponent("SEARCH", "🔍", new Color(0, 220, 255)));
+    tabs.setTabComponentAt(3, new JukeboxTabComponent("HOT HERE", "🔥", new Color(255, 80, 120)));
+    tabs.setTabComponentAt(4, new JukeboxTabComponent("GENRES", "▣", Color.WHITE));
+    tabs.setTabComponentAt(5, new JukeboxTabComponent("QUEUE", "♫", new Color(140, 255, 140)));
 
     // Admin tab is invisible by default — access is gated by LoginToAdminPanelCard.
     // A zero-size transparent component keeps the tab structure intact while hiding it visually.
-    tabs.setEnabledAt(4, false);
+    tabs.setEnabledAt(6, false);
     JPanel invisibleTabHeader = new JPanel();
     invisibleTabHeader.setOpaque(false);
     invisibleTabHeader.setPreferredSize(new Dimension(0, 0));
-    tabs.setTabComponentAt(4, invisibleTabHeader);
+    tabs.setTabComponentAt(6, invisibleTabHeader);
+
+    // Select HOME (index 1) as the default visible tab
+    tabs.setSelectedIndex(1);
+    lastSelectedTabIndex = 1;
 
     // Reset each tab to its default state when the user switches to it.
     // Suppress resets triggered by the overlay card system showing/hiding
@@ -431,11 +466,12 @@ public class JukeANatorFrame extends JFrame {
         return;
       lastSelectedTabIndex = selected;
       switch (selected) {
-        case 1 -> searchPanel.resetToDefaultView();
-        case 2 -> hotHerePanel.resetToDefaultView();
-        case 3 -> genrePanel.resetToDefaultView();
+        case 2 -> searchPanel.resetToDefaultView();
+        case 3 -> hotHerePanel.resetToDefaultView();
+        case 4 -> genrePanel.resetToDefaultView();
+        case 5 -> queuePanel.onShown();
         default -> {
-          /* HOME and ADMIN require no reset */ }
+          /* HOME, DUMMY, and ADMIN require no reset */ }
       }
     });
 
@@ -556,6 +592,25 @@ public class JukeANatorFrame extends JFrame {
 
     return new AdminPanel(this, songLibraryService, songQueueService, songPlayerService,
         creditManager, incrementCreditsKey, imageLoader);
+  }
+
+  // ============================================================
+  // QUEUE PANEL
+  // ============================================================
+  /**
+   * A transparent panel that hosts the SongQueueCard content inline as a proper tab, painting the
+   * same diagonal gradient as the rest of the screen so the background appears seamless. The
+   * SongQueueCard is created once and reused; calling {@link QueuePanel#onShown()} refreshes the
+   * list and restarts the countdown.
+   */
+  private QueuePanel buildQueuePanel() {
+
+    return new QueuePanel(songPlayerService, currentQueue, songQueueService, creditManager,
+        imageLoader, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3,
+        incrementCreditsKey,
+        /* onDismiss — no-op: closing the Queue "card" inside the tab just stays on the tab */
+        () -> {
+        });
   }
 
   // ============================================================
@@ -789,6 +844,7 @@ public class JukeANatorFrame extends JFrame {
     SwingUtilities.invokeLater(() -> {
       currentQueue = queue != null ? queue : new java.util.ArrayList<>();
       adminPanel.setQueue(queue);
+      queuePanel.setQueue(currentQueue);
     });
   }
 
@@ -884,8 +940,9 @@ public class JukeANatorFrame extends JFrame {
    */
   public void showSongQueueCard() {
 
-    if (contentPanelTabs.getSelectedComponent() == adminPanel) {
-      return; // disabled on Admin tab
+    if (contentPanelTabs.getSelectedComponent() == adminPanel
+        || contentPanelTabs.getSelectedComponent() == queuePanel) {
+      return; // disabled on Admin and Queue tabs (Queue tab has its own embedded view)
     }
 
     if (songQueueCard == null) {
@@ -944,8 +1001,8 @@ public class JukeANatorFrame extends JFrame {
           hideOverlay();
           // Switch to the Admin panel without making the tab visible or enabled —
           // the tab header stays permanently hidden so it cannot be clicked directly.
-          contentPanelTabs.setSelectedIndex(4);
-          lastSelectedTabIndex = 4;
+          contentPanelTabs.setSelectedIndex(6);
+          lastSelectedTabIndex = 6;
         }), /* onDismiss */ this::hideOverlay);
 
     loginToAdminPanelCard.setOpaque(false);

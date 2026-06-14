@@ -337,7 +337,13 @@ admin panel, if not, or the card times out, then the tab/panel showing before th
 
 
 
+Do the following:
 
+Item #1: Create a "QUEUE" tab on the JTabbed pane, using the "♫" character as its symbol, and when the user clicks on it, the SongQueueCard is shown
+
+Item #2: Since the "ADMIN" tab is invisible/password protected, make sure that the visible tabs are centered on the screen horizontally.  You may need to 
+create a dummy/blank invisible tab to put to the left/WEST of the HOME button in order to make the visible buttons, which will include this new
+queue tab centered.
 
 
 
