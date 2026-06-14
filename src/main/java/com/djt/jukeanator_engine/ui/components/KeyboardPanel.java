@@ -238,6 +238,27 @@ public class KeyboardPanel extends JPanel {
     return row;
   }
 
+  // ── Keyboard mode toggle helper ───────────────────────────────────────────
+
+  private JButton buildModeToggleButton(String label, KeyboardMode targetMode) {
+    boolean isActiveMode = (targetMode == keyboardMode);
+
+    // Pass the active state flag straight into our unified styledKey generator
+    JButton btn = styledKey(label, new Dimension(140, 60), isActiveMode);
+
+    if (isActiveMode) {
+      btn.setBackground(new Color(0, 160, 200));
+    }
+
+    btn.addActionListener(e -> {
+      if (keyboardMode != targetMode) {
+        keyboardMode = targetMode;
+        refreshKeyboard();
+      }
+    });
+    return btn;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // KEY HELPERS
   // ─────────────────────────────────────────────────────────────────────────
@@ -246,20 +267,6 @@ public class KeyboardPanel extends JPanel {
     JButton back = styledKey("⌫", new Dimension(100, 60));
     back.addActionListener(e -> listener.onBackspace());
     return back;
-  }
-
-  private JButton buildModeToggleButton(String label, KeyboardMode targetMode) {
-    JButton btn = styledKey(label, new Dimension(140, 60));
-    if (targetMode == keyboardMode) {
-      btn.setBackground(new Color(0, 160, 200));
-    }
-    btn.addActionListener(e -> {
-      if (keyboardMode != targetMode) {
-        keyboardMode = targetMode;
-        refreshKeyboard();
-      }
-    });
-    return btn;
   }
 
   private void refreshKeyboard() {
@@ -282,10 +289,14 @@ public class KeyboardPanel extends JPanel {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // STYLED KEY (AMI 3D — identical to SearchPanel original)
+  // STYLED KEY (AMI 3D)
   // ─────────────────────────────────────────────────────────────────────────
 
   private JButton styledKey(String text, Dimension size) {
+    return styledKey(text, size, false);
+  }
+
+  private JButton styledKey(String text, Dimension size, boolean drawHighlight) {
     JButton btn = new JButton(text) {
       private static final long serialVersionUID = 1L;
 
@@ -342,6 +353,14 @@ public class KeyboardPanel extends JPanel {
         int ty = (faceH - fm.getHeight()) / 2 + fm.getAscent();
         g2.setColor(pressed ? ACCENT_BLUE : TEXT_PRIMARY);
         g2.drawString(getText(), tx, ty);
+
+        // ── Active Mode Neon Border Overlay ───────────────────────────────
+        if (drawHighlight) {
+          g2.setColor(ACCENT_BLUE);
+          g2.setStroke(new java.awt.BasicStroke(2.0f));
+          // Draws right around the 3D button bounds seamlessly
+          g2.drawRoundRect(1, 1, w - 3, h - 3, arc, arc);
+        }
 
         g2.dispose();
       }

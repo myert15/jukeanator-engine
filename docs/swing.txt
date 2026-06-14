@@ -344,7 +344,7 @@ admin panel, if not, or the card times out, then the tab/panel showing before th
 TODO:
 DONE 1: Albums with songs with duplicate track numbers, no track numbers, use song index in album childSongs list as track number.  Do this at scan time
 
-2: AlbumViewPanel: Add a header panel, same size, background color as footer/navigation panel, that shows column descriptions of "Popularity", "TrackNumber"
+DONE 2: AlbumViewPanel: Add a header panel, same size, background color as footer/navigation panel, that shows column descriptions of "Popularity", "TrackNumber"
 and "Song Name".  If a compilation album (the album needs to determine this based on whether or not all the song artist names are the same and match that
 of the album's parent artist), then the "Artist" column needs to be rendered as well
 
@@ -361,9 +361,9 @@ are non-empty, then enable the "Update Metadata" button
 
 6: For Edit Album, add a cover art URL image to allow the user to specify any URL from the web
 
-7: Extract KeyboardPanel from SearchPanel, so that it can be re-used for a LoginPanel that will be needed to password-protect the AdminPanel
+DONE 7: Extract KeyboardPanel from SearchPanel, so that it can be re-used for a LoginPanel that will be needed to password-protect the AdminPanel
 
-8: For KeyboardPanel, add a highlight around either the "ABC" or "123@", depending upon which is currently displaying 
+DONE 8: For KeyboardPanel, add a highlight around either the "ABC" or "123@", depending upon which panel is currently displaying 
 
 9: When doing a search, strip out any characters from the album/artist/song name that are NOT available to the on-screen keyboard (e.g. ~)
 
