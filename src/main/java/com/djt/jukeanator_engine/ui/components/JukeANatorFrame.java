@@ -929,8 +929,9 @@ public class JukeANatorFrame extends JFrame {
    * Shows the Admin Login overlay when the user clicks the Credits panel.
    *
    * <p>
-   * On successful authentication, the Admin tab is made visible and selected. On Cancel or timeout,
-   * the overlay is dismissed and the previously active tab / state is preserved.
+   * On successful authentication, the Admin panel is selected directly — the Admin tab remains
+   * invisible at all times so it cannot be reached without logging in. On Cancel or timeout the
+   * overlay is dismissed and the previously active tab / state is preserved.
    */
   public void showLoginToAdminPanelCard() {
 
@@ -941,10 +942,8 @@ public class JukeANatorFrame extends JFrame {
     loginToAdminPanelCard = new LoginToAdminPanelCard(songLibraryService,
         /* onSuccess */ () -> SwingUtilities.invokeLater(() -> {
           hideOverlay();
-          // Restore the Admin tab header and switch to it
-          contentPanelTabs.setEnabledAt(4, true);
-          contentPanelTabs.setTabComponentAt(4,
-              new JukeboxTabComponent("ADMIN", "⚙", new Color(255, 220, 0)));
+          // Switch to the Admin panel without making the tab visible or enabled —
+          // the tab header stays permanently hidden so it cannot be clicked directly.
           contentPanelTabs.setSelectedIndex(4);
           lastSelectedTabIndex = 4;
         }), /* onDismiss */ this::hideOverlay);

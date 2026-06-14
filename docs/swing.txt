@@ -305,12 +305,10 @@ should show through (just like it is for all the other screens, like HomePanel, 
 
 Make the following UI changes:    
     
-Item #1: When viewing an AlbumViewCard from the Artists detail panel from the Genre Details Panel, when the user clicks on the back button, they
-should be returned to whatever panel where they started from.  This behavior is already implemented for Search and Hot Here, so make the same changes
-where appropriate.
-
-Item #2: Whenever an overlay card is shown, whether it is AddSongToQueueCard, SongQueueCard or EditAlbumCard, the underlying screen gradient from JukeANatorFrame
-should show through (just like it is for all the other screens, like HomePanel, for example)
+Item #1: When viewing a list of albums from the Artists detail panel from HotHerePanel search results, when they click on an album to view the album details and
+then click on a song to add it to the song queue, when the AddQueueCard is dismissed, the user is taken back to the HotHere search results, 
+when they should have been return to the album details page that they started from.  This behavior is already implemented correctly for Search and Genre, 
+so make the same changes where appropriate.
 
 
 
