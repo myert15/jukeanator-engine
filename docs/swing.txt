@@ -438,6 +438,18 @@ and then having initialization logic set the same transient attribute on the Art
 26: Need to explore Stripe APIs and/or payment systems with mobile
 
 27: Need to develop a screensaver
+
+28: Need to implement authentication for service calls
+
+29: Need to define User entity (name, email address, credits, play history, playlists), Swing UI will have singleton LocalUser
+
+30: Need to enhance root folder entity to have location name, coordinates, logo, etc.
+
+31: Need to implement logging for service endpoints
+
+32: Need to implement song queue addition constraint checks and appropriate isEligileForSongQueueAddition(song)
+
+33: Need to implement exception handling for controller endpoints
  
  
  

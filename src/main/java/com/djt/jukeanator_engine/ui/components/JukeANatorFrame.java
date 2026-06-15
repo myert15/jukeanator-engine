@@ -274,7 +274,7 @@ public class JukeANatorFrame extends JFrame {
       }
     });
 
-    this.screenSaverWindow = new ScreenSaverWindow(this.imageLoader, this.screenWidth,
+    this.screenSaverWindow = new ScreenSaverWindow(this, this.imageLoader, this.screenWidth,
         this.screenHeight, this.songLibraryService.getAlbums().size(), this.songPlayerService,
         this.songLibraryService);
 

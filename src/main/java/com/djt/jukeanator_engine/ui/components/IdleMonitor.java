@@ -9,10 +9,20 @@ import javax.swing.Timer;
 
 public class IdleMonitor {
 
-  //private static final long IDLE_TIMEOUT_MS = 120_000;
-  private static final long IDLE_TIMEOUT_MS = 30_000;
+  private static final long IDLE_TIMEOUT_MS = 120_000;
+
+  /**
+   * How long (ms) to suppress the onActive callback after the screensaver is triggered. This
+   * prevents stale AWT events that are already queued — or the OS-level repaint/focus events
+   * produced when the ScreenSaverWindow becomes visible — from immediately dismissing the
+   * screensaver.
+   */
+  private static final long ACTIVATION_GRACE_PERIOD_MS = 2_000;
 
   private long lastActivity = System.currentTimeMillis();
+
+  /** Timestamp of the most recent onIdle call, or 0 if never fired. */
+  private long lastIdleFiredAt = 0;
 
   private final Timer timer;
 
@@ -24,7 +34,15 @@ public class IdleMonitor {
 
         lastActivity = System.currentTimeMillis();
 
-        onActive.run();
+        // Suppress onActive during the grace period immediately after the
+        // screensaver was activated so that queued / system-generated events
+        // cannot dismiss it before the user sees it.
+        boolean inGracePeriod = lastIdleFiredAt > 0
+            && (System.currentTimeMillis() - lastIdleFiredAt) < ACTIVATION_GRACE_PERIOD_MS;
+
+        if (!inGracePeriod) {
+          onActive.run();
+        }
       }
 
     }, AWTEvent.MOUSE_EVENT_MASK | AWTEvent.MOUSE_MOTION_EVENT_MASK
@@ -34,6 +52,7 @@ public class IdleMonitor {
 
       if (System.currentTimeMillis() - lastActivity >= IDLE_TIMEOUT_MS) {
 
+        lastIdleFiredAt = System.currentTimeMillis();
         onIdle.run();
       }
     });

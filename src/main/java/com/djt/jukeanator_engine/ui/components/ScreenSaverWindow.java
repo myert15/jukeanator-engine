@@ -43,7 +43,13 @@ public class ScreenSaverWindow extends JWindow {
   private final int numAlbums;
   private final ImageIcon logo;
 
-  public ScreenSaverWindow(ImageLoader imageLoader, int screenWidth, int screenHeight, int numAlbums, SongPlayerService songPlayerService, SongLibraryService songLibraryService) {
+  public ScreenSaverWindow(javax.swing.JFrame owner, ImageLoader imageLoader, int screenWidth,
+      int screenHeight, int numAlbums, SongPlayerService songPlayerService,
+      SongLibraryService songLibraryService) {
+
+    // Passing the owner JFrame ensures the JWindow is anchored to the same
+    // graphics device as the fullscreen JFrame, so setBounds lands correctly.
+    super(owner);
 
     this.imageLoader = imageLoader;
     this.screenWidth = screenWidth;
@@ -57,7 +63,13 @@ public class ScreenSaverWindow extends JWindow {
     this.logo = new ImageIcon(transparentStrippedImage);
 
     setAlwaysOnTop(true);
-    setBounds(0, 0, screenWidth, screenHeight);
+
+    // Use the GraphicsDevice bounds so the window covers every pixel of the
+    // screen, including any area the OS may reserve for taskbars. This is the
+    // same device the JFrame occupies in exclusive fullscreen mode.
+    java.awt.Rectangle screenBounds = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+        .getDefaultScreenDevice().getDefaultConfiguration().getBounds();
+    setBounds(screenBounds);
 
     JPanel background = new JPanel(null) {
 
@@ -120,7 +132,15 @@ public class ScreenSaverWindow extends JWindow {
 
     moveFloatingPanel();
 
-    moveTimer = new Timer(MOVE_INTERVAL_MS, e -> moveFloatingPanel());
+    moveTimer = new Timer(MOVE_INTERVAL_MS, e -> {
+      // Always reposition the panel to prevent burn-in.
+      // When no song is playing, also pick a fresh random cover art so the
+      // screensaver shows variety instead of the same album every 30 seconds.
+      if (this.songPlayerService.getNowPlayingSong() == null) {
+        updateContent();
+      }
+      moveFloatingPanel();
+    });
     moveTimer.start();
   }
 
@@ -144,12 +164,12 @@ public class ScreenSaverWindow extends JWindow {
     if (currentSong != null && currentSong.getCoverArtPath() != null) {
 
       coverArt = imageLoader.loadFilesystemImage(currentSong.getCoverArtPath(), 350, 350);
-      
+
     } else {
-      
+
       AlbumDto album = this.songLibraryService.getAlbumById(new Random().nextInt(this.numAlbums));
       coverArt = imageLoader.loadFilesystemImage(album.getCoverArtPath(), 350, 350);
-      
+
     }
 
     coverArtLabel.setIcon(coverArt);
