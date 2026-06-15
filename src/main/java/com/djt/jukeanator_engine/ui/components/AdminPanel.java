@@ -274,17 +274,32 @@ public class AdminPanel extends JPanel {
   // ALBUM ACTIONS (SongLibraryService)
   // ─────────────────────────────────────────────────────────────────────────
   private void doAddAlbumToQueue() {
-
     AlbumDto selected = albumList.getSelectedValue();
+
     if (selected == null) {
       JOptionPane.showMessageDialog(this, "Please select an album first.", "No Selection",
           JOptionPane.WARNING_MESSAGE);
       return;
     }
+
+    // Capture the ID safely
+    final Integer albumId = selected.getAlbumId();
+
     CompletableFuture.runAsync(() -> {
       try {
-        AlbumDto full = songLibraryService.getAlbumById(selected.getAlbumId());
+        // 1. Fetch full album entity context in the background
+        AlbumDto full = songLibraryService.getAlbumById(albumId);
+
+        // 2. Submit to the queue engine (Fires events, updates data models)
         songQueueService.addAlbumToQueue(new AddAlbumToQueueRequest(full.getAlbumId(), 1));
+
+        // 3. Explicitly request the fresh queue list from the service layer
+        // WHILE STILL on the background thread.
+        var freshQueue = songQueueService.getQueuedSongs();
+
+        // 4. Safely push the isolated DTO snapshot to the Swing EDT
+        SwingUtilities.invokeLater(() -> refreshQueueList(freshQueue));
+
       } catch (Exception ex) {
         ex.printStackTrace();
       }
@@ -600,17 +615,21 @@ public class AdminPanel extends JPanel {
   }
 
   private void refreshQueueList(List<SongQueueEntryDto> queue) {
-    try {
 
-      SwingUtilities.invokeLater(() -> {
-        int sel = queueList.getSelectedIndex();
-        queueListModel.clear();
-        if (queue != null)
-          queue.forEach(queueListModel::addElement);
-        if (sel >= 0 && sel < queueListModel.getSize()) {
-          queueList.setSelectedIndex(sel);
-        }
-      });
+    if (!SwingUtilities.isEventDispatchThread()) {
+      SwingUtilities.invokeLater(() -> refreshQueueList(queue));
+      return;
+    }
+    try {
+      int sel = queueList.getSelectedIndex();
+      queueListModel.clear();
+      if (queue != null) {
+        // Appending a fully materialized snapshot
+        queue.forEach(queueListModel::addElement);
+      }
+      if (sel >= 0 && sel < queueListModel.getSize()) {
+        queueList.setSelectedIndex(sel);
+      }
     } catch (Exception ex) {
       ex.printStackTrace();
     }
