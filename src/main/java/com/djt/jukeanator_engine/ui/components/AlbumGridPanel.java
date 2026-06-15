@@ -65,7 +65,6 @@ public class AlbumGridPanel extends JPanel {
   private final int artH;
   private final AlbumClickListener listener;
 
-  private int currentPage = 0; // retained only for reset() public API compatibility
   private int startIndex = 0; // index of the album in the upper-left corner of the grid
   private String selectedLetter = null; // which letter button is highlighted
 
@@ -94,9 +93,11 @@ public class AlbumGridPanel extends JPanel {
     this.artH = artH;
     this.listener = listener;
 
-    // Default: highlight the first available letter key on load
+    // Pick a random letter from the available buckets at startup
     if (!this.letterMap.isEmpty()) {
-      selectedLetter = this.letterMap.keySet().iterator().next();
+      List<String> keys = new java.util.ArrayList<>(this.letterMap.keySet());
+      selectedLetter = keys.get(new java.util.Random().nextInt(keys.size()));
+      startIndex = letterStartIndex(selectedLetter);
     }
 
     setLayout(new BorderLayout(0, 0));
@@ -121,7 +122,7 @@ public class AlbumGridPanel extends JPanel {
 
   /** Go to page 0 and repaint — call this when the album list is replaced. */
   public void reset() {
-    currentPage = 0;
+
     startIndex = 0;
     if (!letterMap.isEmpty()) {
       selectedLetter = letterMap.keySet().iterator().next();
