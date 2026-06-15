@@ -84,6 +84,7 @@ public class JukeANatorFrame extends JFrame {
   private QueuePanel queuePanel;
 
   // ADMIN TAB
+  private int preAdminTabIndex = 1; // Tracks the tab to return to when exiting Admin
   private AdminPanel adminPanel;
 
   // ── OVERLAY CARD SYSTEM (replaces former JDialog popups) ───────────────────
@@ -279,6 +280,46 @@ public class JukeANatorFrame extends JFrame {
       @Override
       public void actionPerformed(java.awt.event.ActionEvent e) {
         creditManager.addDollar();
+      }
+    });
+
+    // Physical Escape Key Binding to Toggle/Bypass Admin Panel
+    javax.swing.KeyStroke escapeStroke =
+        javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0);
+    final String ESCAPE_ACTION = "escapeAction";
+    getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(escapeStroke,
+        ESCAPE_ACTION);
+    getRootPane().getActionMap().put(ESCAPE_ACTION, new javax.swing.AbstractAction() {
+      private static final long serialVersionUID = 1L;
+
+      @Override
+      public void actionPerformed(java.awt.event.ActionEvent e) {
+        // CASE 1: If AdminPanel is currently showing, return to the previous screen
+        if (contentPanelTabs.getSelectedIndex() == 6) {
+          contentPanelTabs.setSelectedIndex(preAdminTabIndex);
+          lastSelectedTabIndex = preAdminTabIndex;
+          return;
+        }
+
+        // CASE 2: If we are not in AdminPanel, perform the bypass login workflow
+        if (loginToAdminPanelCard != null) {
+          loginToAdminPanelCard.dismiss();
+        }
+
+        hideOverlay();
+
+        // Safe lazy initialization of AdminPanel
+        if (adminPanel == null) {
+          adminPanel = buildAdminPanel();
+          contentPanelTabs.setComponentAt(6, adminPanel);
+          adminPanel.setQueue(currentQueue);
+        }
+
+        // Save the current tab index before jumping to AdminPanel (index 6)
+        preAdminTabIndex = contentPanelTabs.getSelectedIndex();
+
+        contentPanelTabs.setSelectedIndex(6);
+        lastSelectedTabIndex = 6;
       }
     });
 
@@ -1054,6 +1095,9 @@ public class JukeANatorFrame extends JFrame {
             // Push any queue updates that arrived before the panel existed.
             adminPanel.setQueue(currentQueue);
           }
+
+          // Capture the screen they were looking at before the login overlay took over
+          preAdminTabIndex = contentPanelTabs.getSelectedIndex();
 
           // Switch to the Admin panel without making the tab visible or enabled —
           // the tab header stays permanently hidden so it cannot be clicked directly.
