@@ -57,6 +57,9 @@ public final class SongLibraryServiceImpl
 
   private static final Logger log = LoggerFactory.getLogger(SongLibraryServiceImpl.class);
 
+  private static final String VALID_KEYBOARD_CHARACTERS =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789" + "',. !@#$%^&*\"()[]/\\\\?:;";
+
   private final ApplicationEventPublisher eventPublisher;
 
   private String scanPath;
@@ -98,6 +101,23 @@ public final class SongLibraryServiceImpl
     POPULARITY, TITLE, RELEASE_DATE
   }
 
+  private String stripNonKeyboardCharacters(String value) {
+
+    if (value == null || value.isBlank()) {
+      return value;
+    }
+
+    StringBuilder result = new StringBuilder(value.length());
+
+    for (char c : value.toCharArray()) {
+      if (VALID_KEYBOARD_CHARACTERS.indexOf(Character.toUpperCase(c)) >= 0) {
+        result.append(c);
+      }
+    }
+
+    return result.toString();
+  }
+
   @Override
   public SearchResultDto getMusicBySearch(String searchFor) {
 
@@ -109,7 +129,9 @@ public final class SongLibraryServiceImpl
       return new SearchResultDto(List.of(), List.of(), List.of());
     }
 
-    return getMusic(null, searchFor.strip().toLowerCase(), SortOrder.POPULARITY);
+    String searchForNormalized = stripNonKeyboardCharacters(searchFor.strip().toLowerCase());
+
+    return getMusic(null, searchForNormalized, SortOrder.POPULARITY);
   }
 
   @Override
@@ -230,7 +252,7 @@ public final class SongLibraryServiceImpl
         return 900;
       }
     }
-    
+
     //
     // Starts With (+500)
     //

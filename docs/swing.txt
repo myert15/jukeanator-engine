@@ -373,6 +373,40 @@ at startup from properties YML.
 
 
 
+For EditAlbumCard, do the following:
+
+Item #1: When populating the Artist Name field in the Internet Search box, if the artist name is "Compilations", change it to be "Various Artists" instead,
+as that term is more likely to bring back search results.
+
+Item #2: Add another field called "Cover Art URL" that can be populated in one of two ways: First, after an internet search, the URL used to display the 
+internet search cover art image, the URL can be placed there, OR, the user is allowed to edit this field and enter any cover art URL that they specify.
+Either way, when the "download cover art" button is clicked, the image specified by this URL will be downloaded (as is down now, by the cover art url contained
+in the search results.
+
+Item #3: Not all internet searches via the service call will yield results, so also add a "Browse..." file selection dialog that will allow a user to choose
+any JPG or PNG image.  When they do this, take the selected image file, resize it to 500x500 into a file call "cover.jpg" and write to a file that matches
+the cover art path for the given album that is being edited.
+
+
+Add another editable at all times text field called "Cover Art URL" that can be populated in one of two ways: First, after an internet search, the URL used to 
+display the internet search cover art image, the URL can be placed there, OR, the user is allowed to edit this field and enter any cover art URL that they specify. 
+Either way, when the "download cover art" button is clicked, the image specified by this URL will be downloaded (as is down now, by the cover art url contained
+ in the search results.
+
+This field should be located in the internet search box area and will be just below the displayed cover image from the search results (if there is one).
+
+Move the "Browse..." button just to the right of the "Has Explicit" checkbox in internet search box and add another button called "Google", then when pressed, 
+launches the default browser for the operating system and does a google search with the terms being the contents of the artist name and album name text fields.
+  This will allow the user a chance to browse google results and THEN cut and paste a given URL into this "Cover URL URL" text field.
+
+Again, the download cover art button will either be downloading the cover art from the internet search from songLibraryService, or this manual fail safe approach
+where the user can specify the image URL manually from this new "Google" search button.
+
+
+
+
+
+
 
 TODO:
 DONE 1: Albums with songs with duplicate track numbers, no track numbers, use song index in album childSongs list as track number.  Do this at scan time

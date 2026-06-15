@@ -37,7 +37,7 @@ public final class CoverArtDownloader {
       Files.write(path, imageBytes);
 
       
-      BufferedImage image = ImageIO.read(new File(coverArtPath));
+      BufferedImage image = ImageIO.read(path.toFile());
       int width = image.getWidth();
       int height = image.getHeight();
       if (width > 500 || height > 500) {

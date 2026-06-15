@@ -3,6 +3,7 @@ package com.djt.jukeanator_engine.ui.components;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -15,6 +16,7 @@ import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.net.URI;
 import java.net.URL;
@@ -27,6 +29,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -35,6 +38,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.AlbumMetadataDto;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.DownloadAlbumCoverArtRequest;
@@ -83,6 +87,7 @@ public class EditAlbumCard extends JPanel {
   private JTextField tfResultReleaseDate;
   private JTextField tfResultRecordLabel;
   private JCheckBox chbResultHasExplicit;
+  private JTextField tfCoverArtUrl;
 
   // Navigation Buttons (Invalid Metadata Albums)
   private JButton btnPrevAlbum;
@@ -166,6 +171,12 @@ public class EditAlbumCard extends JPanel {
     String labelVal = tfResultRecordLabel.getText().trim();
     boolean fieldsNotEmpty = !yearVal.isEmpty() || !labelVal.isEmpty();
     btnUpdateMeta.setEnabled(fieldsNotEmpty);
+  }
+
+  private void evaluateDownloadArtButtonState() {
+    if (btnDownloadArt == null || tfCoverArtUrl == null)
+      return;
+    btnDownloadArt.setEnabled(!tfCoverArtUrl.getText().trim().isEmpty());
   }
 
   private void initLayout() {
@@ -320,7 +331,58 @@ public class EditAlbumCard extends JPanel {
     lblCoverArtCanvas.setOpaque(true);
     lblCoverArtCanvas.setAlignmentX(CENTER_ALIGNMENT);
     rightCenterContainer.add(lblCoverArtCanvas);
-    rightCenterContainer.add(Box.createVerticalStrut(15));
+    rightCenterContainer.add(Box.createVerticalStrut(8));
+
+    // ── Cover Art URL strip (below canvas, always editable) ──────────────────
+    // Uses GridBagLayout so the text field stretches and the two buttons stay fixed-width.
+    JPanel coverUrlStrip = new JPanel(new GridBagLayout());
+    coverUrlStrip.setOpaque(false);
+    coverUrlStrip.setAlignmentX(CENTER_ALIGNMENT);
+    coverUrlStrip.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+    GridBagConstraints gbcUrl = new GridBagConstraints();
+    gbcUrl.insets = new Insets(0, 3, 0, 3);
+    gbcUrl.fill = GridBagConstraints.HORIZONTAL;
+    gbcUrl.gridy = 0;
+
+    gbcUrl.gridx = 0;
+    gbcUrl.weightx = 0.0;
+    coverUrlStrip.add(createLabel("Cover Art URL:"), gbcUrl);
+
+    gbcUrl.gridx = 1;
+    gbcUrl.weightx = 1.0;
+    tfCoverArtUrl = new JTextField();
+    setupTextField(tfCoverArtUrl);
+    tfCoverArtUrl
+        .setToolTipText("Auto-populated from search results — or paste / type any image URL");
+    tfCoverArtUrl.getDocument().addDocumentListener(new DocumentListener() {
+      @Override
+      public void insertUpdate(DocumentEvent e) {
+        evaluateDownloadArtButtonState();
+      }
+
+      @Override
+      public void removeUpdate(DocumentEvent e) {
+        evaluateDownloadArtButtonState();
+      }
+
+      @Override
+      public void changedUpdate(DocumentEvent e) {
+        evaluateDownloadArtButtonState();
+      }
+    });
+    coverUrlStrip.add(tfCoverArtUrl, gbcUrl);
+
+    gbcUrl.gridx = 2;
+    gbcUrl.weightx = 0.0;
+    JButton btnBrowseArt = createStyledButton("Browse...", e -> doBrowseCoverArt());
+    coverUrlStrip.add(btnBrowseArt, gbcUrl);
+
+    gbcUrl.gridx = 3;
+    JButton btnGoogle = createStyledButton("Google", e -> doGoogleSearch());
+    coverUrlStrip.add(btnGoogle, gbcUrl);
+
+    rightCenterContainer.add(coverUrlStrip);
+    rightCenterContainer.add(Box.createVerticalStrut(8));
 
     // Item #1: Mirrored forms tracking interactive fields
     JPanel resultsFormPanel = new JPanel(new GridBagLayout());
@@ -423,7 +485,7 @@ public class EditAlbumCard extends JPanel {
     footerOuter.add(lblGlobalStatus, BorderLayout.SOUTH);
     mainPanel.add(footerOuter, BorderLayout.SOUTH);
 
-    mainPanel.setPreferredSize(new Dimension(860, 660));
+    mainPanel.setPreferredSize(new Dimension(900, 700));
     add(mainPanel);
   }
 
@@ -440,7 +502,12 @@ public class EditAlbumCard extends JPanel {
     chbHasExplicit
         .setSelected(currentAlbum.getHasExplicit() != null && currentAlbum.getHasExplicit());
 
-    tfSearchArtist.setText(currentAlbum.getArtistName());
+    // Use "Various Artists" instead of "Compilations" for better internet search results
+    String searchArtistName = currentAlbum.getArtistName();
+    if ("Compilations".equalsIgnoreCase(searchArtistName)) {
+      searchArtistName = "Various Artists";
+    }
+    tfSearchArtist.setText(searchArtistName);
     tfSearchAlbum.setText(currentAlbum.getAlbumName());
 
     // Local file system cover art asset rendering
@@ -512,6 +579,7 @@ public class EditAlbumCard extends JPanel {
 
       evaluateUpdateMetadataButtonState();
       btnDownloadArt.setEnabled(false);
+      tfCoverArtUrl.setText("");
       return;
     }
 
@@ -536,6 +604,10 @@ public class EditAlbumCard extends JPanel {
     boolean hasValidMetadata =
         !yearVal.isEmpty() && !labelVal.isEmpty() && urlStr != null && !urlStr.isBlank();
     btnDownloadArt.setEnabled(hasValidMetadata);
+
+    // Populate the editable Cover Art URL field from the search result (Item #2)
+    tfCoverArtUrl.setText(urlStr != null ? urlStr : "");
+    evaluateDownloadArtButtonState();
 
     lblCoverArtCanvas.setIcon(null);
     lblCoverArtCanvas.setText("");
@@ -625,11 +697,17 @@ public class EditAlbumCard extends JPanel {
 
   private void doCoverArtDownload() {
 
-    if (currentAlbum == null || currentResultIndex == -1 || searchResults.isEmpty())
+    if (currentAlbum == null)
       return;
 
-    AlbumMetadataDto targetMeta = searchResults.get(currentResultIndex);
-    String liveArtUrlStr = targetMeta.getCoverArtUrl();
+    // Use the (possibly user-edited) Cover Art URL field rather than the raw search result (Item
+    // #2)
+    String liveArtUrlStr = tfCoverArtUrl.getText().trim();
+    if (liveArtUrlStr.isEmpty()) {
+      setStatus("No Cover Art URL specified. Enter or paste a URL in the Cover Art URL field.",
+          STATUS_WARN);
+      return;
+    }
 
     try {
 
@@ -644,6 +722,101 @@ public class EditAlbumCard extends JPanel {
     } catch (Exception e) {
       setStatus("Failed downloading art asset payload: " + e.getMessage(), STATUS_ERROR);
     }
+  }
+
+  private void doGoogleSearch() {
+
+    String artistQuery = tfSearchArtist.getText().trim();
+    String albumQuery = tfSearchAlbum.getText().trim();
+
+    if (artistQuery.isEmpty() && albumQuery.isEmpty()) {
+      setStatus("Enter an Artist and/or Album name before opening Google.", STATUS_WARN);
+      return;
+    }
+
+    try {
+      String searchTerms = (artistQuery + " " + albumQuery).trim();
+      String encodedQuery =
+          java.net.URLEncoder.encode(searchTerms, java.nio.charset.StandardCharsets.UTF_8);
+      URI googleUri = URI.create("https://www.google.com/search?q=" + encodedQuery);
+
+      if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+        Desktop.getDesktop().browse(googleUri);
+        setStatus("Opened Google search for: " + searchTerms, STATUS_INFO);
+      } else {
+        setStatus("System browser launch is not supported on this platform.", STATUS_WARN);
+      }
+
+    } catch (Exception ex) {
+      setStatus("Failed to open browser: " + ex.getMessage(), STATUS_ERROR);
+    }
+  }
+
+  private void doBrowseCoverArt() {
+
+    if (currentAlbum == null) {
+      setStatus("No album selected.", STATUS_WARN);
+      return;
+    }
+
+    String coverArtPath = currentAlbum.getCoverArtPath();
+    if (coverArtPath == null || coverArtPath.isBlank()) {
+      setStatus("Current album has no cover art path defined — cannot write cover.jpg.",
+          STATUS_WARN);
+      return;
+    }
+
+    JFileChooser chooser = new JFileChooser();
+    chooser.setDialogTitle("Select Cover Art Image");
+    chooser
+        .setFileFilter(new FileNameExtensionFilter("Image files (JPG, PNG)", "jpg", "jpeg", "png"));
+    chooser.setAcceptAllFileFilterUsed(false);
+
+    int result = chooser.showOpenDialog(this);
+    if (result != JFileChooser.APPROVE_OPTION)
+      return;
+
+    File selectedFile = chooser.getSelectedFile();
+
+    new Thread(() -> {
+      try {
+
+        BufferedImage sourceImage = ImageIO.read(selectedFile);
+        if (sourceImage == null) {
+          SwingUtilities
+              .invokeLater(() -> setStatus("Could not read selected image file.", STATUS_ERROR));
+          return;
+        }
+
+        // Resize to 500×500
+        BufferedImage resized = new BufferedImage(500, 500, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = resized.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+            RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2d.drawImage(sourceImage, 0, 0, 500, 500, null);
+        g2d.dispose();
+
+        // Derive destination: same directory as the album's current coverArtPath, named "cover.jpg"
+        File coverArtFile = new File(coverArtPath);
+        File destFile = new File(coverArtFile.getParentFile(), "cover.jpg");
+
+        ImageIO.write(resized, "jpg", destFile);
+
+        // Refresh the left-panel preview with the newly written image
+        Image scaled = resized.getScaledInstance(250, 250, Image.SCALE_SMOOTH);
+        ImageIcon icon = new ImageIcon(scaled);
+        SwingUtilities.invokeLater(() -> {
+          lblCurrentCoverArt.setIcon(icon);
+          lblCurrentCoverArt.setText("");
+          setStatus("Cover art saved to: " + destFile.getAbsolutePath(), STATUS_SUCCESS);
+        });
+
+      } catch (Exception ex) {
+        SwingUtilities.invokeLater(
+            () -> setStatus("Failed writing cover art: " + ex.getMessage(), STATUS_ERROR));
+      }
+    }).start();
   }
 
   // ── Helper UI Styling Methods ──────────────────────────────────────────────
