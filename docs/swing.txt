@@ -426,13 +426,13 @@ DONE 4: When searching for "Pub", "Sgt, Pepper's Lonely Hearts Club Band" shows 
 DONE 5: For Edit Album, allow the user to enter in text for Release Date and Record Label without having to do a search first, and when either/both of these fields
 are non-empty, then enable the "Update Metadata" button
 
-6: For Edit Album, add a cover art URL image to allow the user to specify any URL from the web
+DONE 6: For Edit Album, add a cover art URL image to allow the user to specify any URL from the web
 
 DONE 7: Extract KeyboardPanel from SearchPanel, so that it can be re-used for a LoginPanel that will be needed to password-protect the AdminPanel
 
 DONE 8: For KeyboardPanel, add a highlight around either the "ABC" or "123@", depending upon which panel is currently displaying 
 
-9: When doing a search, strip out any characters from the album/artist/song name that are NOT available to the on-screen keyboard (e.g. ~)
+DONE 9: When doing a search, strip out any characters from the album/artist/song name that are NOT available to the on-screen keyboard (e.g. ~)
 
 DONE 10: Remove song does not work from AdminPanel, nor from SongQueuePanel
 
@@ -455,7 +455,7 @@ DONE 18: Remove any looping logic in the song library DTOs, that may be performe
 the entities themselves.  For example, there is "getCoverArtPath()" logic in the ArtistDto that could be eliminated by adding a coverArtPath attribute to ArtistDto
 and then having initialization logic set the same transient attribute on the ArtistFolderEntity.
 
-19: For Edit Album, change artist from Compilations to Various Artists
+DONE 19: For Edit Album, change artist from Compilations to Various Artists
 
 20: Make re-sizable in Landscape mode, need to expose many private constants that are tied to specific resolution, such as number of listings per page
 

@@ -116,6 +116,7 @@ public class LoginToAdminPanelCard extends JPanel {
       public void onCharacter(String ch) {
         activeBuffer().append(ch);
         syncLabels();
+        checkAndAdvanceFocus();
       }
 
       @Override
@@ -136,6 +137,7 @@ public class LoginToAdminPanelCard extends JPanel {
       public void onSpace() {
         activeBuffer().append(' ');
         syncLabels();
+        checkAndAdvanceFocus();
       }
     });
 
@@ -431,6 +433,16 @@ public class LoginToAdminPanelCard extends JPanel {
   /** Returns the buffer that currently has keyboard focus. */
   private StringBuilder activeBuffer() {
     return activeField == ActiveField.USERNAME ? usernameBuffer : passwordBuffer;
+  }
+
+  /**
+   * Checks if the username has reached 5 characters and auto-advances focus to the password field.
+   */
+  private void checkAndAdvanceFocus() {
+    if (activeField == ActiveField.USERNAME && usernameBuffer.length() == 5) {
+      activeField = ActiveField.PASSWORD;
+      refreshFieldBorders();
+    }
   }
 
   /** Syncs display labels from the internal buffers. */
