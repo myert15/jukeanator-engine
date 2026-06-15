@@ -264,13 +264,21 @@ public class JukeANatorFrame extends JFrame {
     });
 
     // Hardware Bill Acceptor Key Bindings
-    this.setFocusable(true);
-    this.addKeyListener(new java.awt.event.KeyAdapter() {
+    // Use WHEN_IN_FOCUSED_WINDOW so the keystroke is caught regardless of which
+    // child component (e.g. SongQueueCard) currently holds keyboard focus.
+    // A raw KeyListener on JFrame would silently stop working the moment any
+    // child panel calls requestFocusInWindow().
+    javax.swing.KeyStroke billAcceptorStroke =
+        javax.swing.KeyStroke.getKeyStroke(incrementCreditsKey);
+    final String BILL_ACCEPTOR_ACTION = "billAcceptor";
+    getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(billAcceptorStroke,
+        BILL_ACCEPTOR_ACTION);
+    getRootPane().getActionMap().put(BILL_ACCEPTOR_ACTION, new javax.swing.AbstractAction() {
+      private static final long serialVersionUID = 1L;
+
       @Override
-      public void keyTyped(java.awt.event.KeyEvent e) {
-        if (e.getKeyChar() == incrementCreditsKey) {
-          creditManager.addDollar();
-        }
+      public void actionPerformed(java.awt.event.ActionEvent e) {
+        creditManager.addDollar();
       }
     });
 
@@ -639,7 +647,6 @@ public class JukeANatorFrame extends JFrame {
 
     return new QueuePanel(songPlayerService, currentQueue, songQueueService, creditManager,
         imageLoader, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2, POPULARITY_THRESHOLD_3,
-        incrementCreditsKey,
         /* onDismiss — Cancel button navigates back to HOME (index 1) */
         () -> SwingUtilities.invokeLater(() -> {
           contentPanelTabs.setSelectedIndex(1);
@@ -985,7 +992,7 @@ public class JukeANatorFrame extends JFrame {
     if (songQueueCard == null) {
       songQueueCard = new SongQueueCard(songPlayerService, currentQueue, songQueueService,
           creditManager, imageLoader, POPULARITY_THRESHOLD_1, POPULARITY_THRESHOLD_2,
-          POPULARITY_THRESHOLD_3, incrementCreditsKey, this::hideOverlay);
+          POPULARITY_THRESHOLD_3, this::hideOverlay);
       replaceOverlayCard(CARD_SONG_QUEUE, songQueueCard);
     }
 

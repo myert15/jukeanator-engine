@@ -44,17 +44,15 @@ public class QueuePanel extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   public QueuePanel(SongPlayerService songPlayerService, List<SongQueueEntryDto> initialQueue,
       SongQueueService songQueueService, CreditManager creditManager, ImageLoader imageLoader,
-      int popularityT1, int popularityT2, int popularityT3, char incrementCreditsKey,
-      Runnable onDismiss) {
+      int popularityT1, int popularityT2, int popularityT3, Runnable onDismiss) {
 
     // Transparent so our paintComponent can render the gradient cleanly
     setOpaque(false);
     // GridBagLayout centres the card both horizontally and vertically
     setLayout(new java.awt.GridBagLayout());
 
-    songQueueCard =
-        new SongQueueCard(songPlayerService, initialQueue, songQueueService, creditManager,
-            imageLoader, popularityT1, popularityT2, popularityT3, incrementCreditsKey, onDismiss);
+    songQueueCard = new SongQueueCard(songPlayerService, initialQueue, songQueueService,
+        creditManager, imageLoader, popularityT1, popularityT2, popularityT3, onDismiss);
 
     // The card itself is transparent — the gradient paints through it
     songQueueCard.setOpaque(false);

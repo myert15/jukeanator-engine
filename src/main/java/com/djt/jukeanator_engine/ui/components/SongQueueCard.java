@@ -115,8 +115,7 @@ public class SongQueueCard extends JPanel {
   // ─────────────────────────────────────────────────────────────────────────
   public SongQueueCard(SongPlayerService songPlayerService, List<SongQueueEntryDto> queue,
       SongQueueService songQueueService, CreditManager creditManager, ImageLoader imageLoader,
-      int popularityT1, int popularityT2, int popularityT3, char incrementCreditsKey,
-      Runnable onDismiss) {
+      int popularityT1, int popularityT2, int popularityT3, Runnable onDismiss) {
 
     this.songPlayerService = songPlayerService;
     this.queue = queue;
@@ -142,16 +141,6 @@ public class SongQueueCard extends JPanel {
     });
     countdownTimer.start();
 
-    // Hardware Bill Acceptor Key Bindings
-    this.setFocusable(true);
-    this.addKeyListener(new java.awt.event.KeyAdapter() {
-      @Override
-      public void keyTyped(java.awt.event.KeyEvent e) {
-        if (e.getKeyChar() == incrementCreditsKey) {
-          creditManager.addDollar();
-        }
-      }
-    });
   }
 
   /** Updates the live queue reference — call before {@link #onShown()} if it may have changed. */
