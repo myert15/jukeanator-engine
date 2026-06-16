@@ -218,7 +218,7 @@ public class HomePanel extends JPanel implements TabNavigator {
 
     if (allAlbums.isEmpty()) {
       JLabel empty = new JLabel("No albums found.", SwingConstants.CENTER);
-      empty.setForeground(AlbumGridPanel.TEXT_SECONDARY);
+      empty.setForeground(ColorTheme.get().textSecondary);
       empty.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 22));
       card.add(header, BorderLayout.NORTH);
       card.add(empty, BorderLayout.CENTER);

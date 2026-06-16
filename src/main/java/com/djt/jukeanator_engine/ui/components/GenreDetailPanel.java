@@ -140,7 +140,7 @@ public class GenreDetailPanel extends JPanel {
     row.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 8));
 
     JLabel sortLabel = new JLabel("Sort By: ");
-    sortLabel.setForeground(AlbumGridPanel.TEXT_PRIMARY);
+    sortLabel.setForeground(ColorTheme.get().textPrimary);
     sortLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 26));
     row.add(sortLabel);
 

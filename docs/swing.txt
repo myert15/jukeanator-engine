@@ -454,6 +454,12 @@ only that which is strictly needed to implement this method.  Do not leave any u
 
 
 
+If BackgroundMusic.TXT cannot be loaded, then as a fail-safe, create it using the top 500 songs (i.e. with the highest number of song plays), then
+re-load using this newly created BackgroundMusic.TXT file
+
+
+
+
 
 
 

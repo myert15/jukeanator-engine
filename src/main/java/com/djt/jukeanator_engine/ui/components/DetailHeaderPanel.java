@@ -23,9 +23,6 @@ public class DetailHeaderPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
-  private static final Color ACCENT_BLUE = AlbumGridPanel.ACCENT_BLUE;
-  private static final Color TEXT_PRIMARY = AlbumGridPanel.TEXT_PRIMARY;
-  private static final Color TEXT_SECONDARY = AlbumGridPanel.TEXT_SECONDARY;
   private static final Color COLOR_BORDER = new Color(60, 60, 80);
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -87,11 +84,11 @@ public class DetailHeaderPanel extends JPanel {
     textBlock.setLayout(new BoxLayout(textBlock, BoxLayout.Y_AXIS));
 
     JLabel titleLabel = new JLabel(title != null ? title : "");
-    titleLabel.setForeground(TEXT_PRIMARY);
+    titleLabel.setForeground(ColorTheme.get().textPrimary);
     titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 26));
 
     JLabel subtitleLabel = new JLabel(subtitle != null ? subtitle : "");
-    subtitleLabel.setForeground(TEXT_SECONDARY);
+    subtitleLabel.setForeground(ColorTheme.get().textSecondary);
     subtitleLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
 
     textBlock.add(titleLabel);
@@ -157,7 +154,7 @@ public class DetailHeaderPanel extends JPanel {
         g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
 
         // Accent border
-        g2.setColor(ACCENT_BLUE);
+        g2.setColor(ColorTheme.get().accentBlue);
         g2.setStroke(new java.awt.BasicStroke(1.5f));
         g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
 

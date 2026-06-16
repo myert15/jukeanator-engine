@@ -17,10 +17,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ThreadLocalRandom;
 import com.djt.jukeanator_engine.domain.common.exception.EntityDoesNotExistException;
 import com.djt.jukeanator_engine.domain.common.utils.OperatingSystemDetector;
 import com.djt.jukeanator_engine.domain.common.utils.OperatingSystemDetector.OSType;
-import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 
 public class RootFolderEntity extends FolderEntity {
   private static final long serialVersionUID = 2L;
@@ -30,7 +30,9 @@ public class RootFolderEntity extends FolderEntity {
 
   private static final String BACKGROUND_MUSIC_FILE_PREFIX = "BackgroundMusic";
   private static final String BACKGROUND_MUSIC_FILE_SUFFIX = ".TXT";
-  
+  private static final String BACKGROUND_MUSIC_YET_TO_BE_PLAYED_FILE_PREFIX =
+      "BackgroundMusic_YetToBePlayed";
+
   private Set<ArtistFromSongEntity> artistsFromSongs = new TreeSet<ArtistFromSongEntity>();
 
   private transient Map<Integer, GenreFolderEntity> genresMap;
@@ -42,6 +44,7 @@ public class RootFolderEntity extends FolderEntity {
 
   // Used only by SongQueueService.loadPlaylistIntoQueue()
   private transient Map<String, SongFileEntity> songsByPathMap;
+  private transient List<String> backgroundSongsYetToBePlayedList;
 
   public RootFolderEntity(String scanPath) {
 
@@ -235,6 +238,8 @@ public class RootFolderEntity extends FolderEntity {
         this.songsMap.put(buildSongKey(albumId, song.getPersistentIdentity()), song);
       }
     }
+
+    initializeBackgroundSongsYetToBePlayedList(getName());
   }
 
   public void resetSongStatistics() {
@@ -331,23 +336,96 @@ public class RootFolderEntity extends FolderEntity {
     String backgroundMusicPathName = null;
     OSType osType = OperatingSystemDetector.getOperatingSystem();
     if (osType == OSType.WINDOWS) {
-      backgroundMusicPathName = scanPath + File.separator + BACKGROUND_MUSIC_FILE_PREFIX + BACKGROUND_MUSIC_FILE_SUFFIX;
+      backgroundMusicPathName =
+          scanPath + File.separator + BACKGROUND_MUSIC_FILE_PREFIX + BACKGROUND_MUSIC_FILE_SUFFIX;
     } else if (osType == OSType.MACOS) {
-      backgroundMusicPathName =
-          scanPath + File.separator + BACKGROUND_MUSIC_FILE_PREFIX + "_mac" + BACKGROUND_MUSIC_FILE_SUFFIX;
+      backgroundMusicPathName = scanPath + File.separator + BACKGROUND_MUSIC_FILE_PREFIX + "_mac"
+          + BACKGROUND_MUSIC_FILE_SUFFIX;
     } else {
-      backgroundMusicPathName =
-          scanPath + File.separator + BACKGROUND_MUSIC_FILE_PREFIX + "_linux" + BACKGROUND_MUSIC_FILE_SUFFIX;
+      backgroundMusicPathName = scanPath + File.separator + BACKGROUND_MUSIC_FILE_PREFIX + "_linux"
+          + BACKGROUND_MUSIC_FILE_SUFFIX;
     }
     return backgroundMusicPathName;
   }
-  
+
+
+  private String buildBackgroundMusicYetToBePlayedPathname(String scanPath) {
+
+    String pathname = null;
+    OSType osType = OperatingSystemDetector.getOperatingSystem();
+    if (osType == OSType.WINDOWS) {
+      pathname = scanPath + File.separator + BACKGROUND_MUSIC_YET_TO_BE_PLAYED_FILE_PREFIX
+          + BACKGROUND_MUSIC_FILE_SUFFIX;
+    } else if (osType == OSType.MACOS) {
+      pathname = scanPath + File.separator + BACKGROUND_MUSIC_YET_TO_BE_PLAYED_FILE_PREFIX + "_mac"
+          + BACKGROUND_MUSIC_FILE_SUFFIX;
+    } else {
+      pathname = scanPath + File.separator + BACKGROUND_MUSIC_YET_TO_BE_PLAYED_FILE_PREFIX
+          + "_linux" + BACKGROUND_MUSIC_FILE_SUFFIX;
+    }
+    return pathname;
+  }
+
+  private void copyBackgroundMusicPlaylist(String scanPath) {
+
+    try {
+      Files.copy(Path.of(buildBackgroundMusicPathname(scanPath)),
+          Path.of(buildBackgroundMusicYetToBePlayedPathname(scanPath)),
+          java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to copy background music playlist.", e);
+    }
+  }
+
+  private void initializeBackgroundSongsYetToBePlayedList(String scanPath) {
+
+    String pathname = buildBackgroundMusicYetToBePlayedPathname(scanPath);
+    Path file = Path.of(pathname);
+
+    try {
+
+      if (!Files.exists(file)) {
+        copyBackgroundMusicPlaylist(scanPath);
+      }
+
+      List<String> songs = Files.readAllLines(file, StandardCharsets.UTF_8).stream()
+          .map(String::trim).filter(line -> !line.isEmpty()).toList();
+
+      if (songs.isEmpty()) {
+        copyBackgroundMusicPlaylist(scanPath);
+        songs = Files.readAllLines(file, StandardCharsets.UTF_8).stream().map(String::trim)
+            .filter(line -> !line.isEmpty()).toList();
+      }
+
+      this.backgroundSongsYetToBePlayedList = new ArrayList<>(songs);
+
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to initialize background music playlist.", e);
+    }
+  }
+
+  private void writeBackgroundSongsYetToBePlayed(String scanPath) {
+
+    try (BufferedWriter writer = Files.newBufferedWriter(
+        Path.of(buildBackgroundMusicYetToBePlayedPathname(scanPath)), StandardCharsets.UTF_8)) {
+
+      for (String song : this.backgroundSongsYetToBePlayedList) {
+        writer.write(song);
+        writer.newLine();
+      }
+
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to write background music playlist.", e);
+    }
+  }
+
   public void restoreSongNumPlays(String scanPath) {
 
     String cdStatsPathName = buildCdStatsPathname(scanPath);
     Path statsFile = Path.of(cdStatsPathName);
     if (!Files.exists(statsFile)) {
-      cdStatsPathName = scanPath + File.separator + CD_STATS_FILE_PREFIX + BACKGROUND_MUSIC_FILE_SUFFIX;
+      cdStatsPathName =
+          scanPath + File.separator + CD_STATS_FILE_PREFIX + BACKGROUND_MUSIC_FILE_SUFFIX;
       statsFile = Path.of(cdStatsPathName);
       if (!Files.exists(statsFile)) {
         System.err.println("CD stats file does not exist: " + cdStatsPathName);
@@ -456,29 +534,36 @@ public class RootFolderEntity extends FolderEntity {
 
   public SongFileEntity getRandomSongFromBackgroundMusicPlaylist(String scanPath) {
 
-    String cdStatsPathName = buildCdStatsPathname(scanPath);
-    Path statsFile = Path.of(cdStatsPathName);
-    if (!Files.exists(statsFile)) {
-      cdStatsPathName = scanPath + File.separator + CD_STATS_FILE_PREFIX + CD_STATS_FILE_SUFFIX;
-      statsFile = Path.of(cdStatsPathName);
-      if (!Files.exists(statsFile)) {
-        throw new IllegalStateException("CD stats file does not exist: " + cdStatsPathName);
-      }
-    }
-
     if (this.songsMap == null) {
       initialize();
     }
 
-    Map<String, SongFileEntity> songsByPath = new HashMap<>();
-    for (SongFileEntity song : this.songsMap.values()) {
+    if (this.backgroundSongsYetToBePlayedList == null
+        || this.backgroundSongsYetToBePlayedList.isEmpty()) {
 
-      String songPathname = song.getNaturalIdentity().toLowerCase();
-      songsByPath.put(songPathname, song);
+      initializeBackgroundSongsYetToBePlayedList(scanPath);
     }
-    
-    // TODO: Implement as given in the prompt:
-    
-    throw new RuntimeException("Not implemented yet!");
+
+    String songPathname = null;
+
+    if (this.backgroundSongsYetToBePlayedList.size() == 1) {
+      songPathname = this.backgroundSongsYetToBePlayedList.remove(0);
+    } else {
+      int index = ThreadLocalRandom.current().nextInt(this.backgroundSongsYetToBePlayedList.size());
+      songPathname = this.backgroundSongsYetToBePlayedList.remove(index);
+    }
+
+    writeBackgroundSongsYetToBePlayed(scanPath);
+
+    if (this.backgroundSongsYetToBePlayedList.isEmpty()) {
+      initializeBackgroundSongsYetToBePlayedList(scanPath);
+    }
+
+    try {
+      return getSongByPath(songPathname);
+    } catch (EntityDoesNotExistException e) {
+      throw new IllegalStateException("Background music song not found in library: " + songPathname,
+          e);
+    }
   }
 }
