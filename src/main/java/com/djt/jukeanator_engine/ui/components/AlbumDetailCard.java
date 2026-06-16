@@ -24,8 +24,7 @@ public class AlbumDetailCard extends JPanel {
   private static final long serialVersionUID = 1L;
 
   private static final int TIMEOUT_SECONDS = 120;
-  private static final Color ACCENT_BLUE = new Color(0, 210, 255);
-  private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
+  // ── Colours — sourced from ColorTheme.get() ──────────────────────────────
 
   private int secondsRemaining = TIMEOUT_SECONDS;
   private final Timer countdownTimer;
@@ -93,12 +92,12 @@ public class AlbumDetailCard extends JPanel {
     timeoutSection.setOpaque(false);
 
     timeoutBar.setValue(TIMEOUT_SECONDS);
-    timeoutBar.setForeground(new Color(0, 210, 255));
+    timeoutBar.setForeground(ColorTheme.get().accentBlue);
     timeoutBar.setOpaque(false);
     timeoutBar.setBorderPainted(false);
     timeoutBar.setStringPainted(false);
 
-    timeoutLabel.setForeground(TEXT_SECONDARY);
+    timeoutLabel.setForeground(ColorTheme.get().textSecondary);
 
     updateTimeout();
 
@@ -112,12 +111,6 @@ public class AlbumDetailCard extends JPanel {
   }
 
   private JButton createBackButton(String text, Runnable action) {
-
-    // Idle and hover fill colours mirror the sort button's active gradient
-    final Color GRAD_TOP = new Color(0, 160, 210);
-    final Color GRAD_BOTTOM = new Color(0, 80, 130);
-    final Color HOVER_TOP = new Color(0, 190, 240);
-    final Color HOVER_BOTTOM = new Color(0, 100, 160);
 
     JButton button = new JButton(text) {
 
@@ -147,13 +140,14 @@ public class AlbumDetailCard extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         // Gradient fill — brighter on hover
-        Color top = hovered ? HOVER_TOP : GRAD_TOP;
-        Color bottom = hovered ? HOVER_BOTTOM : GRAD_BOTTOM;
+        Color top = hovered ? ColorTheme.get().navBtnHoverTop : ColorTheme.get().navBtnGradTop;
+        Color bottom =
+            hovered ? ColorTheme.get().navBtnHoverBottom : ColorTheme.get().navBtnGradBottom;
         g2.setPaint(new GradientPaint(0, 0, top, 0, getHeight(), bottom));
         g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
 
         // Accent border
-        g2.setColor(ACCENT_BLUE);
+        g2.setColor(ColorTheme.get().accentBlue);
         g2.setStroke(new java.awt.BasicStroke(1.5f));
         g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
 
@@ -163,7 +157,7 @@ public class AlbumDetailCard extends JPanel {
     };
 
     button.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
-    button.setForeground(Color.WHITE);
+    button.setForeground(ColorTheme.get().textPrimary);
     button.setContentAreaFilled(false);
     button.setBorderPainted(false);
     button.setFocusPainted(false);

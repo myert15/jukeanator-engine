@@ -36,32 +36,7 @@ public class AddSongToQueueCard extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
-  // ── Colours (match JukeANatorFrame palette) ──────────────────────────────
-  private static final Color ACCENT_BLUE = new Color(0, 210, 255);
-  private static final Color ACCENT_GOLD = new Color(255, 200, 0);
-  private static final Color TEXT_PRIMARY = Color.WHITE;
-  private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
-
-  // Jukebox Warning Colors
-  private static final Color AM_WARN_BORDER = new Color(220, 40, 40);
-
-  // ── 3D button palette ─────────────────────────────────────────────────
-  // Face gradient: deep blue-slate body matching the AMI dark-teal look
-  private static final Color BTN3D_FACE_TOP = new Color(28, 45, 72);
-  private static final Color BTN3D_FACE_MID = new Color(18, 32, 54);
-  private static final Color BTN3D_FACE_BOTTOM = new Color(10, 18, 34);
-  // Bottom "shelf" band — very dark, sells the physical depth illusion
-  private static final Color BTN3D_SHELF = new Color(6, 10, 20);
-  // Drop-shadow layer rendered one pixel below the whole button
-  private static final Color BTN3D_SHADOW = new Color(2, 4, 10);
-  // Specular top-edge highlight and side sheen
-  private static final Color BTN3D_HIGHLIGHT = new Color(80, 140, 210, 200);
-  private static final Color BTN3D_SIDE = new Color(40, 80, 130, 90);
-  // Warning state face gradient (dark red)
-  private static final Color BTN3D_WARN_TOP = new Color(55, 10, 10);
-  private static final Color BTN3D_WARN_MID = new Color(38, 6, 6);
-  private static final Color BTN3D_WARN_BOTTOM = new Color(22, 3, 3);
-  private static final Color BTN3D_WARN_SHELF = new Color(12, 2, 2);
+  // ── Colours — sourced from ColorTheme.get() ──────────────────────────────
 
   // ── Timeout ───────────────────────────────────────────────────────────────
   private static final int TIMEOUT_SECONDS = 120;
@@ -133,7 +108,7 @@ public class AddSongToQueueCard extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(ACCENT_BLUE);
+        g2.setColor(ColorTheme.get().accentBlue);
         g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 16, 16);
         g2.dispose();
       }
@@ -146,7 +121,7 @@ public class AddSongToQueueCard extends JPanel {
 
   private JPanel buildMainPanel() {
     JPanel main = new JPanel(new BorderLayout(0, 0));
-    main.setBackground(new Color(22, 22, 28));
+    main.setBackground(ColorTheme.get().bgOverlayCard);
     main.setBorder(BorderFactory.createEmptyBorder(24, 28, 20, 28));
 
     main.add(buildInfoRow(song, imageLoader), BorderLayout.NORTH);
@@ -166,8 +141,8 @@ public class AddSongToQueueCard extends JPanel {
     cover.setHorizontalAlignment(SwingConstants.CENTER);
     cover.setVerticalAlignment(SwingConstants.CENTER);
     cover.setOpaque(true);
-    cover.setBackground(new Color(30, 30, 40));
-    cover.setBorder(BorderFactory.createLineBorder(new Color(80, 80, 90), 1));
+    cover.setBackground(ColorTheme.get().bgCoverArtPlaceholder);
+    cover.setBorder(BorderFactory.createLineBorder(ColorTheme.get().coverArtBorder, 1));
 
     if (song.getCoverArtPath() != null) {
       try {
@@ -184,16 +159,16 @@ public class AddSongToQueueCard extends JPanel {
     text.setLayout(new BoxLayout(text, BoxLayout.Y_AXIS));
 
     JLabel songName = new JLabel(song.getSongName() != null ? song.getSongName() : "");
-    songName.setForeground(TEXT_PRIMARY);
+    songName.setForeground(ColorTheme.get().textPrimary);
     songName.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 32));
 
     JLabel artistName = new JLabel(song.getArtistName() != null ? song.getArtistName() : "");
-    artistName.setForeground(TEXT_PRIMARY);
+    artistName.setForeground(ColorTheme.get().textPrimary);
     artistName.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
 
     JLabel albumName =
         new JLabel(AlbumGridPanel.albumDisplayName(song.getAlbumName(), song.getGenreName()));
-    albumName.setForeground(TEXT_PRIMARY);
+    albumName.setForeground(ColorTheme.get().textPrimary);
     albumName.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
 
     text.add(Box.createVerticalGlue());
@@ -217,7 +192,7 @@ public class AddSongToQueueCard extends JPanel {
       @Override
       protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        g.setColor(new Color(80, 80, 100));
+        g.setColor(ColorTheme.get().dividerLine);
         g.fillRect(0, getHeight() / 2, getWidth(), 1);
       }
     };
@@ -237,25 +212,27 @@ public class AddSongToQueueCard extends JPanel {
     int highestPriority = songQueueService.getHighestPriority();
     int priorityCost = highestPriority * priorityCostMultiplier;
 
-    this.normalButton = createQueueButton("Play Song", normalPlayCost, ACCENT_BLUE, e -> {
-      if (creditManager.deductCredits(normalPlayCost)) {
+    this.normalButton =
+        createQueueButton("Play Song", normalPlayCost, ColorTheme.get().accentBlue, e -> {
+          if (creditManager.deductCredits(normalPlayCost)) {
 
-        CompletableFuture.runAsync(() -> songQueueService
-            .addSongToQueue(new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)));
+            CompletableFuture.runAsync(() -> songQueueService
+                .addSongToQueue(new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), 1)));
 
-        dismiss();
-      }
-    });
+            dismiss();
+          }
+        });
 
-    this.priorityButton = createQueueButton("Priority Play Song", priorityCost, ACCENT_GOLD, e -> {
-      if (creditManager.deductCredits(priorityCost)) {
+    this.priorityButton =
+        createQueueButton("Priority Play Song", priorityCost, ColorTheme.get().accentGold, e -> {
+          if (creditManager.deductCredits(priorityCost)) {
 
-        CompletableFuture.runAsync(() -> songQueueService.addSongToQueue(
-            new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), highestPriority)));
+            CompletableFuture.runAsync(() -> songQueueService.addSongToQueue(
+                new AddSongToQueueRequest(song.getAlbumId(), song.getSongId(), highestPriority)));
 
-        dismiss();
-      }
-    });
+            dismiss();
+          }
+        });
 
     buttons.add(this.normalButton);
     buttons.add(this.priorityButton);
@@ -285,14 +262,14 @@ public class AddSongToQueueCard extends JPanel {
     row.setOpaque(false);
     row.setBorder(new EmptyBorder(6, 0, 0, 0));
 
-    timeoutLabel.setForeground(TEXT_SECONDARY);
+    timeoutLabel.setForeground(ColorTheme.get().textSecondary);
     timeoutLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
     timeoutLabel.setHorizontalAlignment(SwingConstants.RIGHT);
     updateTimeout();
 
     timeoutBar.setValue(TIMEOUT_SECONDS);
-    timeoutBar.setForeground(ACCENT_BLUE);
-    timeoutBar.setBackground(new Color(40, 40, 55));
+    timeoutBar.setForeground(ColorTheme.get().accentBlue);
+    timeoutBar.setBackground(ColorTheme.get().timeoutBarTrack);
     timeoutBar.setBorderPainted(false);
     timeoutBar.setStringPainted(false);
     timeoutBar.setPreferredSize(new Dimension(0, 4));
@@ -371,32 +348,32 @@ public class AddSongToQueueCard extends JPanel {
         int visH = h - shadowH;
 
         // ── 1. Drop-shadow slab ────────────────────────────────────────────
-        g2.setColor(BTN3D_SHADOW);
+        g2.setColor(ColorTheme.get().btn3dShadow);
         g2.fillRoundRect(2, shadowH, w - 4, visH, arc, arc);
 
         // ── 2. Shelf band (bottom ~22 % of visible face) ──────────────────
         int shelfH = Math.round(visH * 0.22f);
         int faceH = visH - shelfH;
 
-        Color shelfColor = warn ? BTN3D_WARN_SHELF : BTN3D_SHELF;
+        Color shelfColor = warn ? ColorTheme.get().btn3dWarnShelf : ColorTheme.get().btn3dShelf;
         g2.setColor(shelfColor);
         g2.fillRoundRect(1, faceH, w - 2, shelfH + arc / 2, arc, arc);
 
         // ── 3. Face gradient ──────────────────────────────────────────────
         Color fTop, fMid, fBot;
         if (warn) {
-          fTop = BTN3D_WARN_TOP;
-          fMid = BTN3D_WARN_MID;
-          fBot = BTN3D_WARN_BOTTOM;
+          fTop = ColorTheme.get().btn3dWarnTop;
+          fMid = ColorTheme.get().btn3dWarnMid;
+          fBot = ColorTheme.get().btn3dWarnBottom;
         } else if (hovered) {
           // Brighten face slightly on hover
-          fTop = new Color(40, 65, 105);
-          fMid = new Color(28, 50, 84);
-          fBot = new Color(16, 30, 56);
+          fTop = ColorTheme.get().btn3dHoverTop;
+          fMid = ColorTheme.get().btn3dHoverMid;
+          fBot = ColorTheme.get().btn3dHoverBottom;
         } else {
-          fTop = BTN3D_FACE_TOP;
-          fMid = BTN3D_FACE_MID;
-          fBot = BTN3D_FACE_BOTTOM;
+          fTop = ColorTheme.get().btn3dFaceTop;
+          fMid = ColorTheme.get().btn3dFaceMid;
+          fBot = ColorTheme.get().btn3dFaceBottom;
         }
         g2.setPaint(new java.awt.LinearGradientPaint(0, 0, 0, faceH, new float[] {0f, 0.5f, 1f},
             new Color[] {fTop, fMid, fBot}));
@@ -404,19 +381,19 @@ public class AddSongToQueueCard extends JPanel {
         g2.fillRoundRect(1, 0, w - 2, faceH + arc / 2, arc, arc);
 
         // ── 4. Specular top-edge highlight ────────────────────────────────
-        g2.setColor(warn ? new Color(200, 60, 60, 160) : BTN3D_HIGHLIGHT);
+        g2.setColor(warn ? ColorTheme.get().btn3dWarnSpecular : ColorTheme.get().btn3dHighlight);
         g2.setStroke(new java.awt.BasicStroke(1.2f));
         g2.drawLine(arc, 1, w - arc - 1, 1);
 
         // ── 5. Side-edge sheen (subtle vertical lines) ────────────────────
-        g2.setColor(warn ? new Color(160, 30, 30, 70) : BTN3D_SIDE);
+        g2.setColor(warn ? ColorTheme.get().btn3dWarnSide : ColorTheme.get().btn3dSide);
         g2.setStroke(new java.awt.BasicStroke(1f));
         g2.drawLine(1, 3, 1, faceH - 3);
         g2.drawLine(w - 2, 3, w - 2, faceH - 3);
 
         // ── 6. Glowing border ─────────────────────────────────────────────
-        Color borderColor =
-            warn ? AM_WARN_BORDER : (hovered ? accentColor.brighter() : accentColor);
+        Color borderColor = warn ? ColorTheme.get().btn3dWarnBorder
+            : (hovered ? accentColor.brighter() : accentColor);
         g2.setColor(borderColor);
         g2.setStroke(new java.awt.BasicStroke(2f));
         g2.drawRoundRect(1, 1, w - 3, visH - 2, arc, arc);
@@ -428,7 +405,7 @@ public class AddSongToQueueCard extends JPanel {
         int totalTextH = fm1.getHeight() + 4 + fm1.getHeight(); // rough two-line block height
         int blockY = (faceH - totalTextH) / 2 + fm1.getAscent();
 
-        g2.setColor(TEXT_PRIMARY);
+        g2.setColor(ColorTheme.get().textPrimary);
         g2.drawString(actionText, (w - fm1.stringWidth(actionText)) / 2, blockY);
 
         // Line 2: cost or warning — gold / red, bold 18 pt
@@ -439,12 +416,12 @@ public class AddSongToQueueCard extends JPanel {
         if (enabled) {
           // AMI-style short format: "2cr"
           String costText = cost + "cr";
-          g2.setColor(ACCENT_GOLD);
+          g2.setColor(ColorTheme.get().accentGold);
           g2.drawString(costText, (w - fm2.stringWidth(costText)) / 2, line2Y);
         } else {
           int needed = cost - creditManager.getCredits();
           String warnText = "ADD " + needed + (needed == 1 ? " CREDIT" : " CREDITS");
-          g2.setColor(AM_WARN_BORDER);
+          g2.setColor(ColorTheme.get().btn3dWarnBorder);
           g2.drawString(warnText, (w - fm2.stringWidth(warnText)) / 2, line2Y);
         }
 
@@ -499,41 +476,41 @@ public class AddSongToQueueCard extends JPanel {
         int faceH = visH - shelfH;
 
         // Drop-shadow
-        g2.setColor(BTN3D_SHADOW);
+        g2.setColor(ColorTheme.get().btn3dShadow);
         g2.fillRoundRect(2, shadowH, w - 4, visH, arc, arc);
 
         // Shelf
-        g2.setColor(BTN3D_SHELF);
+        g2.setColor(ColorTheme.get().btn3dShelf);
         g2.fillRoundRect(1, faceH, w - 2, shelfH + arc / 2, arc, arc);
 
         // Face gradient
-        Color fTop = hovered ? new Color(40, 65, 105) : BTN3D_FACE_TOP;
-        Color fMid = hovered ? new Color(28, 50, 84) : BTN3D_FACE_MID;
-        Color fBot = hovered ? new Color(16, 30, 56) : BTN3D_FACE_BOTTOM;
+        Color fTop = hovered ? ColorTheme.get().btn3dHoverTop : ColorTheme.get().btn3dFaceTop;
+        Color fMid = hovered ? ColorTheme.get().btn3dHoverMid : ColorTheme.get().btn3dFaceMid;
+        Color fBot = hovered ? ColorTheme.get().btn3dHoverBottom : ColorTheme.get().btn3dFaceBottom;
         g2.setPaint(new java.awt.LinearGradientPaint(0, 0, 0, faceH, new float[] {0f, 0.5f, 1f},
             new Color[] {fTop, fMid, fBot}));
         g2.fillRoundRect(1, 0, w - 2, faceH + arc / 2, arc, arc);
 
         // Specular top-edge highlight
-        g2.setColor(BTN3D_HIGHLIGHT);
+        g2.setColor(ColorTheme.get().btn3dHighlight);
         g2.setStroke(new java.awt.BasicStroke(1.2f));
         g2.drawLine(arc, 1, w - arc - 1, 1);
 
         // Side sheen
-        g2.setColor(BTN3D_SIDE);
+        g2.setColor(ColorTheme.get().btn3dSide);
         g2.setStroke(new java.awt.BasicStroke(1f));
         g2.drawLine(1, 3, 1, faceH - 3);
         g2.drawLine(w - 2, 3, w - 2, faceH - 3);
 
         // Border
-        g2.setColor(hovered ? ACCENT_BLUE.brighter() : ACCENT_BLUE);
+        g2.setColor(hovered ? ColorTheme.get().accentBlue.brighter() : ColorTheme.get().accentBlue);
         g2.setStroke(new java.awt.BasicStroke(2f));
         g2.drawRoundRect(1, 1, w - 3, visH - 2, arc, arc);
 
         // Label — vertically centred in faceH
         g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
         FontMetrics fm = g2.getFontMetrics();
-        g2.setColor(TEXT_PRIMARY);
+        g2.setColor(ColorTheme.get().textPrimary);
         int tx = (w - fm.stringWidth(text)) / 2;
         int ty = (faceH - fm.getHeight()) / 2 + fm.getAscent();
         g2.drawString(text, tx, ty);

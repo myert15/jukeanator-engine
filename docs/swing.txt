@@ -418,6 +418,43 @@ change my Postman collection for all of these endpoints.
 
 
 
+Implement SongFileEntity getRandomSongFromBackgroundMusicPlaylist(String scanPath) in RootFolderEntity as follows:
+
+OVERVIEW: The intent of this method is to return a random song, from the list of song pathnames given in SCANPATH/BackgroundMusic.TXT
+(depending upon the operating system, there may be a suffix).  
+
+REQUIREMENT: However, there is a requirement, or constraint, that ALL songs in the list must be played once, before any song is repeated.  
+This constraint must be honored between restarts of the application, however, so this tracking must be persistent.
+
+IMPLEMENTATION STRATEGY: 
+Item #1: To that end, upon first use, the contents of BackgroundMusic.TXT will be copied to a file named 
+SCANPATH/BackgroundMusic_YetToBePlayed.TXT.  If this file does not exist, then BackgroundMusic.TXT will be copied to it.
+
+Item #2: Whenever RootFolderEntity is initialized, a backgroundSongsYetToBePlayedList ArrayList will be populated with all the songs from 
+BackgroundMusic_YetToBePlayed.TXT.  If this filename does not exist, or is empty, then BackgroundMusic.TXT is to be copied to 
+BackgroundMusic_YetToBePlayed.TXT and the contents of BackgroundMusic_YetToBePlayed.TXT is to be used to populate backgroundSongsYetToBePlayedList.
+
+Item #3: Whenever getRandomSongFromBackgroundMusicPlaylist() is invoked, then a random song from backgroundSongsYetToBePlayedList will be returned.
+This same song will then be REMOVED from backgroundSongsYetToBePlayedList and then a call will be made to a method to be created called
+writeBackgroundSongsYetToBePlayed() to the BackgroundMusic_YetToBePlayed.TXT file.  NOTE: THis BackgroundMusic_YetToBePlayed.TXT file needs to be
+treated like the other files in that there should be constants for PREFIX/SUFFIX and a private method for building the full pathname given
+the operating system.
+
+Item #4: If there is only one song left yet to be played, there is no need to return a random song, just return the one song (and remove it from the list) 
+
+Item #5: Again, if there are no songs left yet to be played, then the process should start over where BackgroundMusic.TXT gets copied to
+BackgroundMusic_YetToBePlayed.TXT and the contents of with will be used to re-populate backgroundSongsYetToBePlayedList.  This method to re-populate
+backgroundSongsYetToBePlayedList should be in its own helper method so that it can be invoked from both initialize() and from 
+getRandomSongFromBackgroundMusicPlaylist().
+
+Please let me know if you have any questions before implementing this.  Keep all existing comments, formatting and public signatures, changing 
+only that which is strictly needed to implement this method.  Do not leave any unused imports either.
+
+
+
+
+
+
 
 
 

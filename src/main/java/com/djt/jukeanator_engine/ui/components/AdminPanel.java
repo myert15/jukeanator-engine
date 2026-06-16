@@ -50,19 +50,7 @@ public class AdminPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
-  // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color ACCENT_BLUE = new Color(0, 210, 255);
-  private static final Color ACCENT_GOLD = new Color(255, 200, 0);
-  private static final Color ACCENT_GREEN = new Color(60, 210, 80);
-  private static final Color ACCENT_RED = new Color(220, 60, 60);
-  private static final Color ACCENT_ORANGE = new Color(255, 140, 0);
-  private static final Color ACCENT_VIOLET = new Color(180, 80, 255);
-  private static final Color TEXT_PRIMARY = Color.WHITE;
-  private static final Color TEXT_MUTED = new Color(160, 165, 180);
-  private static final Color LIST_BG = new Color(10, 12, 18);
-  private static final Color LIST_SEL_BG = new Color(0, 60, 80);
-  private static final Color ROW_ALT = new Color(18, 20, 28);
-  private static final Color SEPARATOR = new Color(40, 44, 60);
+  // ── Palette — sourced from ColorTheme.get() ──────────────────────────────
 
   /**
    * Fixed size for every sidebar button — narrow enough to leave the lists dominant, tall enough to
@@ -137,9 +125,9 @@ public class AdminPanel extends JPanel {
       @Override
       protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
-        g2.setColor(new Color(8, 8, 14));
+        g2.setColor(ColorTheme.get().bgAdminHeader);
         g2.fillRect(0, 0, getWidth(), getHeight());
-        g2.setColor(SEPARATOR);
+        g2.setColor(ColorTheme.get().colorAdminSeparator);
         g2.fillRect(0, getHeight() - 1, getWidth(), 1);
         g2.dispose();
         super.paintComponent(g);
@@ -149,16 +137,16 @@ public class AdminPanel extends JPanel {
     bar.setBorder(new EmptyBorder(10, 14, 10, 14));
 
     JLabel title = new JLabel("⚙  ADMIN PANEL");
-    title.setForeground(ACCENT_GOLD);
+    title.setForeground(ColorTheme.get().accentGold);
     title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
 
     JPanel creditBadge = new JPanel(new BorderLayout(6, 0));
     creditBadge.setOpaque(false);
     JLabel crLabel = new JLabel("CREDITS:");
-    crLabel.setForeground(TEXT_MUTED);
+    crLabel.setForeground(ColorTheme.get().textMuted);
     crLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
     creditCountLabel = new JLabel(String.valueOf(creditManager.getCredits()));
-    creditCountLabel.setForeground(ACCENT_GOLD);
+    creditCountLabel.setForeground(ColorTheme.get().accentGold);
     creditCountLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
     creditBadge.add(crLabel, BorderLayout.WEST);
     creditBadge.add(creditCountLabel, BorderLayout.CENTER);
@@ -179,10 +167,10 @@ public class AdminPanel extends JPanel {
 
     // ── Album list ────────────────────────────────────────────────────────
     albumList.setOpaque(true);
-    albumList.setBackground(LIST_BG);
-    albumList.setForeground(TEXT_PRIMARY);
-    albumList.setSelectionBackground(LIST_SEL_BG);
-    albumList.setSelectionForeground(Color.WHITE);
+    albumList.setBackground(ColorTheme.get().bgList);
+    albumList.setForeground(ColorTheme.get().textPrimary);
+    albumList.setSelectionBackground(ColorTheme.get().bgListSelected);
+    albumList.setSelectionForeground(ColorTheme.get().textPrimary);
     albumList.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
     albumList.setFixedCellHeight(36);
     albumList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -195,16 +183,16 @@ public class AdminPanel extends JPanel {
 
     // ── Queue list ────────────────────────────────────────────────────────
     queueList.setOpaque(true);
-    queueList.setBackground(LIST_BG);
-    queueList.setForeground(TEXT_PRIMARY);
-    queueList.setSelectionBackground(LIST_SEL_BG);
-    queueList.setSelectionForeground(Color.WHITE);
+    queueList.setBackground(ColorTheme.get().bgList);
+    queueList.setForeground(ColorTheme.get().textPrimary);
+    queueList.setSelectionBackground(ColorTheme.get().bgListSelected);
+    queueList.setSelectionForeground(ColorTheme.get().textPrimary);
     queueList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     SongTrackCellRenderer.install(queueList, popularityT1, popularityT2, popularityT3);
 
     JPanel queuePane = new JPanel(new BorderLayout(0, 4));
     queuePane.setOpaque(false);
-    queuePane.add(sectionHeader("SONG QUEUE", ACCENT_GREEN), BorderLayout.NORTH);
+    queuePane.add(sectionHeader("SONG QUEUE", ColorTheme.get().accentGreen), BorderLayout.NORTH);
     queuePane.add(darkScrollPane(queueList), BorderLayout.CENTER);
 
     center.add(albumPane);
@@ -220,20 +208,21 @@ public class AdminPanel extends JPanel {
     JPanel strip = buildButtonStrip();
 
     strip.add(Box.createVerticalGlue());
-    strip.add(sideButton("Queue\nAlbum", ACCENT_GREEN, e -> doAddAlbumToQueue()));
+    strip.add(sideButton("Queue\nAlbum", ColorTheme.get().accentGreen, e -> doAddAlbumToQueue()));
     strip.add(Box.createVerticalGlue());
-    strip.add(sideButton("Edit\nAlbum", ACCENT_GOLD, e -> doEditAlbum()));
-    strip.add(sideButton("Reset\nStats", ACCENT_ORANGE, e -> doResetStats()));
-    strip.add(sideButton("Rescan\nLibrary", ACCENT_VIOLET, e -> doRescan()));
+    strip.add(sideButton("Edit\nAlbum", ColorTheme.get().accentGold, e -> doEditAlbum()));
+    strip.add(sideButton("Reset\nStats", ColorTheme.get().accentOrange, e -> doResetStats()));
+    strip.add(sideButton("Rescan\nLibrary", ColorTheme.get().accentViolet, e -> doRescan()));
     strip.add(Box.createVerticalGlue());
-    strip.add(sideButton("⊟ Minimize", ACCENT_BLUE, e -> doMinimize()));
-    strip.add(sideButton("✕ Exit", ACCENT_RED, e -> doExit()));
+    strip.add(sideButton("⊟ Minimize", ColorTheme.get().accentBlue, e -> doMinimize()));
+    strip.add(sideButton("✕ Exit", ColorTheme.get().accentRed, e -> doExit()));
 
     // Wrap so the strip itself is opaque-background-free but has a right border separator
     JPanel wrapper = new JPanel(new BorderLayout());
     wrapper.setOpaque(false);
     wrapper.setBorder(BorderFactory.createCompoundBorder(
-        BorderFactory.createMatteBorder(0, 0, 0, 1, SEPARATOR), new EmptyBorder(6, 6, 6, 6)));
+        BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTheme.get().colorAdminSeparator),
+        new EmptyBorder(6, 6, 6, 6)));
     wrapper.add(strip, BorderLayout.CENTER);
     return wrapper;
   }
@@ -245,27 +234,28 @@ public class AdminPanel extends JPanel {
 
     JPanel strip = buildButtonStrip();
     strip.add(Box.createVerticalGlue());
-    strip.add(sideButton("▶▶\nNext", ACCENT_GREEN, e -> doPlayNextTrack()));
-    strip.add(sideButton("❚❚\nPause", ACCENT_BLUE, e -> doPause()));
-    strip.add(sideButton("▶\nPlay", ACCENT_GREEN, e -> doPlaySelected()));
+    strip.add(sideButton("▶▶\nNext", ColorTheme.get().accentGreen, e -> doPlayNextTrack()));
+    strip.add(sideButton("❚❚\nPause", ColorTheme.get().accentBlue, e -> doPause()));
+    strip.add(sideButton("▶\nPlay", ColorTheme.get().accentGreen, e -> doPlaySelected()));
     strip.add(Box.createVerticalGlue());
-    strip.add(sideButton("▲\nMove Up", ACCENT_BLUE, e -> doMoveUp()));
-    strip.add(sideButton("▼\nMove Dn", ACCENT_BLUE, e -> doMoveDown()));
-    strip.add(sideButton("✕\nRemove", ACCENT_RED, e -> doRemoveSong()));
+    strip.add(sideButton("▲\nMove Up", ColorTheme.get().accentBlue, e -> doMoveUp()));
+    strip.add(sideButton("▼\nMove Dn", ColorTheme.get().accentBlue, e -> doMoveDown()));
+    strip.add(sideButton("✕\nRemove", ColorTheme.get().accentRed, e -> doRemoveSong()));
     strip.add(verticalSpacer(20));
-    strip.add(sideButton("🗑\nFlush", ACCENT_RED, e -> doFlushQueue()));
-    strip.add(sideButton("🔀\nShuffle", ACCENT_VIOLET, e -> doRandomizeQueue()));
+    strip.add(sideButton("🗑\nFlush", ColorTheme.get().accentRed, e -> doFlushQueue()));
+    strip.add(sideButton("🔀\nShuffle", ColorTheme.get().accentViolet, e -> doRandomizeQueue()));
     strip.add(verticalSpacer(20));
-    strip.add(sideButton("📂\nLoad Playlist", ACCENT_GOLD, e -> doLoadPlaylist()));
-    strip.add(sideButton("💾\nSave Playlist", ACCENT_GOLD, e -> doSavePlaylist()));
+    strip.add(sideButton("📂\nLoad Playlist", ColorTheme.get().accentGold, e -> doLoadPlaylist()));
+    strip.add(sideButton("💾\nSave Playlist", ColorTheme.get().accentGold, e -> doSavePlaylist()));
     strip.add(Box.createVerticalGlue());
-    strip.add(sideButton("➕\nCredits", ACCENT_GREEN, e -> doIncrementCredits()));
-    strip.add(sideButton("➖\nCredits", ACCENT_ORANGE, e -> doDecrementCredits()));
+    strip.add(sideButton("➕\nCredits", ColorTheme.get().accentGreen, e -> doIncrementCredits()));
+    strip.add(sideButton("➖\nCredits", ColorTheme.get().accentOrange, e -> doDecrementCredits()));
 
     JPanel wrapper = new JPanel(new BorderLayout());
     wrapper.setOpaque(false);
     wrapper.setBorder(BorderFactory.createCompoundBorder(
-        BorderFactory.createMatteBorder(0, 1, 0, 0, SEPARATOR), new EmptyBorder(6, 6, 6, 6)));
+        BorderFactory.createMatteBorder(0, 1, 0, 0, ColorTheme.get().colorAdminSeparator),
+        new EmptyBorder(6, 6, 6, 6)));
     wrapper.add(strip, BorderLayout.CENTER);
     return wrapper;
   }
@@ -652,14 +642,14 @@ public class AdminPanel extends JPanel {
       thumb.setPreferredSize(new Dimension(30, 30));
       thumb.setHorizontalAlignment(SwingConstants.CENTER);
       thumb.setOpaque(true);
-      thumb.setBackground(new Color(24, 26, 38));
+      thumb.setBackground(ColorTheme.get().adminThumbBg);
 
       JPanel text = new JPanel(new BorderLayout(0, 0));
       text.setOpaque(false);
       name.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
       artist.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-      name.setForeground(TEXT_PRIMARY);
-      artist.setForeground(TEXT_MUTED);
+      name.setForeground(ColorTheme.get().textPrimary);
+      artist.setForeground(ColorTheme.get().textMuted);
       text.add(name, BorderLayout.CENTER);
       text.add(artist, BorderLayout.SOUTH);
 
@@ -681,7 +671,7 @@ public class AdminPanel extends JPanel {
         } else {
           thumb.setIcon(null);
           thumb.setText("♫");
-          thumb.setForeground(TEXT_MUTED);
+          thumb.setForeground(ColorTheme.get().textMuted);
           thumb.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         }
       } catch (Exception ignored) {
@@ -689,11 +679,11 @@ public class AdminPanel extends JPanel {
       }
 
       if (isSelected) {
-        setBackground(LIST_SEL_BG);
-        name.setForeground(ACCENT_BLUE);
+        setBackground(ColorTheme.get().bgListSelected);
+        name.setForeground(ColorTheme.get().accentBlue);
       } else {
-        setBackground(index % 2 == 0 ? LIST_BG : ROW_ALT);
-        name.setForeground(TEXT_PRIMARY);
+        setBackground(index % 2 == 0 ? ColorTheme.get().bgList : ColorTheme.get().bgListRowAlt);
+        name.setForeground(ColorTheme.get().textPrimary);
       }
       setOpaque(true);
       return this;
@@ -718,9 +708,9 @@ public class AdminPanel extends JPanel {
       @Override
       protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
-        g2.setColor(new Color(8, 8, 14));
+        g2.setColor(ColorTheme.get().bgAdminHeader);
         g2.fillRect(0, 0, getWidth(), getHeight());
-        g2.setColor(ACCENT_BLUE);
+        g2.setColor(ColorTheme.get().accentBlue);
         g2.fillRect(0, getHeight() - 2, getWidth(), 2);
         g2.dispose();
         super.paintComponent(g);
@@ -730,18 +720,19 @@ public class AdminPanel extends JPanel {
     header.setBorder(new EmptyBorder(6, 10, 6, 10));
 
     JLabel lbl = new JLabel("JUKEBOX LIST");
-    lbl.setForeground(ACCENT_BLUE);
+    lbl.setForeground(ColorTheme.get().accentBlue);
     lbl.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
     header.add(lbl, BorderLayout.WEST);
 
     // ── Filter field ─────────────────────────────────────────────────────
     javax.swing.JTextField filterField = new javax.swing.JTextField();
     filterField.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
-    filterField.setForeground(TEXT_PRIMARY);
-    filterField.setBackground(new Color(18, 20, 30));
-    filterField.setCaretColor(ACCENT_BLUE);
+    filterField.setForeground(ColorTheme.get().textPrimary);
+    filterField.setBackground(ColorTheme.get().adminFilterFieldBg);
+    filterField.setCaretColor(ColorTheme.get().accentBlue);
     filterField.setBorder(BorderFactory.createCompoundBorder(
-        BorderFactory.createLineBorder(SEPARATOR, 1), new EmptyBorder(2, 6, 2, 6)));
+        BorderFactory.createLineBorder(ColorTheme.get().colorAdminSeparator, 1),
+        new EmptyBorder(2, 6, 2, 6)));
     filterField.setPreferredSize(new Dimension(160, 24));
     filterField.setMaximumSize(new Dimension(160, 24));
     filterField.setToolTipText("Filter — jumps to first match");
@@ -783,7 +774,7 @@ public class AdminPanel extends JPanel {
     JPanel filterWrapper = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
     filterWrapper.setOpaque(false);
     JLabel filterLbl = new JLabel("Filter: ");
-    filterLbl.setForeground(TEXT_MUTED);
+    filterLbl.setForeground(ColorTheme.get().textMuted);
     filterLbl.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
     filterWrapper.add(filterLbl);
     filterWrapper.add(filterField);
@@ -815,7 +806,7 @@ public class AdminPanel extends JPanel {
       @Override
       protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
-        g2.setColor(new Color(8, 8, 14));
+        g2.setColor(ColorTheme.get().bgAdminHeader);
         g2.fillRect(0, 0, getWidth(), getHeight());
         g2.setColor(accent);
         g2.fillRect(0, getHeight() - 2, getWidth(), 2);
@@ -887,11 +878,11 @@ public class AdminPanel extends JPanel {
         int faceH = visH - shelfH;
 
         // Drop-shadow
-        g2.setColor(new Color(2, 2, 6));
+        g2.setColor(ColorTheme.get().adminSideBtnShadow);
         g2.fillRoundRect(1, shadowH, w - 2, visH, arc, arc);
 
         // Shelf
-        g2.setColor(new Color(6, 6, 12));
+        g2.setColor(ColorTheme.get().adminSideBtnShelf);
         g2.fillRoundRect(1, faceH, w - 2, shelfH + arc / 2, arc, arc);
 
         // Face gradient
@@ -912,7 +903,7 @@ public class AdminPanel extends JPanel {
         g2.drawRoundRect(1, 1, w - 3, visH - 2, arc, arc);
 
         // Text — one or two lines centred on the face
-        g2.setColor(Color.WHITE);
+        g2.setColor(ColorTheme.get().textPrimary);
         if (line2 == null) {
           // Single line
           g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
@@ -938,7 +929,7 @@ public class AdminPanel extends JPanel {
     };
 
     btn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
-    btn.setForeground(Color.WHITE);
+    btn.setForeground(ColorTheme.get().textPrimary);
     btn.setContentAreaFilled(false);
     btn.setBorderPainted(false);
     btn.setFocusPainted(false);
@@ -957,8 +948,8 @@ public class AdminPanel extends JPanel {
     JScrollPane sp = new JScrollPane(view);
     sp.setOpaque(false);
     sp.getViewport().setOpaque(false);
-    sp.setBorder(BorderFactory.createLineBorder(SEPARATOR, 1));
-    sp.getVerticalScrollBar().setBackground(new Color(20, 20, 30));
+    sp.setBorder(BorderFactory.createLineBorder(ColorTheme.get().colorAdminSeparator, 1));
+    sp.getVerticalScrollBar().setBackground(ColorTheme.get().adminScrollBarBg);
     sp.getHorizontalScrollBar().setVisible(false);
     return sp;
   }

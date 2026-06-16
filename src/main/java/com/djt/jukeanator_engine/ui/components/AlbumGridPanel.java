@@ -24,19 +24,7 @@ public class AlbumGridPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
-  // ── Palette ───────────────────────────────────────────────────────────────
-  static final Color ACCENT_BLUE = new Color(0, 210, 255);
-  static final Color TEXT_PRIMARY = Color.WHITE;
-  static final Color TEXT_SECONDARY = new Color(180, 180, 180);
-
-  // AMI 3D key colours — match KeyboardPanel exactly
-  private static final Color KEY_FACE_TOP = new Color(72, 76, 88);
-  private static final Color KEY_FACE_MID = new Color(52, 55, 65);
-  private static final Color KEY_FACE_BOTTOM = new Color(35, 37, 45);
-  private static final Color KEY_SHELF = new Color(18, 18, 22);
-  private static final Color KEY_SHADOW = new Color(6, 6, 8);
-  private static final Color KEY_HIGHLIGHT = new Color(160, 162, 175, 200);
-  private static final Color KEY_SIDE = new Color(100, 102, 115, 80);
+  // ── Palette — sourced from ColorTheme.get() ──────────────────────────────
 
   // ─────────────────────────────────────────────────────────────────────────
   // SHARED DISPLAY HELPER
@@ -326,31 +314,31 @@ public class AlbumGridPanel extends JPanel {
         int visH = h - shadowH;
 
         // Drop-shadow slab
-        g2.setColor(KEY_SHADOW);
+        g2.setColor(ColorTheme.get().keyShadow);
         g2.fillRoundRect(1, shadowH, w - 2, visH, arc, arc);
 
         // Shelf band (bottom ~25%)
         int shelfH = Math.round(visH * 0.25f);
         int faceH = visH - shelfH;
-        g2.setColor(KEY_SHELF);
+        g2.setColor(ColorTheme.get().keyShelf);
         g2.fillRoundRect(1, faceH, w - 2, shelfH + arc / 2, arc, arc);
 
         // Face gradient
         boolean pressed = getModel().isArmed();
-        Color fTop = pressed ? KEY_FACE_BOTTOM : KEY_FACE_TOP;
-        Color fMid = KEY_FACE_MID;
-        Color fBot = pressed ? KEY_FACE_TOP : KEY_FACE_BOTTOM;
+        Color fTop = pressed ? ColorTheme.get().keyFaceBottom : ColorTheme.get().keyFaceTop;
+        Color fMid = ColorTheme.get().keyFaceMid;
+        Color fBot = pressed ? ColorTheme.get().keyFaceTop : ColorTheme.get().keyFaceBottom;
         g2.setPaint(new LinearGradientPaint(0, 0, 0, faceH, new float[] {0f, 0.55f, 1f},
             new Color[] {fTop, fMid, fBot}));
         g2.fillRoundRect(1, 0, w - 2, faceH + arc / 2, arc, arc);
 
         // Specular top-edge highlight
-        g2.setColor(KEY_HIGHLIGHT);
+        g2.setColor(ColorTheme.get().keyHighlight);
         g2.setStroke(new java.awt.BasicStroke(1.2f));
         g2.drawLine(arc, 1, w - arc - 1, 1);
 
         // Side-edge sheens
-        g2.setColor(KEY_SIDE);
+        g2.setColor(ColorTheme.get().keySide);
         g2.setStroke(new java.awt.BasicStroke(1f));
         g2.drawLine(1, 2, 1, faceH - 2);
         g2.drawLine(w - 2, 2, w - 2, faceH - 2);
@@ -360,12 +348,12 @@ public class AlbumGridPanel extends JPanel {
         java.awt.FontMetrics fm = g2.getFontMetrics();
         int tx = (w - fm.stringWidth(getText())) / 2;
         int ty = (faceH - fm.getHeight()) / 2 + fm.getAscent();
-        g2.setColor(pressed ? ACCENT_BLUE : TEXT_PRIMARY);
+        g2.setColor(pressed ? ColorTheme.get().accentBlue : ColorTheme.get().textPrimary);
         g2.drawString(getText(), tx, ty);
 
         // Neon border when this letter is the selected/active one (Item #4)
         if (highlighted) {
-          g2.setColor(ACCENT_BLUE);
+          g2.setColor(ColorTheme.get().accentBlue);
           g2.setStroke(new java.awt.BasicStroke(2.0f));
           g2.drawRoundRect(1, 1, w - 3, h - 3, arc, arc);
         }
@@ -382,7 +370,7 @@ public class AlbumGridPanel extends JPanel {
     btn.setContentAreaFilled(false);
     btn.setBorderPainted(false);
     btn.setOpaque(false);
-    btn.setForeground(TEXT_PRIMARY);
+    btn.setForeground(ColorTheme.get().textPrimary);
     btn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, fontSize));
     btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     return btn;
@@ -426,19 +414,19 @@ public class AlbumGridPanel extends JPanel {
 
         // Match GenrePanel genre tiles: Frosted glass backing plate translucent metrics
         if (isHovered) {
-          g2.setColor(new Color(255, 255, 255, 30)); // Brightened backdrop glow
+          g2.setColor(ColorTheme.get().bgFrostedGlassHover);
         } else {
-          g2.setColor(new Color(255, 255, 255, 15)); // Soft resting backdrop mesh
+          g2.setColor(ColorTheme.get().bgFrostedGlassRest);
         }
         g2.fillRoundRect(0, 0, w, h, 16, 16);
 
         // Match GenrePanel genre tiles: Perimeter highlight rings
         if (isHovered) {
-          g2.setColor(ACCENT_BLUE);
+          g2.setColor(ColorTheme.get().accentBlue);
           g2.setStroke(new java.awt.BasicStroke(2.0f));
           g2.drawRoundRect(1, 1, w - 2, h - 2, 16, 16);
         } else {
-          g2.setColor(new Color(255, 255, 255, 35));
+          g2.setColor(ColorTheme.get().bgFrostedGlassRing);
           g2.setStroke(new java.awt.BasicStroke(1.0f));
           g2.drawRoundRect(0, 0, w - 1, h - 1, 16, 16);
         }
@@ -477,7 +465,7 @@ public class AlbumGridPanel extends JPanel {
       // Fallback: fix a size so the musical note placeholder occupies the right space
       artLabel.setText("♫");
       artLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, artH / 3));
-      artLabel.setForeground(new Color(80, 80, 100));
+      artLabel.setForeground(ColorTheme.get().sidebarPlaceholderFg);
       artLabel.setPreferredSize(new Dimension(artW, artH));
     }
 
@@ -491,12 +479,12 @@ public class AlbumGridPanel extends JPanel {
 
     JLabel albumLabel = new JLabel(albumDisplayName(album.getAlbumName(), album.getGenreName()),
         SwingConstants.CENTER);
-    albumLabel.setForeground(TEXT_PRIMARY);
+    albumLabel.setForeground(ColorTheme.get().textPrimary);
     albumLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
 
     JLabel artistLabel = new JLabel(album.getArtistName() != null ? album.getArtistName() : "",
         SwingConstants.CENTER);
-    artistLabel.setForeground(TEXT_SECONDARY);
+    artistLabel.setForeground(ColorTheme.get().textSecondary);
     artistLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
 
     textPanel.add(albumLabel);

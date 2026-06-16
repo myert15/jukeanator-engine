@@ -461,7 +461,7 @@ public final class SongLibraryServiceImpl
   @Override
   public SongDto getRandomSongFromBackgroundMusicPlaylist() {
     
-    return this.root.getRandomSongFromBackgroundMusicPlaylist();
+    return SongLibraryMapper.toSongDto(this.root.getRandomSongFromBackgroundMusicPlaylist(this.scanPath));
   }
 
   

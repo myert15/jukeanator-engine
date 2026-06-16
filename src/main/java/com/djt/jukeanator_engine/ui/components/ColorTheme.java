@@ -279,6 +279,16 @@ public final class ColorTheme {
   /** 3-D button side-edge sheen. */
   public final Color btn3dSide = new Color(40, 80, 130, 90);
 
+  // Hover state face gradient (brightened face when cursor is over an enabled button)
+  /** 3-D button hover face gradient — top. */
+  public final Color btn3dHoverTop = new Color(40, 65, 105);
+
+  /** 3-D button hover face gradient — mid-point. */
+  public final Color btn3dHoverMid = new Color(28, 50, 84);
+
+  /** 3-D button hover face gradient — bottom. */
+  public final Color btn3dHoverBottom = new Color(16, 30, 56);
+
   // Warning state (insufficient credits / error)
   /** 3-D warning button face — top. */
   public final Color btn3dWarnTop = new Color(55, 10, 10);
@@ -294,6 +304,18 @@ public final class ColorTheme {
 
   /** 3-D warning button border. */
   public final Color btn3dWarnBorder = new Color(220, 40, 40);
+
+  /**
+   * Warning-state specular top-edge highlight (semi-transparent red). Origin: AddSongToQueueCard
+   * queue button paintComponent — warn specular line.
+   */
+  public final Color btn3dWarnSpecular = new Color(200, 60, 60, 160);
+
+  /**
+   * Warning-state side-edge sheen (dim transparent red). Origin: AddSongToQueueCard queue button
+   * paintComponent — warn side sheen lines.
+   */
+  public final Color btn3dWarnSide = new Color(160, 30, 30, 70);
 
   // Grey / disabled state (SongQueueCard action buttons when nothing is selected)
   /** Disabled / greyed action button face. */
@@ -444,6 +466,30 @@ public final class ColorTheme {
 
   /** AdminPanel filter text-field background. */
   public final Color adminFilterFieldBg = new Color(18, 20, 30);
+
+  /**
+   * AdminPanel scroll bar background. Origin: AdminPanel#darkScrollPane —
+   * sp.getVerticalScrollBar().setBackground
+   */
+  public final Color adminScrollBarBg = new Color(20, 20, 30);
+
+  /**
+   * AdminPanel side-button drop-shadow slab color. Origin: AdminPanel#sideButton paintComponent —
+   * drop-shadow step.
+   */
+  public final Color adminSideBtnShadow = new Color(2, 2, 6);
+
+  /**
+   * AdminPanel side-button shelf band color. Origin: AdminPanel#sideButton paintComponent — shelf
+   * step.
+   */
+  public final Color adminSideBtnShelf = new Color(6, 6, 12);
+
+  /**
+   * Semi-transparent white tint painted over a disabled track-nav button caret. Origin:
+   * AlbumViewCard#trackNavButton paintComponent — disabled state color.
+   */
+  public final Color trackNavDisabledTint = new Color(255, 255, 255, 40);
 
   /** DetailHeaderPanel image placeholder background. */
   public final Color headerImagePlaceholderBg = new Color(20, 20, 32);

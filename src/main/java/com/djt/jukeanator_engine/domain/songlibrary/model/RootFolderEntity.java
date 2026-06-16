@@ -28,6 +28,9 @@ public class RootFolderEntity extends FolderEntity {
   private static final String CD_STATS_FILE_PREFIX = "CDStats";
   private static final String CD_STATS_FILE_SUFFIX = ".TXT";
 
+  private static final String BACKGROUND_MUSIC_FILE_PREFIX = "BackgroundMusic";
+  private static final String BACKGROUND_MUSIC_FILE_SUFFIX = ".TXT";
+  
   private Set<ArtistFromSongEntity> artistsFromSongs = new TreeSet<ArtistFromSongEntity>();
 
   private transient Map<Integer, GenreFolderEntity> genresMap;
@@ -323,12 +326,28 @@ public class RootFolderEntity extends FolderEntity {
     return cdStatsPathName;
   }
 
+  private String buildBackgroundMusicPathname(String scanPath) {
+
+    String backgroundMusicPathName = null;
+    OSType osType = OperatingSystemDetector.getOperatingSystem();
+    if (osType == OSType.WINDOWS) {
+      backgroundMusicPathName = scanPath + File.separator + BACKGROUND_MUSIC_FILE_PREFIX + BACKGROUND_MUSIC_FILE_SUFFIX;
+    } else if (osType == OSType.MACOS) {
+      backgroundMusicPathName =
+          scanPath + File.separator + BACKGROUND_MUSIC_FILE_PREFIX + "_mac" + BACKGROUND_MUSIC_FILE_SUFFIX;
+    } else {
+      backgroundMusicPathName =
+          scanPath + File.separator + BACKGROUND_MUSIC_FILE_PREFIX + "_linux" + BACKGROUND_MUSIC_FILE_SUFFIX;
+    }
+    return backgroundMusicPathName;
+  }
+  
   public void restoreSongNumPlays(String scanPath) {
 
     String cdStatsPathName = buildCdStatsPathname(scanPath);
     Path statsFile = Path.of(cdStatsPathName);
     if (!Files.exists(statsFile)) {
-      cdStatsPathName = scanPath + File.separator + CD_STATS_FILE_PREFIX + CD_STATS_FILE_SUFFIX;
+      cdStatsPathName = scanPath + File.separator + CD_STATS_FILE_PREFIX + BACKGROUND_MUSIC_FILE_SUFFIX;
       statsFile = Path.of(cdStatsPathName);
       if (!Files.exists(statsFile)) {
         System.err.println("CD stats file does not exist: " + cdStatsPathName);
@@ -435,8 +454,31 @@ public class RootFolderEntity extends FolderEntity {
     }
   }
 
-  public SongDto getRandomSongFromBackgroundMusicPlaylist() {
+  public SongFileEntity getRandomSongFromBackgroundMusicPlaylist(String scanPath) {
 
+    String cdStatsPathName = buildCdStatsPathname(scanPath);
+    Path statsFile = Path.of(cdStatsPathName);
+    if (!Files.exists(statsFile)) {
+      cdStatsPathName = scanPath + File.separator + CD_STATS_FILE_PREFIX + CD_STATS_FILE_SUFFIX;
+      statsFile = Path.of(cdStatsPathName);
+      if (!Files.exists(statsFile)) {
+        throw new IllegalStateException("CD stats file does not exist: " + cdStatsPathName);
+      }
+    }
+
+    if (this.songsMap == null) {
+      initialize();
+    }
+
+    Map<String, SongFileEntity> songsByPath = new HashMap<>();
+    for (SongFileEntity song : this.songsMap.values()) {
+
+      String songPathname = song.getNaturalIdentity().toLowerCase();
+      songsByPath.put(songPathname, song);
+    }
+    
+    // TODO: Implement as given in the prompt:
+    
     throw new RuntimeException("Not implemented yet!");
   }
 }
