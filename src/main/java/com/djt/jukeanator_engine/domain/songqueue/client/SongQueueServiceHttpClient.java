@@ -23,11 +23,14 @@ public class SongQueueServiceHttpClient implements SongQueueService {
     this.restClient = RestClient.builder().baseUrl(baseUrl).build();
   }
 
+  /**
+   * Internal system method — not exposed over HTTP. Called directly by SongPlayerService on the
+   * service bean, not via this controller.
+   */
   @Override
   public SongQueueEntryDto dequeueNextSong() {
-
-    return restClient.get().uri("/api/song-queue/dequeueNextSong").retrieve()
-        .body(SongQueueEntryDto.class);
+    throw new UnsupportedOperationException(
+        "dequeueNextSong() is a system-only method and is not accessible via the REST API");
   }
 
   @Override

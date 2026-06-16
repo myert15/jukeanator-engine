@@ -1,5 +1,10 @@
 # src/main/resources/application.yml
 
+app:
+  jwt:
+    secret: fT7mK9xQ2pNc8VdL4sHz1YwB6rAe3JkM0uCp5GqX8nRv2ZtF7hLs9Wd3YbKm6QaP
+    expiration-ms: 86400000   # 24 hours
+    
 spring:
   application:
     name: JukeANator
@@ -28,6 +33,11 @@ song-queue:
 song-player:  
   player-type: vlc   # vlc or detached-vlc (all operating systems) | winamp (windows only)
 
+user:
+  repository-type: filesystem   # filesystem | postgres
+  #root-path: R:\\Rock_On_Third # windows
+  root-path: /mnt/readyNAS/Rock_On_Third # linux
+  
 user-interface:
   enabled: true   # if true, a JFC/Swing UI is launched, otherwise, a headless backend
   #

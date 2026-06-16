@@ -5,6 +5,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.djt.jukeanator_engine.domain.common.security.JwtUtil;
 import com.djt.jukeanator_engine.domain.songlibrary.config.SongLibraryProperties;
 import com.djt.jukeanator_engine.domain.songlibrary.repository.SongLibraryObjectPersistor;
 import com.djt.jukeanator_engine.domain.songlibrary.repository.SongLibraryRepository;
@@ -27,6 +29,13 @@ import com.djt.jukeanator_engine.domain.songqueue.repository.SongQueueRepository
 import com.djt.jukeanator_engine.domain.songqueue.repository.SongQueueRepositoryPostgresImpl;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueService;
 import com.djt.jukeanator_engine.domain.songqueue.service.SongQueueServiceImpl;
+import com.djt.jukeanator_engine.domain.user.config.UserProperties;
+import com.djt.jukeanator_engine.domain.user.repository.UserRepository;
+import com.djt.jukeanator_engine.domain.user.repository.UserRepositoryFileSystemImpl;
+import com.djt.jukeanator_engine.domain.user.repository.UserRepositoryPostgresImpl;
+import com.djt.jukeanator_engine.domain.user.repository.UserRootObjectPersistor;
+import com.djt.jukeanator_engine.domain.user.service.UserService;
+import com.djt.jukeanator_engine.domain.user.service.UserServiceImpl;
 
 @Configuration
 public class ApplicationConfig {
@@ -69,6 +78,12 @@ public class ApplicationConfig {
     return new SongQueueObjectPersistor();
   }
 
+  @Bean
+  public UserRootObjectPersistor userRootObjectPersistor() {
+    
+    return new UserRootObjectPersistor();
+  }
+  
   @Bean
   @ConditionalOnProperty(name = "song-library.repository-type", havingValue = "filesystem",
       matchIfMissing = true // default
@@ -121,7 +136,24 @@ public class ApplicationConfig {
     
     return new SongQueueRepositoryPostgresImpl();
   }
-
+  
+  @Bean
+  @ConditionalOnProperty(name = "user.repository-type", havingValue = "filesystem",
+      matchIfMissing = true // default
+  )
+  public UserRepository userRepositoryFileSystemImpl(UserProperties userProperties) {
+    
+    return new UserRepositoryFileSystemImpl(userProperties.getRootPath() // basePath = rootPath
+    );
+  }
+  
+  @Bean
+  @ConditionalOnProperty(name = "user.repository-type", havingValue = "postgres")
+  public UserRepository userRepositoryPostgresImpl(UserProperties userProperties) {
+    
+    return new UserRepositoryPostgresImpl();
+  }
+  
   @Bean
   @Primary
   public SongLibraryService songLibraryService(
@@ -166,5 +198,20 @@ public class ApplicationConfig {
         songPlayerProperties.getPlayerType(),
         songQueueService,
         eventPublisher);
+  }
+  
+  @Bean
+  @Primary
+  public UserService userService(
+      UserProperties userProperties,
+      UserRepository userRepository,
+      PasswordEncoder passwordEncoder, 
+      JwtUtil jwtUtil) {
+    
+    return new UserServiceImpl(
+        userProperties.getRootPath(), 
+        userRepository,
+        passwordEncoder, 
+        jwtUtil);
   }  
 }

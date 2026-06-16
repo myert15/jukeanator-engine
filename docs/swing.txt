@@ -406,6 +406,17 @@ where the user can specify the image URL manually from this new "Google" search 
 
 
 
+This is for a Java 21 and Spring Boot 4.0.4 project.  The pom.xml file is attached so that you can see the project dependencies.
+
+How would one implement Authentication for the SongLibraryService?  There would be a UserEntity, whose attributes are firstName, 
+lastName, emailAddress, passwordHash, numCredits and songPlayHistory (i.e. a list of all song plays by the given user).
+
+The controller, HTTP client and JUnit tests would need to be changed accordingly, as well as you would need to tell me how to 
+change my Postman collection for all of these endpoints.
+
+
+
+
 
 
 TODO:

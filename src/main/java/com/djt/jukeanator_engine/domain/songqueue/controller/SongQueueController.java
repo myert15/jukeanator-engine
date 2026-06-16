@@ -30,10 +30,14 @@ public class SongQueueController implements SongQueueService {
     this.songQueueService = songQueueService;
   }
 
+  /**
+   * Internal system method — not exposed over HTTP. Called directly by SongPlayerService on the
+   * service bean, not via this controller.
+   */
   @Override
-  @GetMapping("/dequeueNextSong")
   public SongQueueEntryDto dequeueNextSong() {
-    return songQueueService.dequeueNextSong();
+    throw new UnsupportedOperationException(
+        "dequeueNextSong() is a system-only method and is not accessible via the REST API");
   }
 
   @Override
