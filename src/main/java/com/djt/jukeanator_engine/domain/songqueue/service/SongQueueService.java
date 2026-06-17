@@ -46,9 +46,9 @@ public interface SongQueueService {
    * @param albumId
    * @param songId
    * @param priority
-   * @return
+   * @return The reason why the song was not eligible
    */
-  boolean isSongEligibleForQueue(Integer albumId, Integer songId, Integer priority);
+  String isSongEligibleForQueue(Integer albumId, Integer songId, Integer priority);
   
   /**
    * @param addSongToQueueRequest

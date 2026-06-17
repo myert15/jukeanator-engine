@@ -48,13 +48,13 @@ public class SongQueueServiceHttpClient implements SongQueueService {
   }
 
   @Override
-  public boolean isSongEligibleForQueue(Integer albumId, Integer songId, Integer priority) {
+  public String isSongEligibleForQueue(Integer albumId, Integer songId, Integer priority) {
 
     return restClient.get()
         .uri(uriBuilder -> uriBuilder.path("/api/song-queue/isSongEligibleForQueue")
             .queryParam("albumId", albumId).queryParam("songId", songId)
             .queryParam("priority", priority).build())
-        .retrieve().body(Boolean.class);
+        .retrieve().body(String.class);
   }
 
   @Override

@@ -57,6 +57,10 @@ public class AddSongToQueueCard extends JPanel {
 
   /** Card name for the song-constraint / ineligible view. */
   private static final String INNER_CARD_CONSTRAINT = "CONSTRAINT";
+  private JLabel constraintLabel;
+  private String constraintLabelText = 
+      "<html><div style='text-align:center;'>" + "This song cannot be played at this time because [REASON].<br>"
+          + "Please try again later." + "</div></html>";
 
   /** Inner card layout that switches between the main panel and the constraint panel. */
   private final CardLayout innerCardLayout = new CardLayout();
@@ -175,20 +179,17 @@ public class AddSongToQueueCard extends JPanel {
     songNameLabel.setForeground(ColorTheme.get().accentGold);
     songNameLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
 
-    JLabel bodyLabel = new JLabel(
-        "<html><div style='text-align:center;'>" + "This song cannot be played at this time.<br>"
-            + "Please try again later." + "</div></html>",
-        SwingConstants.CENTER);
-    bodyLabel.setAlignmentX(CENTER_ALIGNMENT);
-    bodyLabel.setForeground(ColorTheme.get().textSecondary);
-    bodyLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 18));
+    constraintLabel = new JLabel(constraintLabelText, SwingConstants.CENTER);
+    constraintLabel.setAlignmentX(CENTER_ALIGNMENT);
+    constraintLabel.setForeground(ColorTheme.get().textSecondary);
+    constraintLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 18));
 
     messagePanel.add(Box.createVerticalGlue());
     messagePanel.add(headingLabel);
     messagePanel.add(Box.createVerticalStrut(6));
     messagePanel.add(songNameLabel);
     messagePanel.add(Box.createVerticalStrut(14));
-    messagePanel.add(bodyLabel);
+    messagePanel.add(constraintLabel);
     messagePanel.add(Box.createVerticalGlue());
 
     // ── OK button (bottom) ───────────────────────────────────────────────
@@ -221,8 +222,13 @@ public class AddSongToQueueCard extends JPanel {
   /**
    * Flips the inner card to the song-constraint view. Safe to call before or after the component is
    * added to the hierarchy.
+   * 
+   * @param reason
    */
-  public void showConstraintPanel() {
+  public void showConstraintPanel(String reason) {
+    
+    this.constraintLabelText = this.constraintLabelText.replace("[REASON]", reason);
+    this.constraintLabel.setText(this.constraintLabelText);    
     innerCardLayout.show(innerCardRoot, INNER_CARD_CONSTRAINT);
   }
 

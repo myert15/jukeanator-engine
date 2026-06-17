@@ -164,7 +164,7 @@ public final class SongQueueServiceImpl
       Integer albumId = randomSong.getAlbum().getPersistentIdentity();
       Integer songId = randomSong.getPersistentIdentity();
 
-      if (isSongEligibleForQueue(albumId, songId, 0)) {
+      if (isSongEligibleForQueue(albumId, songId, 0) != null) {
         addSongToQueue("BACKGROUND_MUSIC", albumId, songId, 0);
       }
     }
@@ -191,7 +191,7 @@ public final class SongQueueServiceImpl
   }
 
   @Override
-  public boolean isSongEligibleForQueue(Integer albumId, Integer songId, Integer priority) {
+  public String isSongEligibleForQueue(Integer albumId, Integer songId, Integer priority) {
 
     try {
 
@@ -199,12 +199,12 @@ public final class SongQueueServiceImpl
 
       AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
       if (album == null) {
-        return false;
+        return "the song cannot be found";
       }
 
       SongFileEntity targetSong = album.getChildSong(songId);
       if (targetSong == null) {
-        return false;
+        return "the song cannot be found";
       }
 
 
@@ -231,7 +231,8 @@ public final class SongQueueServiceImpl
 
           long minutesBetween = Duration.between(queuedEntry.getQueuedAtTime(), now).toMinutes();
           if (minutesBetween < minimumMinutesBetweenSongPlays) {
-            return false;
+            
+            return "the minimum minutes between song plays has not been met";
           }
         }
       }
@@ -281,7 +282,7 @@ public final class SongQueueServiceImpl
           }
 
           if (consecutiveCount > maximumConsecutiveSongPlaysByArtist) {
-            return false;
+            return "the consecutive play count by artist has been exceeded";
           }
         }
       } // end synchronized
@@ -319,7 +320,7 @@ public final class SongQueueServiceImpl
           }
 
           if (!withinWindow) {
-            return false;
+            return "the song has explicit lyrics";
           }
         }
       }
@@ -335,10 +336,10 @@ public final class SongQueueServiceImpl
     } catch (Exception e) {
       // TODO: Handle this better
       e.printStackTrace();
-      return false;
+      return "Error: " + e.getMessage();
     }
 
-    return true;
+    return null;
   }
 
   @Override

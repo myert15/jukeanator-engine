@@ -1035,7 +1035,7 @@ public class JukeANatorFrame extends JFrame {
     // ── Eligibility check (normal play = priority 1) ──────────────────────
     // getHighestPriority() returns the next available priority; normal plays
     // always use priority 1, so we pass 1 here as a representative value.
-    boolean eligible =
+    String reason =
         songQueueService.isSongEligibleForQueue(song.getAlbumId(), song.getSongId(), 1);
 
     addSongToQueueCard = new AddSongToQueueCard(song, imageLoader, priorityCostMultiplier,
@@ -1044,8 +1044,8 @@ public class JukeANatorFrame extends JFrame {
     addSongToQueueCard.setOpaque(false);
 
     // ── Show constraint panel immediately when the song is ineligible ─────
-    if (!eligible) {
-      addSongToQueueCard.showConstraintPanel();
+    if (reason != null) {
+      addSongToQueueCard.showConstraintPanel(reason);
     }
 
     replaceOverlayCard(CARD_ADD_SONG, addSongToQueueCard);

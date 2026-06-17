@@ -57,7 +57,7 @@ public class SongQueueController implements SongQueueService {
 
   @Override
   @GetMapping("/isSongEligibleForQueue")
-  public boolean isSongEligibleForQueue(@RequestParam Integer albumId, @RequestParam Integer songId,
+  public String isSongEligibleForQueue(@RequestParam Integer albumId, @RequestParam Integer songId,
       @RequestParam Integer priority) {
     return songQueueService.isSongEligibleForQueue(albumId, songId, priority);
   }
