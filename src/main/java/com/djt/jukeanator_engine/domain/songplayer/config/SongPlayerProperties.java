@@ -8,10 +8,15 @@ import org.springframework.validation.annotation.Validated;
 public class SongPlayerProperties {
 
   /*
-   * VLC: All operating systems
-   * Winamp: Windows only
+   * VLC: All operating systems Winamp: Windows only
    */
   private String playerType = "vlc";
+
+  /*
+   * 0: Completely muted 100: 100% of the normal volume 200: 200% volume (up to 2x software
+   * amplification)
+   */
+  private int volume = 100;
 
   public String getPlayerType() {
     return playerType;
@@ -19,5 +24,13 @@ public class SongPlayerProperties {
 
   public void setPlayerType(String playerType) {
     this.playerType = playerType;
+  }
+
+  public int getVolume() {
+    return volume;
+  }
+
+  public void setVolume(int volume) {
+    this.volume = volume;
   }
 }

@@ -195,7 +195,7 @@ public class ApplicationConfig {
       ApplicationEventPublisher eventPublisher) {
     
     return new SongPlayerServiceImpl(
-        songPlayerProperties.getPlayerType(),
+        songPlayerProperties,
         songQueueService,
         eventPublisher);
   }

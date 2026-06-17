@@ -16,7 +16,12 @@ public class VlcMediaPlayer implements Player {
   private volatile Runnable onFinished;
   private volatile long durationMillis = 0;
 
-  public VlcMediaPlayer() {
+  // Track the desired volume state (LibVLC default is 100)
+  private volatile int currentVolume = 100;
+
+  public VlcMediaPlayer(int volume) {
+    
+    this.currentVolume = volume;
 
     if (isLinux()) {
       this.factory = new MediaPlayerFactory("--no-video", "--no-xlib", "--quiet", "--intf=dummy");
@@ -31,6 +36,9 @@ public class VlcMediaPlayer implements Player {
       @Override
       public void playing(MediaPlayer mediaPlayer) {
         status.set(SongPlayerStatus.PLAYING);
+        
+        // FIX: Enforce the tracked volume reliably as soon as the media starts playing
+        mediaPlayer.audio().setVolume(currentVolume);
       }
 
       @Override
@@ -86,12 +94,19 @@ public class VlcMediaPlayer implements Player {
 
   @Override
   public int getVolume() {
-    return mediaPlayer.audio().volume();
+    
+    // If actively playing, get the real-time runtime volume; otherwise return our tracked value
+    return status.get() == SongPlayerStatus.PLAYING ? mediaPlayer.audio().volume() : currentVolume;
   }
 
   @Override
   public void setVolume(int volume) {
-    mediaPlayer.audio().setVolume(volume);
+    
+    this.currentVolume = volume;
+    // Only attempt to pass it to LibVLC if the media is actively playing to prevent silent drops
+    if (status.get() == SongPlayerStatus.PLAYING) {
+      mediaPlayer.audio().setVolume(volume);
+    }
   }
 
   @Override

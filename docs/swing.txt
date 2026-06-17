@@ -598,6 +598,10 @@ DONE 32: Need to implement song queue addition constraint checks and appropriate
 DONE 34: Implement enableBackgroundMusic with another property called minimumNumberSongsToKeepInQueue 
  
 DONE 35: Add ability to enable/disable screensaver and random background music. 
+
+- Change Song Queue to render song name by priority (0: gray, 1: white, 2: yellow, 3: orange, 4: red, 5+, purple
+
+- On Startup, do not flip to a letter button if there aren't enough albums to fill up the number of album tiles for the screen
  
 36: Move over the most relevant features from:
 

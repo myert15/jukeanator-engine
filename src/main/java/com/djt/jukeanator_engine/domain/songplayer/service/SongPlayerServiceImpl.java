@@ -11,6 +11,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
 import com.djt.jukeanator_engine.domain.songlibrary.model.RootFolderEntity;
+import com.djt.jukeanator_engine.domain.songplayer.config.SongPlayerProperties;
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlaybackStatusDto;
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlayerStatus;
 import com.djt.jukeanator_engine.domain.songplayer.event.AllSongsDonePlayingEvent;
@@ -43,11 +44,12 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
       Executors.newSingleThreadExecutor(Thread.ofPlatform().name("song-queue-thread").factory());
 
   private final String playerType;
+  private final int volume;
   private final SongQueueService songQueueService;
   private final ApplicationEventPublisher eventPublisher;
   private final Deque<SongQueueEntryDto> playbackHistory = new ArrayDeque<>();
-  private final Player player;  
-  
+  private final Player player;
+
   /**
    * Everything below is confined to the queueExecutor thread.
    */
@@ -55,27 +57,27 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
   private SongQueueEntryDto nowPlayingSong;
   private SongPlayerStatus songPlayerStatus;
 
-  public SongPlayerServiceImpl(
-      String playerType,
-      SongQueueService songQueueService,
-      ApplicationEventPublisher eventPublisher) {
+  public SongPlayerServiceImpl(SongPlayerProperties songPlayerProperties,
+      SongQueueService songQueueService, ApplicationEventPublisher eventPublisher) {
 
-    requireNonNull(playerType, "playerType cannot be null");
+    requireNonNull(songPlayerProperties, "songPlayerProperties cannot be null");
     requireNonNull(songQueueService, "songQueueService cannot be null");
     requireNonNull(eventPublisher, "eventPublisher cannot be null");
 
-    this.playerType = playerType;
+    this.playerType = songPlayerProperties.getPlayerType();
+    this.volume = songPlayerProperties.getVolume();
     this.songQueueService = songQueueService;
     this.eventPublisher = eventPublisher;
 
     if (this.playerType.equals("vlc")) {
-      this.player = new VlcMediaPlayer();
+      this.player = new VlcMediaPlayer(this.volume);
     } else {
-      this.player = new VideoVlcMediaPlayer();
+      this.player = new VideoVlcMediaPlayer(this.volume);
     }
 
     log.info("Using song library root: " + this.songLibraryRoot);
     log.info("Using : " + this.playerType);
+    log.info("Volume : " + this.volume);
 
     // Initialize the song library root and song queue
     initialize();
@@ -92,7 +94,7 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
 
     SongQueueEntryDto current = this.nowPlayingSong;
     if (current != null) {
-      
+
       return current.getSong();
     }
     return null;
@@ -119,11 +121,11 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
 
     songPlayerStatus = player.getStatus();
     if (songPlayerStatus != SongPlayerStatus.STOPPED) {
-    
+
       player.stop();
     }
-    
-    eventPublisher.publishEvent(new SongPlaybackNextTrackRequestedEvent());    
+
+    eventPublisher.publishEvent(new SongPlaybackNextTrackRequestedEvent());
 
     submitQueueProcessing();
   }
@@ -132,26 +134,28 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
   public void pause() {
 
     songPlayerStatus = player.getStatus();
-    if (songPlayerStatus == SongPlayerStatus.PLAYING || songPlayerStatus == SongPlayerStatus.PAUSED) {
+    if (songPlayerStatus == SongPlayerStatus.PLAYING
+        || songPlayerStatus == SongPlayerStatus.PAUSED) {
 
       player.pause();
 
       eventPublisher.publishEvent(new SongPlaybackPausedEvent(nowPlayingSong));
-    }    
+    }
   }
 
   @Override
   public void stop() {
 
     songPlayerStatus = player.getStatus();
-    if (songPlayerStatus == SongPlayerStatus.PLAYING || songPlayerStatus == SongPlayerStatus.PAUSED) {
+    if (songPlayerStatus == SongPlayerStatus.PLAYING
+        || songPlayerStatus == SongPlayerStatus.PAUSED) {
 
       player.stop();
       songPlayerStatus = SongPlayerStatus.STOPPED;
       eventPublisher.publishEvent(new SongPlaybackStoppedEvent(nowPlayingSong));
-      
-      submitQueueProcessing();            
-    }    
+
+      submitQueueProcessing();
+    }
   }
 
   @PreDestroy
@@ -188,7 +192,7 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
 
     submitQueueProcessing();
   }
-  
+
   /**
    * THE ONLY PLACE processQueue() IS EVER INVOKED.
    */
@@ -219,7 +223,8 @@ public final class SongPlayerServiceImpl implements SongPlayerService {
        */
       SongPlayerStatus previousSongPlayerStatus = songPlayerStatus;
       songPlayerStatus = player.getStatus();
-      if (previousSongPlayerStatus != songPlayerStatus && songPlayerStatus == SongPlayerStatus.STOPPED) {
+      if (previousSongPlayerStatus != songPlayerStatus
+          && songPlayerStatus == SongPlayerStatus.STOPPED) {
         eventPublisher.publishEvent(new AllSongsDonePlayingEvent());
       }
       if (songPlayerStatus != SongPlayerStatus.STOPPED) {
