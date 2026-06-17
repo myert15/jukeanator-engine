@@ -1,9 +1,7 @@
 package com.djt.jukeanator_engine.domain.songplayer.service.utils;
 
 import java.util.concurrent.atomic.AtomicReference;
-
 import com.djt.jukeanator_engine.domain.songplayer.dto.SongPlayerStatus;
-
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.base.MediaPlayer;
 import uk.co.caprica.vlcj.player.base.MediaPlayerEventAdapter;
@@ -12,8 +10,9 @@ public class VlcMediaPlayer implements Player {
 
   private final MediaPlayerFactory factory;
   private final MediaPlayer mediaPlayer;
-  private final AtomicReference<SongPlayerStatus> status = new AtomicReference<>(SongPlayerStatus.STOPPED);
-  
+  private final AtomicReference<SongPlayerStatus> status =
+      new AtomicReference<>(SongPlayerStatus.STOPPED);
+
   private volatile Runnable onFinished;
   private volatile long durationMillis = 0;
 
@@ -53,7 +52,7 @@ public class VlcMediaPlayer implements Player {
           callback.run();
         }
       }
-      
+
       @Override
       public void lengthChanged(MediaPlayer mediaPlayer, long newLength) {
         durationMillis = newLength;
@@ -84,7 +83,7 @@ public class VlcMediaPlayer implements Player {
   public SongPlayerStatus getStatus() {
     return status.get();
   }
-  
+
   @Override
   public int getVolume() {
     return mediaPlayer.audio().volume();
@@ -94,7 +93,7 @@ public class VlcMediaPlayer implements Player {
   public void setVolume(int volume) {
     mediaPlayer.audio().setVolume(volume);
   }
-  
+
   @Override
   public void pause() {
     mediaPlayer.controls().pause();
@@ -127,10 +126,10 @@ public class VlcMediaPlayer implements Player {
 
   @Override
   public void setOnFinished(Runnable callback) {
-    
+
     this.onFinished = callback;
   }
-  
+
   private boolean isLinux() {
 
     String os = System.getProperty("os.name");

@@ -10,8 +10,9 @@ public class VideoVlcMediaPlayer implements Player {
 
   private final MediaPlayerFactory factory;
   private final MediaPlayer mediaPlayer;
-  private final AtomicReference<SongPlayerStatus> status = new AtomicReference<>(SongPlayerStatus.STOPPED);
-  
+  private final AtomicReference<SongPlayerStatus> status =
+      new AtomicReference<>(SongPlayerStatus.STOPPED);
+
   private volatile Runnable onFinished;
   private volatile long durationMillis = 0;
 
@@ -42,7 +43,7 @@ public class VideoVlcMediaPlayer implements Player {
 
         status.set(SongPlayerStatus.STOPPED);
         Runnable callback = onFinished;
-        if (callback != null) {          
+        if (callback != null) {
           callback.run();
         }
       }
@@ -80,7 +81,7 @@ public class VideoVlcMediaPlayer implements Player {
   public void setVolume(int volume) {
     mediaPlayer.audio().setVolume(volume);
   }
-  
+
   @Override
   public void pause() {
     mediaPlayer.controls().pause();
@@ -111,9 +112,9 @@ public class VideoVlcMediaPlayer implements Player {
     mediaPlayer.release();
     factory.release();
   }
-  
+
   @Override
   public void setOnFinished(Runnable callback) {
     this.onFinished = callback;
-  }  
+  }
 }
