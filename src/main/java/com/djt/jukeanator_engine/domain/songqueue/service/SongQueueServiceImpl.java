@@ -2,8 +2,13 @@ package com.djt.jukeanator_engine.domain.songqueue.service;
 
 import static java.util.Objects.requireNonNull;
 import java.io.File;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -50,20 +55,31 @@ public final class SongQueueServiceImpl
   private final ApplicationEventPublisher eventPublisher;
   private final SongLibraryRepository songLibraryRepository;
   private final SongQueueRepository songQueueRepository;
+
   private final boolean enableBackgroundMusic;
   private final int minimumNumberSongsToKeepInQueue;
   private final int minimumMinutesBetweenSongPlays;
   private final int maximumConsecutiveSongPlaysByArtist;
   private final boolean allowExplicitSongsAtAllTimes;
-  private final int allowExplicitSongsBegin; // # In 24 hour/military time (e.g. 21:00 hours is
-                                             // 9:00PM) Only used when allowExplicitSongsAtAllTimes
-                                             // is false
-  private final int allowExplicitSongsEnd; // # In 24 hour/military time (e.g. 5:00 hours is 5:00AM)
-                                           // Only used when allowExplicitSongsAtAllTimes is false
+  private final int allowExplicitSongsBegin;
+  private final int allowExplicitSongsEnd;
 
   private String rootPath;
   private RootFolderEntity songLibraryRoot;
   private SongQueueRootEntity songQueueRoot;
+
+  // Helper record/class to track history of queued artists within a rolling 2-hour window
+  private static class ArtistQueueRecord {
+    final String artistName;
+    final Instant queuedAt;
+
+    ArtistQueueRecord(String artistName, Instant queuedAt) {
+      this.artistName = artistName;
+      this.queuedAt = queuedAt;
+    }
+  }
+
+  private final List<ArtistQueueRecord> artistQueueHistory = new CopyOnWriteArrayList<>();
 
   public SongQueueServiceImpl(SongQueueProperties songQueueProperties,
       SongLibraryRepository songLibraryRepository, SongQueueRepository songQueueRepository,
@@ -88,13 +104,11 @@ public final class SongQueueServiceImpl
     this.allowExplicitSongsBegin = songQueueProperties.getAllowExplicitSongsBegin();
     this.allowExplicitSongsEnd = songQueueProperties.getAllowExplicitSongsEnd();
 
-    // Initialize the song library root and song queue
     initialize();
 
     log.info("Using song library root: " + this.songLibraryRoot);
   }
 
-  // Service methods
   @Override
   public synchronized SongQueueEntryDto dequeueNextSong() {
 
@@ -105,10 +119,31 @@ public final class SongQueueServiceImpl
     }
 
     SongQueueEntryEntity nextSong = songs.getFirst();
-
     songQueueRoot.removeSongFromQueue(nextSong);
-
     songQueueRepository.storeAggregateRoot(songQueueRoot);
+
+    // If background music is enabled, maintain the minimum required songs in the queue
+    if (enableBackgroundMusic) {
+      
+      int attempts = 0;
+      int songCount = songQueueRoot.getSongs().size();
+      while (songCount < minimumNumberSongsToKeepInQueue && attempts < 50) {
+
+        attempts++;
+        SongFileEntity randomSong = this.songLibraryRoot.getRandomSongFromBackgroundMusicPlaylist(this.rootPath);
+        if (randomSong != null) {
+
+          Integer albumId = randomSong.getAlbum().getPersistentIdentity();
+          Integer songId = randomSong.getPersistentIdentity();
+
+          if (isSongEligibleForQueue(albumId, songId, 0)) {
+            
+            addSongToQueue("BACKGROUND_MUSIC", albumId, songId, 0);
+            songCount = songQueueRoot.getSongs().size();
+          }
+        }
+      }
+    }
 
     eventPublisher
         .publishEvent(new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
@@ -118,12 +153,6 @@ public final class SongQueueServiceImpl
 
   @Override
   public Integer getHighestPriority() {
-
-    // Return one higher than the current maximum priority in the queue.
-    // The queue is maintained in descending priority order, so the first entry always
-    // holds the highest priority — no need to scan the whole list.
-    // Base value of 2 is returned when the queue is empty (priority 0 is reserved for
-    // randomly selected songs, priority 1 for normal user-selected songs).
     List<SongQueueEntryEntity> songs = songQueueRoot.getSongs();
     if (songs.isEmpty()) {
       return Integer.valueOf(2);
@@ -133,35 +162,98 @@ public final class SongQueueServiceImpl
 
   @Override
   public List<SongQueueEntryDto> getQueuedSongs() {
-
     return SongQueueMapper.toDto(songQueueRoot.getSongs());
   }
 
   @Override
   public boolean isSongEligibleForQueue(Integer albumId, Integer songId, Integer priority) {
+    
+    Instant now = Instant.now();
 
-    // TODO: Implement
-    throw new RuntimeException("Not implemented yet!");
+    try {
+
+      // Fetch the target song entity
+      AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
+      if (album == null) {
+        return false;
+      }
+      SongFileEntity targetSong = album.getChildSong(songId);
+      if (targetSong == null) {
+        return false;
+      }
+
+      // Constraints Checking A: Minimum minutes between matching song plays in current queue
+      for (SongQueueEntryEntity queuedEntry : songQueueRoot.getSongs()) {
+        if (queuedEntry.getSong().getPersistentIdentity() == songId
+            && queuedEntry.getSong().getAlbum().getPersistentIdentity() == albumId) {
+          long minutesBetween = Duration.between(queuedEntry.getQueuedAtTime(), now).toMinutes();
+          if (minutesBetween < minimumMinutesBetweenSongPlays) {
+            return false;
+          }
+        }
+      }
+
+      // Constraints Checking B: Maximum consecutive plays by artist within a 2-hour window
+      Instant twoHoursAgo = now.minus(Duration.ofHours(2));
+      artistQueueHistory.removeIf(record -> record.queuedAt.isBefore(twoHoursAgo));
+
+      int consecutiveCount = 0;
+      String incomingArtist = targetSong.getArtistName();
+
+      // Scan backward through history to verify if adding this song violates the consecutive limit
+      for (int i = artistQueueHistory.size() - 1; i >= 0; i--) {
+        if (artistQueueHistory.get(i).artistName.equalsIgnoreCase(incomingArtist)) {
+          consecutiveCount++;
+        } else {
+          break; // Sequence broken
+        }
+      }
+      if (consecutiveCount >= maximumConsecutiveSongPlaysByArtist) {
+        return false;
+      }
+
+      // Constraints Checking C: Explicit content hour filtering
+      if (!allowExplicitSongsAtAllTimes && targetSong.hasExplicit()) {
+        int currentHour = ZonedDateTime.now(ZoneId.systemDefault()).getHour();
+        boolean isEligibleTimeWindow;
+
+        if (allowExplicitSongsBegin <= allowExplicitSongsEnd) {
+          isEligibleTimeWindow =
+              (currentHour >= allowExplicitSongsBegin && currentHour <= allowExplicitSongsEnd);
+        } else {
+          // Handle wrap-around scenarios (e.g., Begin: 21 [9 PM] to End: 5 [5 AM] next day)
+          isEligibleTimeWindow =
+              (currentHour >= allowExplicitSongsBegin || currentHour <= allowExplicitSongsEnd);
+        }
+
+        if (!isEligibleTimeWindow) {
+          return false;
+        }
+      }
+
+    } catch (Exception e) {
+      // TODO: Handle this better
+      e.printStackTrace();
+      return false;
+    }
+
+    return true;
   }
 
   @Override
   public SongQueueEntryDto addSongToQueue(AddSongToQueueRequest addSongToQueueRequest) {
-
     SongQueueEntryDto queueEntryDto =
         addSongToQueue(addSongToQueueRequest.getUsername(), addSongToQueueRequest.getAlbumId(),
             addSongToQueueRequest.getSongId(), addSongToQueueRequest.getPriority());
 
-    // Publish the event
-    eventPublisher.publishEvent(new SongAddedToQueueEvent(queueEntryDto)); // to increment num plays
-    eventPublisher.publishEvent(new SongQueueChangedEvent(getQueuedSongs())); // On UI, to update
-                                                                              // queue view
+    eventPublisher.publishEvent(new SongAddedToQueueEvent(queueEntryDto));
+    eventPublisher.publishEvent(new SongQueueChangedEvent(getQueuedSongs()));
 
     return queueEntryDto;
   }
 
   @Override
   public List<SongQueueEntryDto> addAlbumToQueue(AddAlbumToQueueRequest addAlbumToQueueRequest) {
-
     if (addAlbumToQueueRequest == null) {
       return List.of();
     }
@@ -175,7 +267,6 @@ public final class SongQueueServiceImpl
       AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
       if (album != null) {
         for (SongFileEntity song : album.getChildSongs()) {
-
           songIdentifiers.add(new SongIdentifier(albumId, song.getPersistentIdentity()));
         }
       }
@@ -200,65 +291,48 @@ public final class SongQueueServiceImpl
     List<SongQueueEntryDto> queueEntries = new ArrayList<>();
 
     for (SongIdentifier songIdentifier : addMultipleSongsToQueueRequest.getSongIdentifiers()) {
-
       queueEntries.add(
           addSongToQueue(addMultipleSongsToQueueRequest.getUsername(), songIdentifier.getAlbumId(),
               songIdentifier.getSongId(), addMultipleSongsToQueueRequest.getPriority()));
     }
 
-    // Publish the events
-    eventPublisher.publishEvent(new MultipleSongsAddedToQueueEvent(queueEntries)); // to increment
-                                                                                   // num plays
-    eventPublisher.publishEvent(new SongQueueChangedEvent(getQueuedSongs())); // On UI, to update
-                                                                              // queue view
+    eventPublisher.publishEvent(new MultipleSongsAddedToQueueEvent(queueEntries));
+    eventPublisher.publishEvent(new SongQueueChangedEvent(getQueuedSongs()));
 
     return queueEntries;
   }
 
   @Override
   public Integer flushQueue() {
-
     Integer numSongsFlushed = songQueueRoot.flushQueue();
-
     songQueueRepository.storeAggregateRoot(songQueueRoot);
-
     eventPublisher
         .publishEvent(new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
-
     return numSongsFlushed;
   }
 
   @Override
   public Integer randomizeQueue() {
-
     Integer numSongsRandomized = songQueueRoot.randomizeQueue();
-
     songQueueRepository.storeAggregateRoot(songQueueRoot);
-
     eventPublisher
         .publishEvent(new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
-
     return numSongsRandomized;
   }
 
   @Override
   public Integer moveSongUpInQueue(ChangeSongQueueRequest changeSongQueueRequest) {
-
     int albumId = changeSongQueueRequest.getAlbumId();
     int songId = changeSongQueueRequest.getSongId();
 
     try {
       AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
       if (album != null) {
-
         SongFileEntity song = album.getChildSong(songId);
         if (song != null) {
-
           Integer numSongsInQueue = songQueueRoot.moveSongUpInQueue(song);
           if (numSongsInQueue.intValue() > 0) {
-
             songQueueRepository.storeAggregateRoot(songQueueRoot);
-
             eventPublisher.publishEvent(
                 new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
           }
@@ -274,22 +348,17 @@ public final class SongQueueServiceImpl
 
   @Override
   public Integer moveSongDownInQueue(ChangeSongQueueRequest changeSongQueueRequest) {
-
     int albumId = changeSongQueueRequest.getAlbumId();
     int songId = changeSongQueueRequest.getSongId();
 
     try {
       AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
       if (album != null) {
-
         SongFileEntity song = album.getChildSong(songId);
         if (song != null) {
-
           Integer numSongsInQueue = songQueueRoot.moveSongDownInQueue(song);
           if (numSongsInQueue.intValue() > 0) {
-
             songQueueRepository.storeAggregateRoot(songQueueRoot);
-
             eventPublisher.publishEvent(
                 new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
           }
@@ -305,22 +374,17 @@ public final class SongQueueServiceImpl
 
   @Override
   public Integer removeSongDownFromQueue(ChangeSongQueueRequest changeSongQueueRequest) {
-
     int albumId = changeSongQueueRequest.getAlbumId();
     int songId = changeSongQueueRequest.getSongId();
 
     try {
       AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
       if (album != null) {
-
         SongFileEntity song = album.getChildSong(songId);
         if (song != null) {
-
           Integer numSongsRemoved = songQueueRoot.removeSongFromQueue(song);
           if (numSongsRemoved.intValue() > 0) {
-
             songQueueRepository.storeAggregateRoot(songQueueRoot);
-
             eventPublisher.publishEvent(
                 new SongQueueChangedEvent(SongQueueMapper.toDto(songQueueRoot.getSongs())));
           }
@@ -336,21 +400,15 @@ public final class SongQueueServiceImpl
 
   @Override
   public Integer saveQueueAsPlaylist(String filename) {
-
     try {
-
       List<String> songPathnames = new ArrayList<>();
       for (SongQueueEntryEntity queueEntry : this.songQueueRoot.getSongs()) {
-
         SongFileEntity song = queueEntry.getSong();
         String songPathname = song.getNaturalIdentity();
         songPathnames.add(songPathname);
       }
-
       PlaylistManager.savePlayList(new File(filename), songPathnames);
-
       return Integer.valueOf(songPathnames.size());
-
     } catch (Exception e) {
       throw new SongQueueException("Could not save queue as playlist: " + filename, e);
     }
@@ -358,19 +416,15 @@ public final class SongQueueServiceImpl
 
   @Override
   public Integer loadPlaylistIntoQueue(LoadPlaylistIntoQueueRequest loadPlaylistIntoQueueRequest) {
-
     String username = loadPlaylistIntoQueueRequest.getUsername();
     String filename = loadPlaylistIntoQueueRequest.getFilename();
 
     try {
-
       List<SongIdentifier> songIdentifiers = new ArrayList<>();
-      Integer priority = 0; // TODO: Implement loadPlaylistIntoQueue() ability to specify priority
+      Integer priority = 0;
 
       for (String songPathname : PlaylistManager.loadPlayList(new File(filename))) {
-
         SongFileEntity song = this.songLibraryRoot.getSongByPath(songPathname);
-
         songIdentifiers.add(new SongIdentifier(song.getAlbum().getPersistentIdentity(),
             song.getPersistentIdentity()));
       }
@@ -379,9 +433,7 @@ public final class SongQueueServiceImpl
           new AddMultipleSongsToQueueRequest(username, songIdentifiers, priority);
 
       addMultipleSongsToQueue(addMultipleSongsToQueueRequest);
-
       return Integer.valueOf(songIdentifiers.size());
-
     } catch (Exception e) {
       throw new SongQueueException(
           "Could not load playlist into queue: username: " + username + ", filename: " + filename,
@@ -391,17 +443,16 @@ public final class SongQueueServiceImpl
 
   private SongQueueEntryDto addSongToQueue(String username, Integer albumId, Integer songId,
       Integer priority) {
-
     try {
       AlbumFolderEntity album = songLibraryRoot.getAlbumById(albumId);
       if (album != null) {
-
         SongFileEntity song = album.getChildSong(songId);
         if (song != null) {
-
           SongQueueEntryEntity queueEntry = songQueueRoot.addSongToQueue(username, song, priority);
-
           songQueueRepository.storeAggregateRoot(songQueueRoot);
+
+          // Track when the artist was successfully queued
+          artistQueueHistory.add(new ArtistQueueRecord(song.getArtistName(), Instant.now()));
 
           return SongQueueMapper.toDto(queueEntry);
         }
@@ -413,44 +464,35 @@ public final class SongQueueServiceImpl
         + songId + ", priority: " + priority);
   }
 
-  // Repository methods
   @Override
   public SongQueueRootEntity loadAggregateRoot(String naturalIdentity)
       throws EntityDoesNotExistException {
-
     return this.songQueueRepository.loadAggregateRoot(naturalIdentity);
   }
 
   @Override
   public SongQueueRootEntity loadAggregateRoot(int persistentIdentity)
       throws EntityDoesNotExistException {
-
     return this.songQueueRepository.loadAggregateRoot(persistentIdentity);
   }
 
   @Override
   public void storeAggregateRoot(SongQueueRootEntity root) {
-
     this.songQueueRepository.storeAggregateRoot(root);
   }
 
-  // Command methods
   @Override
   public CommandResponse processCommand(CommandRequest commandRequest) {
-
     throw new SongLibraryException("Not implemented yet!");
   }
 
-  // Query methods
   @Override
   public QueryResponse<QueryRequest, QueryResponseItem> processQuery(QueryRequest queryRequest) {
-
     throw new SongLibraryException("Not implemented yet!");
   }
 
   @EventListener
   public void handleScanFileSystemForSongsEvent(ScanFileSystemForSongsEvent event) {
-
     log.info("""
         Received ScanFileSystemForSongsEvent:
         scanPath={}
@@ -458,23 +500,16 @@ public final class SongQueueServiceImpl
         """, event.scanPath(), event.albumCount());
 
     this.rootPath = event.scanPath();
-
-    // Refresh song library state
     initialize();
   }
 
   private void initialize() {
-
-    // If we cannot load the song library from disk at startup, then assume a new install and return
-    // an
-    // empty root folder. The application will automatically ask the user to scan for songs at
-    // startup.
     try {
       this.songLibraryRoot = this.songLibraryRepository.loadAggregateRoot(rootPath);
     } catch (EntityDoesNotExistException ednee) {
       log.error("Could not load song library from: " + rootPath
           + ", using empty song library root for now, error: " + ednee.getMessage());
-      this.songQueueRoot = new SongQueueRootEntity(rootPath);
+      this.songUserRepositoryReset();
     }
 
     try {
@@ -485,5 +520,9 @@ public final class SongQueueServiceImpl
           + ", using empty song library root for now, error: " + ednee.getMessage());
       this.songQueueRoot = new SongQueueRootEntity(SongQueueRootEntity.SONG_QUEUE_FILENAME);
     }
+  }
+
+  private void songUserRepositoryReset() {
+    this.songQueueRoot = new SongQueueRootEntity(rootPath);
   }
 }
