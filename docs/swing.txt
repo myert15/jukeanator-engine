@@ -511,6 +511,12 @@ being called by the SongPlayerService.
 
 
 
+For this Java 21 Spring Boot project, add getVolume() and setVolume() to the Player interface and implement them in VlcMediaPlayer and VideoVlcMediaPlayer.  
+NOTE: This application is meant to run on either Windows, Linux Mint or MacOSX, so whatever solution should be portable and limited to the usage of the VLCJ library
+
+
+
+
 
 TODO:
 DONE 1: Albums with songs with duplicate track numbers, no track numbers, use song index in album childSongs list as track number.  Do this at scan time

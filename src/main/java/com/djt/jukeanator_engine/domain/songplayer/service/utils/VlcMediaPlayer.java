@@ -86,6 +86,16 @@ public class VlcMediaPlayer implements Player {
   }
   
   @Override
+  public int getVolume() {
+    return mediaPlayer.audio().volume();
+  }
+
+  @Override
+  public void setVolume(int volume) {
+    mediaPlayer.audio().setVolume(volume);
+  }
+  
+  @Override
   public void pause() {
     mediaPlayer.controls().pause();
   }
