@@ -45,18 +45,7 @@ public class LoginToAdminPanelCard extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
-  // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color ACCENT_BLUE = new Color(0, 210, 255);
-  private static final Color TEXT_PRIMARY = Color.WHITE;
-  private static final Color TEXT_SECONDARY = new Color(180, 180, 180);
-  private static final Color FIELD_BG = Color.BLACK;
-  private static final Color ERROR_COLOR = new Color(220, 60, 60);
-
-  // ── Button gradient palette (matches AlbumDetailCard back-button style) ───
-  private static final Color GRAD_TOP = new Color(0, 160, 210);
-  private static final Color GRAD_BOTTOM = new Color(0, 80, 130);
-  private static final Color HOVER_TOP = new Color(0, 190, 240);
-  private static final Color HOVER_BOTTOM = new Color(0, 100, 160);
+  // ── Colours — sourced from ColorTheme.get() ──────────────────────────────
 
   // ── Timeout ───────────────────────────────────────────────────────────────
   private static final int TIMEOUT_SECONDS = 120;
@@ -187,19 +176,19 @@ public class LoginToAdminPanelCard extends JPanel {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         // Accent-blue rounded border — matches AddSongToQueueCard border style
-        g2.setColor(ACCENT_BLUE);
+        g2.setColor(ColorTheme.get().accentBlue);
         g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 16, 16);
         g2.dispose();
       }
     };
     panel.setPreferredSize(new Dimension(700, 340));
-    panel.setBackground(new Color(22, 22, 28));
+    panel.setBackground(ColorTheme.get().bgOverlayCard);
     panel.setOpaque(true);
     panel.setBorder(BorderFactory.createEmptyBorder(24, 32, 20, 32));
 
     // Title
     JLabel title = new JLabel("ADMIN LOGIN", SwingConstants.CENTER);
-    title.setForeground(new Color(255, 220, 0));
+    title.setForeground(ColorTheme.get().loginTitleColor);
     title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 26));
     title.setBorder(new EmptyBorder(0, 0, 16, 0));
     panel.add(title, BorderLayout.NORTH);
@@ -249,19 +238,19 @@ public class LoginToAdminPanelCard extends JPanel {
     row.setOpaque(false);
 
     JLabel caption = new JLabel(labelText);
-    caption.setForeground(TEXT_SECONDARY);
+    caption.setForeground(ColorTheme.get().textSecondary);
     caption.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
     caption.setPreferredSize(new Dimension(140, 48));
     caption.setHorizontalAlignment(SwingConstants.RIGHT);
 
     JLabel field = new JLabel();
     field.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 22));
-    field.setForeground(TEXT_PRIMARY);
-    field.setBackground(FIELD_BG);
+    field.setForeground(ColorTheme.get().textPrimary);
+    field.setBackground(ColorTheme.get().bgFieldDark);
     field.setOpaque(true);
-    field.setBorder(
-        BorderFactory.createCompoundBorder(BorderFactory.createMatteBorder(2, 1, 1, 1, Color.WHITE),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+    field.setBorder(BorderFactory.createCompoundBorder(
+        BorderFactory.createMatteBorder(2, 1, 1, 1, ColorTheme.get().textPrimary),
+        BorderFactory.createEmptyBorder(8, 12, 8, 12)));
     field.setPreferredSize(new Dimension(100, 48));
 
     // Tap the field to switch keyboard focus to it
@@ -283,7 +272,7 @@ public class LoginToAdminPanelCard extends JPanel {
       usernameLabel = field;
       // Username is active by default
       field.setBorder(BorderFactory.createCompoundBorder(
-          BorderFactory.createMatteBorder(2, 1, 1, 1, ACCENT_BLUE),
+          BorderFactory.createMatteBorder(2, 1, 1, 1, ColorTheme.get().accentBlue),
           BorderFactory.createEmptyBorder(8, 12, 8, 12)));
     }
 
@@ -297,7 +286,7 @@ public class LoginToAdminPanelCard extends JPanel {
 
     // Error / feedback label
     errorLabel = new JLabel(" ", SwingConstants.CENTER);
-    errorLabel.setForeground(ERROR_COLOR);
+    errorLabel.setForeground(ColorTheme.get().loginError);
     errorLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
 
     JButton loginBtn = createActionButton("LOGIN", () -> attemptLogin());
@@ -323,12 +312,12 @@ public class LoginToAdminPanelCard extends JPanel {
     strip.setBorder(new EmptyBorder(10, 0, 0, 0));
 
     timeoutBar.setValue(TIMEOUT_SECONDS);
-    timeoutBar.setForeground(ACCENT_BLUE);
+    timeoutBar.setForeground(ColorTheme.get().accentBlue);
     timeoutBar.setOpaque(false);
     timeoutBar.setBorderPainted(false);
     timeoutBar.setStringPainted(false);
 
-    timeoutLabel.setForeground(TEXT_SECONDARY);
+    timeoutLabel.setForeground(ColorTheme.get().textSecondary);
     timeoutLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
 
     updateTimeout();
@@ -369,12 +358,13 @@ public class LoginToAdminPanelCard extends JPanel {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        Color top = hovered ? HOVER_TOP : GRAD_TOP;
-        Color bottom = hovered ? HOVER_BOTTOM : GRAD_BOTTOM;
+        Color top = hovered ? ColorTheme.get().navBtnHoverTop : ColorTheme.get().navBtnGradTop;
+        Color bottom =
+            hovered ? ColorTheme.get().navBtnHoverBottom : ColorTheme.get().navBtnGradBottom;
         g2.setPaint(new GradientPaint(0, 0, top, 0, getHeight(), bottom));
         g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
 
-        g2.setColor(ACCENT_BLUE);
+        g2.setColor(ColorTheme.get().accentBlue);
         g2.setStroke(new java.awt.BasicStroke(1.5f));
         g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
 
@@ -384,7 +374,7 @@ public class LoginToAdminPanelCard extends JPanel {
     };
 
     button.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
-    button.setForeground(Color.WHITE);
+    button.setForeground(ColorTheme.get().textPrimary);
     button.setContentAreaFilled(false);
     button.setBorderPainted(false);
     button.setFocusPainted(false);
@@ -461,13 +451,15 @@ public class LoginToAdminPanelCard extends JPanel {
   /** Highlights the active field's border with the accent colour. */
   private void refreshFieldBorders() {
     if (usernameLabel != null) {
-      Color borderColor = (activeField == ActiveField.USERNAME) ? ACCENT_BLUE : Color.WHITE;
+      Color borderColor = (activeField == ActiveField.USERNAME) ? ColorTheme.get().accentBlue
+          : ColorTheme.get().textPrimary;
       usernameLabel.setBorder(BorderFactory.createCompoundBorder(
           BorderFactory.createMatteBorder(2, 1, 1, 1, borderColor),
           BorderFactory.createEmptyBorder(8, 12, 8, 12)));
     }
     if (passwordLabel != null) {
-      Color borderColor = (activeField == ActiveField.PASSWORD) ? ACCENT_BLUE : Color.WHITE;
+      Color borderColor = (activeField == ActiveField.PASSWORD) ? ColorTheme.get().accentBlue
+          : ColorTheme.get().textPrimary;
       passwordLabel.setBorder(BorderFactory.createCompoundBorder(
           BorderFactory.createMatteBorder(2, 1, 1, 1, borderColor),
           BorderFactory.createEmptyBorder(8, 12, 8, 12)));

@@ -30,14 +30,7 @@ import com.djt.jukeanator_engine.domain.songlibrary.dto.SongDto;
  */
 public final class ResultsColumnPanel {
 
-  // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color BG_ROW = new Color(15, 15, 20, 0);
-  private static final Color BG_ROW_HOVER = new Color(255, 255, 255, 25);
-  private static final Color BG_THUMB = new Color(40, 40, 55);
-  private static final Color COLOR_SEP = new Color(255, 255, 255, 25);
-  private static final Color ACCENT_BLUE = new Color(0, 210, 255);
-  private static final Color TEXT_PRIMARY = Color.WHITE;
-  private static final Color TEXT_SECONDARY = new Color(190, 195, 210);
+  // ── Colours — sourced from ColorTheme.get() ──────────────────────────────
 
   private ResultsColumnPanel() {}
 
@@ -63,7 +56,7 @@ public final class ResultsColumnPanel {
     headerPanel.setBorder(new EmptyBorder(12, 4, 12, 4));
 
     JLabel headerLabel = new JLabel(displayTitle + " (" + total + ")");
-    headerLabel.setForeground(Color.WHITE);
+    headerLabel.setForeground(ColorTheme.get().textPrimary);
     headerLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
     headerPanel.add(headerLabel, BorderLayout.WEST);
 
@@ -77,7 +70,7 @@ public final class ResultsColumnPanel {
 
         LinearGradientPaint blueGradient = new LinearGradientPaint(new Point2D.Float(0, 0),
             new Point2D.Float(0, getHeight()), new float[] {0.0f, 1.0f},
-            new Color[] {new Color(24, 38, 60, 225), new Color(12, 18, 30, 245)});
+            new Color[] {ColorTheme.get().columnGradTop, ColorTheme.get().columnGradBottom});
         g2.setPaint(blueGradient);
         g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
         g2.dispose();
@@ -99,15 +92,15 @@ public final class ResultsColumnPanel {
       rowsPanel.add(row);
       if (slot < previewCount - 1) {
         JSeparator sep = new JSeparator();
-        sep.setForeground(COLOR_SEP);
-        sep.setBackground(COLOR_SEP);
+        sep.setForeground(ColorTheme.get().colorColumnSeparator);
+        sep.setBackground(ColorTheme.get().colorColumnSeparator);
         rowsPanel.add(sep);
       }
     }
 
     // Navigation Layout container (Made transparent to allow background column gradient through)
     JPanel navPanel = new JPanel(new BorderLayout(8, 0));
-    navPanel.setBackground(Color.BLACK);
+    navPanel.setBackground(ColorTheme.get().bgFieldDark);
     navPanel.setBorder(new EmptyBorder(8, 12, 12, 12));
 
     JButton upBtn = navButton(true);
@@ -149,13 +142,13 @@ public final class ResultsColumnPanel {
 
     JPanel row = new JPanel(new BorderLayout(10, 0));
     row.setOpaque(false);
-    row.setBackground(BG_ROW);
+    row.setBackground(ColorTheme.get().bgRowTransparent);
     row.setBorder(new EmptyBorder(8, 14, 8, 14));
     row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
     row.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
     JLabel numLabel = new JLabel(String.format("%02d", rowNum));
-    numLabel.setForeground(TEXT_SECONDARY);
+    numLabel.setForeground(ColorTheme.get().textResultsSecondary);
     numLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
     numLabel.setPreferredSize(new Dimension(36, 56));
     numLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -164,14 +157,14 @@ public final class ResultsColumnPanel {
     thumb.setPreferredSize(new Dimension(56, 56));
     thumb.setHorizontalAlignment(SwingConstants.CENTER);
     thumb.setOpaque(true);
-    thumb.setBackground(BG_THUMB);
+    thumb.setBackground(ColorTheme.get().bgThumb);
 
     JLabel line1 = new JLabel();
     JLabel line2 = new JLabel();
     line1.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 17));
     line2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
-    line1.setForeground(TEXT_PRIMARY);
-    line2.setForeground(TEXT_SECONDARY);
+    line1.setForeground(ColorTheme.get().textPrimary);
+    line2.setForeground(ColorTheme.get().textResultsSecondary);
 
     String coverPath = extractFields(item, category, line1, line2);
 
@@ -203,14 +196,14 @@ public final class ResultsColumnPanel {
       @Override
       public void mouseEntered(java.awt.event.MouseEvent e) {
         row.setOpaque(true);
-        row.setBackground(BG_ROW_HOVER);
+        row.setBackground(ColorTheme.get().bgRowHover);
         repaintChildren(row);
       }
 
       @Override
       public void mouseExited(java.awt.event.MouseEvent e) {
         row.setOpaque(false);
-        row.setBackground(BG_ROW);
+        row.setBackground(ColorTheme.get().bgRowTransparent);
         repaintChildren(row);
       }
 
@@ -284,7 +277,7 @@ public final class ResultsColumnPanel {
         if (isEnabled()) {
           g2.setColor(getForeground());
         } else {
-          g2.setColor(new Color(255, 255, 255, 40));
+          g2.setColor(ColorTheme.get().trackNavDisabledTint);
         }
 
         g2.setStroke(new java.awt.BasicStroke(3.0f, java.awt.BasicStroke.CAP_ROUND,
@@ -321,23 +314,23 @@ public final class ResultsColumnPanel {
     btn.setPreferredSize(new Dimension(75, 45));
     btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-    btn.setForeground(Color.WHITE);
-    btn.setBackground(new Color(255, 255, 255, 0));
+    btn.setForeground(ColorTheme.get().textPrimary);
+    btn.setBackground(ColorTheme.get().frameTabsTransparent);
 
     btn.addMouseListener(new java.awt.event.MouseAdapter() {
       @Override
       public void mouseEntered(java.awt.event.MouseEvent e) {
         if (btn.isEnabled()) {
-          btn.setBackground(ACCENT_BLUE);
-          btn.setForeground(Color.BLACK);
+          btn.setBackground(ColorTheme.get().accentBlue);
+          btn.setForeground(ColorTheme.get().bgFieldDark);
           btn.repaint();
         }
       }
 
       @Override
       public void mouseExited(java.awt.event.MouseEvent e) {
-        btn.setBackground(new Color(255, 255, 255, 0));
-        btn.setForeground(Color.WHITE);
+        btn.setBackground(ColorTheme.get().frameTabsTransparent);
+        btn.setForeground(ColorTheme.get().textPrimary);
         btn.repaint();
       }
     });

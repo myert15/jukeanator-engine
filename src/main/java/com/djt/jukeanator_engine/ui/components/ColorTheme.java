@@ -676,10 +676,39 @@ public final class ColorTheme {
    * DetailHeaderPanel — imageLabel.setForeground (fallback text)
    */
   public final Color detailHeaderImageFg = new Color(100, 100, 120);
-  
+
   /**
-   * Gray border used on cover art preview labels in EditAlbumCard.
-   * Origin: EditAlbumCard — lblCurrentCoverArt and lblCoverArtCanvas BorderFactory.createLineBorder(Color.GRAY)
+   * Gray border used on cover art preview labels in EditAlbumCard. Origin: EditAlbumCard —
+   * lblCurrentCoverArt and lblCoverArtCanvas BorderFactory.createLineBorder(Color.GRAY)
    */
-  public final Color editAlbumBorderGray = Color.GRAY;  
+  public final Color editAlbumBorderGray = Color.GRAY;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RESULTS COLUMN PANEL PALETTE (ResultsColumnPanel)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Fully-transparent near-black used as the default (non-hover) row background in
+   * ResultsColumnPanel. The alpha=0 makes it invisible so the column gradient shows through.
+   * Origin: ResultsColumnPanel BG_ROW = new Color(15, 15, 20, 0)
+   */
+  public final Color bgRowTransparent = new Color(15, 15, 20, 0);
+
+  /**
+   * Sub-label text color for result rows in ResultsColumnPanel (artist count, album name, etc.).
+   * Intentionally lighter / more blue-grey than textSecondary (180,180,180) or textMuted
+   * (160,165,180). Origin: ResultsColumnPanel TEXT_SECONDARY = new Color(190, 195, 210)
+   */
+  public final Color textResultsSecondary = new Color(190, 195, 210);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // POPULARITY BAR PALETTE (SongTrackCellRenderer)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Fill color for inactive (unlit) popularity bar segments in SongTrackCellRenderer. Active bars
+   * use accentGreen with per-bar alpha variation. Origin: SongTrackCellRenderer PopularityBarsPanel
+   * paintComponent — inactive branch
+   */
+  public final Color popularityBarInactive = new Color(60, 60, 70, 120);
 }

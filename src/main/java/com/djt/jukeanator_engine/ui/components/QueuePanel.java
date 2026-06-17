@@ -1,6 +1,5 @@
 package com.djt.jukeanator_engine.ui.components;
 
-import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.LinearGradientPaint;
@@ -31,11 +30,7 @@ public class QueuePanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
-  // ── Gradient stops — must match JukeANatorFrame's contentPane gradient ────
-  private static final float[] GRAD_FRACTIONS = {0.0f, 0.20f, 0.42f, 0.62f, 0.82f, 1.0f};
-  private static final Color[] GRAD_COLORS =
-      {new Color(140, 50, 50, 90), new Color(140, 90, 30, 80), new Color(80, 110, 40, 70),
-          new Color(30, 100, 110, 70), new Color(40, 60, 140, 80), new Color(100, 30, 140, 90),};
+  // ── Colours and gradient — sourced from ColorTheme.get() ─────────────────
 
   private final SongQueueCard songQueueCard;
 
@@ -72,12 +67,12 @@ public class QueuePanel extends JPanel {
     int h = getHeight();
 
     // Base dark fill
-    g2.setColor(new Color(10, 10, 10));
+    g2.setColor(ColorTheme.get().appBgBase);
     g2.fillRect(0, 0, w, h);
 
     // Diagonal rainbow overlay — top-left to bottom-right
     g2.setPaint(new LinearGradientPaint(new Point2D.Float(0, 0), new Point2D.Float(w, h),
-        GRAD_FRACTIONS, GRAD_COLORS));
+        ColorTheme.get().appGradFractions(), ColorTheme.get().appGradColors()));
     g2.fillRect(0, 0, w, h);
 
     g2.dispose();

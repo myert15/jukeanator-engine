@@ -31,14 +31,7 @@ public class SongTrackCellRenderer extends JPanel
   public static final int BAR_MAX_H = 18;
   public static final int[] BAR_HEIGHTS = {8, 13, 18};
 
-  // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color ACCENT_BLUE = new Color(0, 210, 255);
-  private static final Color ACCENT_GREEN = new Color(60, 210, 80);
-  private static final Color TEXT_PRIMARY = Color.WHITE;
-  private static final Color TEXT_MUTED = new Color(160, 165, 180);
-  private static final Color LIST_BG = new Color(10, 12, 18);
-  private static final Color LIST_SEL_BG = new Color(0, 60, 80);
-  private static final Color ROW_ALT = new Color(18, 20, 28);
+  // ── Colours — sourced from ColorTheme.get() ──────────────────────────────
 
   // ── Popularity thresholds (configurable per use-site) ─────────────────────
   private final int t1;
@@ -98,13 +91,13 @@ public class SongTrackCellRenderer extends JPanel
     sub.setText(entry.getSong().getArtistName() + "  •  " + entry.getSong().getAlbumName());
 
     if (isSelected) {
-      setBackground(LIST_SEL_BG);
-      song.setForeground(ACCENT_BLUE);
-      sub.setForeground(Color.WHITE);
+      setBackground(ColorTheme.get().bgListSelected);
+      song.setForeground(ColorTheme.get().accentBlue);
+      sub.setForeground(ColorTheme.get().textPrimary);
     } else {
-      setBackground(index % 2 == 0 ? LIST_BG : ROW_ALT);
-      song.setForeground(TEXT_PRIMARY);
-      sub.setForeground(TEXT_MUTED);
+      setBackground(index % 2 == 0 ? ColorTheme.get().bgList : ColorTheme.get().bgListRowAlt);
+      song.setForeground(ColorTheme.get().textPrimary);
+      sub.setForeground(ColorTheme.get().textMuted);
     }
     setOpaque(true);
     return this;
@@ -155,10 +148,11 @@ public class SongTrackCellRenderer extends JPanel
 
         if (i < activeBars) {
           int alpha = Math.min(255, 180 + (i * 25));
-          g2.setColor(new Color(ACCENT_GREEN.getRed(), ACCENT_GREEN.getGreen(),
-              ACCENT_GREEN.getBlue(), alpha));
+          g2.setColor(new Color(ColorTheme.get().accentGreen.getRed(),
+              ColorTheme.get().accentGreen.getGreen(), ColorTheme.get().accentGreen.getBlue(),
+              alpha));
         } else {
-          g2.setColor(new Color(60, 60, 70, 120));
+          g2.setColor(ColorTheme.get().popularityBarInactive);
         }
         g2.fillRoundRect(x, y, BAR_WIDTH, barH, 2, 2);
       }

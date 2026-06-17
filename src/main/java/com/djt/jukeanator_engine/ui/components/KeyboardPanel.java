@@ -31,18 +31,7 @@ public class KeyboardPanel extends JPanel {
 
   private static final long serialVersionUID = 1L;
 
-  // ── Palette ───────────────────────────────────────────────────────────────
-  private static final Color ACCENT_BLUE = new Color(0, 210, 255);
-  private static final Color TEXT_PRIMARY = Color.WHITE;
-
-  // Key colours — AMI 3D style (kept identical to SearchPanel originals)
-  private static final Color KEY_FACE_TOP = new Color(72, 76, 88);
-  private static final Color KEY_FACE_MID = new Color(52, 55, 65);
-  private static final Color KEY_FACE_BOTTOM = new Color(35, 37, 45);
-  private static final Color KEY_SHELF = new Color(18, 18, 22);
-  private static final Color KEY_SHADOW = new Color(6, 6, 8);
-  private static final Color KEY_HIGHLIGHT = new Color(160, 162, 175, 200);
-  private static final Color KEY_SIDE = new Color(100, 102, 115, 80);
+  // ── Colours — sourced from ColorTheme.get() ──────────────────────────────
 
   // ── Layout constants ──────────────────────────────────────────────────────
   /** Preferred height of the keyboard wrapper (matches SearchPanel). */
@@ -124,7 +113,7 @@ public class KeyboardPanel extends JPanel {
       protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setColor(new Color(255, 255, 255, 30));
+        g2.setColor(ColorTheme.get().bgFrostedGlassHover);
         g2.fillRect(0, 0, getWidth(), getHeight());
         g2.dispose();
         super.paintComponent(g);
@@ -247,7 +236,7 @@ public class KeyboardPanel extends JPanel {
     JButton btn = styledKey(label, new Dimension(140, 60), isActiveMode);
 
     if (isActiveMode) {
-      btn.setBackground(new Color(0, 160, 200));
+      btn.setBackground(ColorTheme.get().keyActiveModeBackground);
     }
 
     btn.addActionListener(e -> {
@@ -316,32 +305,32 @@ public class KeyboardPanel extends JPanel {
         int visH = h - shadowH;
 
         // ── Drop-shadow slab ──────────────────────────────────────────────
-        g2.setColor(KEY_SHADOW);
+        g2.setColor(ColorTheme.get().keyShadow);
         g2.fillRoundRect(1, shadowH, w - 2, visH, arc, arc);
 
         // ── Shelf band (bottom ~25 % of visible key) ──────────────────────
         int shelfH = Math.round(visH * 0.25f);
         int faceH = visH - shelfH;
 
-        g2.setColor(KEY_SHELF);
+        g2.setColor(ColorTheme.get().keyShelf);
         g2.fillRoundRect(1, faceH, w - 2, shelfH + arc / 2, arc, arc);
 
         // ── Face gradient ─────────────────────────────────────────────────
         boolean pressed = getModel().isArmed();
-        Color fTop = pressed ? KEY_FACE_BOTTOM : KEY_FACE_TOP;
-        Color fMid = KEY_FACE_MID;
-        Color fBot = pressed ? KEY_FACE_TOP : KEY_FACE_BOTTOM;
+        Color fTop = pressed ? ColorTheme.get().keyFaceBottom : ColorTheme.get().keyFaceTop;
+        Color fMid = ColorTheme.get().keyFaceMid;
+        Color fBot = pressed ? ColorTheme.get().keyFaceTop : ColorTheme.get().keyFaceBottom;
         g2.setPaint(new LinearGradientPaint(0, 0, 0, faceH, new float[] {0f, 0.55f, 1f},
             new Color[] {fTop, fMid, fBot}));
         g2.fillRoundRect(1, 0, w - 2, faceH + arc / 2, arc, arc);
 
         // ── Specular top-edge highlight ────────────────────────────────────
-        g2.setColor(KEY_HIGHLIGHT);
+        g2.setColor(ColorTheme.get().keyHighlight);
         g2.setStroke(new java.awt.BasicStroke(1.2f));
         g2.drawLine(arc, 1, w - arc - 1, 1);
 
         // ── Side-edge sheens ──────────────────────────────────────────────
-        g2.setColor(KEY_SIDE);
+        g2.setColor(ColorTheme.get().keySide);
         g2.setStroke(new java.awt.BasicStroke(1f));
         g2.drawLine(1, 2, 1, faceH - 2);
         g2.drawLine(w - 2, 2, w - 2, faceH - 2);
@@ -351,12 +340,12 @@ public class KeyboardPanel extends JPanel {
         java.awt.FontMetrics fm = g2.getFontMetrics();
         int tx = (w - fm.stringWidth(getText())) / 2;
         int ty = (faceH - fm.getHeight()) / 2 + fm.getAscent();
-        g2.setColor(pressed ? ACCENT_BLUE : TEXT_PRIMARY);
+        g2.setColor(pressed ? ColorTheme.get().accentBlue : ColorTheme.get().textPrimary);
         g2.drawString(getText(), tx, ty);
 
         // ── Active Mode Neon Border Overlay ───────────────────────────────
         if (drawHighlight) {
-          g2.setColor(ACCENT_BLUE);
+          g2.setColor(ColorTheme.get().accentBlue);
           g2.setStroke(new java.awt.BasicStroke(2.0f));
           // Draws right around the 3D button bounds seamlessly
           g2.drawRoundRect(1, 1, w - 3, h - 3, arc, arc);
@@ -374,7 +363,7 @@ public class KeyboardPanel extends JPanel {
     btn.setContentAreaFilled(false);
     btn.setBorderPainted(false);
     btn.setOpaque(false);
-    btn.setForeground(TEXT_PRIMARY);
+    btn.setForeground(ColorTheme.get().textPrimary);
     btn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
     btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
     return btn;
