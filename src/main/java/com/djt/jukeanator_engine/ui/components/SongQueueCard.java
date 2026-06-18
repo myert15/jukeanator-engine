@@ -481,13 +481,7 @@ public class SongQueueCard extends JPanel {
   /** Deducts the credit cost for the given entry and returns {@code true} on success. */
   private boolean deductCostFor(SongQueueEntryDto entry) {
     int cost = computeCost(entry);
-    boolean success = creditManager.deductCredits(cost);
-    if (success && creditManager.getCredits() <= 0) {
-      // Per spec: a successful queue operation that exhausts credits behaves like a timeout —
-      // pop back to whatever was showing before this card.
-      SwingUtilities.invokeLater(this::dismiss);
-    }
-    return success;
+    return creditManager.deductCredits(cost);
   }
 
   /** Cost = 3 × entry's priority (minimum 1). */
