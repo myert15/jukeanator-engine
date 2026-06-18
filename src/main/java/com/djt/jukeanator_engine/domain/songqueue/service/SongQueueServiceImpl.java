@@ -114,6 +114,13 @@ public final class SongQueueServiceImpl
     songQueueRoot.removeSongFromQueue(nextSong);
     songQueueRepository.storeAggregateRoot(songQueueRoot);
 
+    // ── Rule B State Tracking ────────────────────────────────────────────────
+    // Rotate the currently playing song into history before advancing to the next track.
+    if (currentlyPlayingSong != null) {
+      songPlayHistory.add(currentlyPlayingSong);
+    }
+    currentlyPlayingSong = nextSong.getSong();
+
     if (enableBackgroundMusic) {
 
       autoPopulateQueue();
