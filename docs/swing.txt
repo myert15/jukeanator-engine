@@ -869,6 +869,8 @@ HibernateEnd=14
 - Verify that random songs are added with priority 0 and that normal songs by user are priority 1.  Verify that priority sorting works
   
 - When the user clicks on the now playing song in the upper right hand corner, display the album for that song instead of the song queue  
+
+- When the user cancels on add song to queue card, they should be taken back to the screen/panel that they were looking at before
   
 36: Move over the most relevant features from:
 

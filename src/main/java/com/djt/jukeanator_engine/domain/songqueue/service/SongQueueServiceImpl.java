@@ -66,6 +66,13 @@ public final class SongQueueServiceImpl
   private RootFolderEntity songLibraryRoot;
   private SongQueueRootEntity songQueueRoot;
 
+  // ── Rule B State Tracking ────────────────────────────────────────────────
+  /** Keeps track of recent historically played songs (oldest first, newest at the end) */
+  private final List<SongFileEntity> songPlayHistory = new ArrayList<>();
+
+  /** Reference to the track that is currently playing on the output system */
+  private SongFileEntity currentlyPlayingSong;
+
   public SongQueueServiceImpl(SongQueueProperties songQueueProperties,
       SongLibraryRepository songLibraryRepository, SongQueueRepository songQueueRepository,
       ApplicationEventPublisher eventPublisher) {
@@ -231,7 +238,24 @@ public final class SongQueueServiceImpl
       // ─────────────────────────────────────────────────────────────────────
       // Rule B — maximum consecutive songs by the same artist
       // ─────────────────────────────────────────────────────────────────────
-      // Create a sandbox mirror of the queue to simulate the placement
+      // Build a full unified timeline view of execution state:
+      List<SongFileEntity> fullTimeline = new ArrayList<>();
+
+      // A. Seed from recent history (only look back as far as maximumConsecutiveSongPlaysByArtist)
+      if (!songPlayHistory.isEmpty()) {
+        int historySize = songPlayHistory.size();
+        int lookbackCount = Math.min(historySize, maximumConsecutiveSongPlaysByArtist);
+        for (int i = historySize - lookbackCount; i < historySize; i++) {
+          fullTimeline.add(songPlayHistory.get(i));
+        }
+      }
+
+      // B. Include the currently playing song
+      if (currentlyPlayingSong != null) {
+        fullTimeline.add(currentlyPlayingSong);
+      }
+
+      // C. Build a prioritized sandbox mirror of the queue to simulate placement
       SongQueueRootEntity mirrorQueue = new SongQueueRootEntity(songQueueRoot.getLocation());
       for (SongQueueEntryEntity existingEntry : songQueueRoot.getSongs()) {
         mirrorQueue.getSongs().add(existingEntry);
@@ -240,11 +264,17 @@ public final class SongQueueServiceImpl
       // Simulate inserting the incoming candidate using the real prioritization logic
       mirrorQueue.addSongToQueue("ELIGIBILITY_CHECK", targetSong, priority);
 
+      // Append the sorted queue state onto our timeline
+      for (SongQueueEntryEntity entry : mirrorQueue.getSongs()) {
+        fullTimeline.add(entry.getSong());
+      }
+
+      // Linear scan to ensure no cluster beats the consecutive limit
       int consecutiveCount = 0;
       String lastArtist = null;
 
-      for (SongQueueEntryEntity entry : mirrorQueue.getSongs()) {
-        String currentArtist = entry.getSong().getArtistName();
+      for (SongFileEntity song : fullTimeline) {
+        String currentArtist = song.getArtistName();
 
         if (currentArtist.equals(lastArtist)) {
           consecutiveCount++;
