@@ -5,10 +5,7 @@ import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Deque;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,19 +65,6 @@ public final class SongQueueServiceImpl
   private String rootPath;
   private RootFolderEntity songLibraryRoot;
   private SongQueueRootEntity songQueueRoot;
-
-  // ── NEW: artist-sequence tracking ────────────────────────────────────────
-  private record ArtistQueueEntry(String artistName, int priority, Instant queuedAt) {
-  }
-
-  /**
-   * Ordered log of recently queued songs (artist name + priority + time). Entries are kept in
-   * insertion order (oldest first). Entries older than two hours are purged lazily inside
-   * {@link #isSongEligibleForQueue}.
-   *
-   * Guarded by {@code this}.
-   */
-  private final Deque<ArtistQueueEntry> artistSequenceLog = new ArrayDeque<>();
 
   public SongQueueServiceImpl(SongQueueProperties songQueueProperties,
       SongLibraryRepository songLibraryRepository, SongQueueRepository songQueueRepository,
@@ -237,8 +221,8 @@ public final class SongQueueServiceImpl
 
             long minutesRemaining = minimumMinutesBetweenSongPlays - minutesBetween;
 
-            return "has already been played in the last " + minimumMinutesBetweenSongPlays + " min. Try again in "
-                + minutesRemaining + " min";
+            return "has already been played in the last " + minimumMinutesBetweenSongPlays
+                + " min. Try again in " + minutesRemaining + " min";
           }
         }
       }
@@ -247,51 +231,32 @@ public final class SongQueueServiceImpl
       // ─────────────────────────────────────────────────────────────────────
       // Rule B — maximum consecutive songs by the same artist
       // ─────────────────────────────────────────────────────────────────────
-      String incomingArtist = targetSong.getArtistName();
-      synchronized (this) {
+      // Create a sandbox mirror of the queue to simulate the placement
+      SongQueueRootEntity mirrorQueue = new SongQueueRootEntity(songQueueRoot.getLocation());
+      for (SongQueueEntryEntity existingEntry : songQueueRoot.getSongs()) {
+        mirrorQueue.getSongs().add(existingEntry);
+      }
 
-        // 1. Purge entries older than 2 hours
-        Instant twoHoursAgo = now.minus(Duration.ofHours(2));
-        artistSequenceLog.removeIf(e -> e.queuedAt().isBefore(twoHoursAgo));
+      // Simulate inserting the incoming candidate using the real prioritization logic
+      mirrorQueue.addSongToQueue("ELIGIBILITY_CHECK", targetSong, priority);
 
-        // 2. Build a merged, priority-sorted view:
-        List<ArtistQueueEntry> merged = new ArrayList<>(artistSequenceLog);
-        ArtistQueueEntry incoming = new ArtistQueueEntry(incomingArtist, priority, now);
-        merged.add(incoming);
-        merged.sort(Comparator.comparingInt(ArtistQueueEntry::priority));
+      int consecutiveCount = 0;
+      String lastArtist = null;
 
-        // 3. Locate the incoming entry in the sorted list
-        int incomingIdx = merged.indexOf(incoming);
+      for (SongQueueEntryEntity entry : mirrorQueue.getSongs()) {
+        String currentArtist = entry.getSong().getArtistName();
 
-        if (incomingIdx >= 0) {
-
-          // Start count at 1 because the incoming song itself counts as 1 play!
-          int consecutiveCount = 1;
-
-          // Walk backwards — songs that play before the new one
-          for (int i = incomingIdx - 1; i >= 0; i--) {
-            if (merged.get(i).artistName().equals(incomingArtist)) {
-              consecutiveCount++;
-            } else {
-              break;
-            }
-          }
-
-          // Walk forwards — songs that play after the new one
-          for (int i = incomingIdx + 1; i < merged.size(); i++) {
-            if (merged.get(i).artistName().equals(incomingArtist)) {
-              consecutiveCount++;
-            } else {
-              break;
-            }
-          }
-
-          // If the TOTAL consecutive plays exceeds the maximum allowed, block it.
-          if (consecutiveCount > maximumConsecutiveSongPlaysByArtist) {
-            return "the consecutive play count for '" + incomingArtist + "' has been exceeded";
-          }
+        if (currentArtist.equals(lastArtist)) {
+          consecutiveCount++;
+        } else {
+          consecutiveCount = 1;
+          lastArtist = currentArtist;
         }
-      } // end synchronized
+
+        if (consecutiveCount > maximumConsecutiveSongPlaysByArtist) {
+          return "the consecutive play count for '" + currentArtist + "' has been exceeded";
+        }
+      }
 
 
       // ─────────────────────────────────────────────────────────────────────
@@ -339,17 +304,7 @@ public final class SongQueueServiceImpl
         }
       }
 
-
-      // ─────────────────────────────────────────────────────────────────────
-      // All rules passed — record the entry in the artist-sequence log and
-      // report the song as eligible.
-      // ─────────────────────────────────────────────────────────────────────
-      synchronized (this) {
-        artistSequenceLog.addLast(new ArtistQueueEntry(incomingArtist, priority, now));
-      }
-
     } catch (Exception e) {
-      // TODO: Handle this better
       e.printStackTrace();
       return "Error: " + e.getMessage();
     }
@@ -359,6 +314,7 @@ public final class SongQueueServiceImpl
 
   @Override
   public SongQueueEntryDto addSongToQueue(AddSongToQueueRequest addSongToQueueRequest) {
+
     SongQueueEntryDto queueEntryDto =
         addSongToQueue(addSongToQueueRequest.getUsername(), addSongToQueueRequest.getAlbumId(),
             addSongToQueueRequest.getSongId(), addSongToQueueRequest.getPriority());
@@ -568,16 +524,6 @@ public final class SongQueueServiceImpl
         if (song != null) {
           SongQueueEntryEntity queueEntry = songQueueRoot.addSongToQueue(username, song, priority);
           songQueueRepository.storeAggregateRoot(songQueueRoot);
-
-          // ─────────────────────────────────────────────────────────────────────
-          // All rules passed — record the entry in the artist-sequence log and
-          // report the song as eligible.
-          // ─────────────────────────────────────────────────────────────────────
-          synchronized (this) {
-            artistSequenceLog
-                .addLast(new ArtistQueueEntry(song.getArtistName(), priority, Instant.now()));
-          }
-
           return SongQueueMapper.toDto(queueEntry);
         }
       }

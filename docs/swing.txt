@@ -702,6 +702,38 @@ I have attached SongQueueRootEntity, SongQueueServiceImpl, so please come up wit
 
 
 
+
+
+
+
+
+
+Rule B needs to take into account the currently playing song, as well as the song play history.  maximumConsecutiveSongPlaysByArtist=3 for the scenarios below:
+
+
+
+Scenario 1:
+
+No prior songs in play history, Journey is currently playing and the first 2 songs in the queue are by Journey.  The user should NOT be allowed to queue another Journey song, because between the now playing Journey song and the 2 Journey songs at the top of the queue, adding a fourth would be a violation of this rule.
+
+
+
+Scenario 2: Almost the same as scenario 1, except that in the song play history, Journey has had the last two songs played and the currently playing song is Journey.  The user should NOT be allowed to queue another Journey song because between the last 2 song plays and the current song, that is already 3 consecutive plays.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 TODO:
 DONE 1: Albums with songs with duplicate track numbers, no track numbers, use song index in album childSongs list as track number.  Do this at scan time
 
