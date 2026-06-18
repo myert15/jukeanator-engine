@@ -724,6 +724,25 @@ Scenario 2: Almost the same as scenario 1, except that in the song play history,
 
 
 
+See the attached screenshot for undesired behavior (from looking at the artist results from the SearchPanel)
+
+The only time the letter button row/array should be shown is from the HomePanel, that shows ALL albums (which is the need for this letter button row)
+
+Any other "artist view" of the artist's albums should always show ALL albums for that artist and NOT show this letter button row (which filters by first char of album name)
+
+This will affect Search, Hot Here and Genre screens for when they show an artists' albums.
+
+So please come up with a plan and if you can make the changes, make only the needed changes, keeping the same formatting, spacing and comments that are already in place.  Only change that which is absolutely needed.
+
+
+
+
+
+
+
+
+When the user clicks on the now playing song in the upper right hand corner, display the album details view (i.e. the song/track listings) for that song instead 
+of the song queue car.  When they dismiss the card, or it times out, have it go back to whatever was showing in the JTabbed pane content area before showing the album details.
 
 
 
@@ -815,9 +834,9 @@ DONE 34: Implement enableBackgroundMusic with another property called minimumNum
  
 DONE 35: Add ability to enable/disable screensaver and random background music. 
 
-- Change cost on SongQueueCard to be double what it is now
+DONE - Change cost on SongQueueCard to be double what it is now
 
-- Change Song Queue to render song name by priority (0: gray, 1: white, 2: yellow, 3: orange, 4: red, 5+, purple)
+DONE - Change Song Queue to render song name by priority (0: gray, 1: white, 2: yellow, 3: orange, 4: red, 5+, purple)
 
 - On Startup, do not flip to a letter button if there aren't enough albums to fill up the number of album tiles for the screen
 
@@ -826,8 +845,6 @@ DONE 35: Add ability to enable/disable screensaver and random background music.
     + create logging interceptor to log auth principle, method name as well as any parameters
     + deal with exception handling
     
-- For Song Queue methods that add to the queue, create checked exception if an ineligible song was passed in    
- 
  - Implement hibernation with the following properties:
 EnableHibernation=false
 HibernateBegin=3
@@ -835,17 +852,17 @@ HibernateEnd=14
 
 - Need to render explicit albums with a red border and normal albums with a white border
 
-- Doing a search for "Buck" then clicking on Buckcherry, does not bring up their album (only the compilations are shown) 
+DONE Doing a search for "Buck" then clicking on Buckcherry, does not bring up their album (only the compilations are shown) 
  
 - Add ASCAP/BMI/SESAC license info screen
 
-- Move Up / Move Down on SongQueueCard is not working correctly
+DONE Move Up / Move Down on SongQueueCard is not working correctly
 
-- Investigate issue with artist results for Buckcherry, make sure either type of Artist has all albums
+DONE Investigate issue with artist results for Buckcherry, make sure either type of Artist has all albums
 
 - Make git repo for installer that contains demo music with 30 second song clips
 
-- When AddSongToQueueCard is dismissed, especially froma constraint warning, the PREVIOUS panel that was showing before
+- When AddSongToQueueCard is dismissed, especially from a constraint warning, the PREVIOUS panel that was showing before
   the card was showing needs to be displayed.
   
 - Investigate Winamp DLL for Windows that does song player
@@ -862,11 +879,11 @@ HibernateEnd=14
 
 - Refactor services so that they all use the same rootPath property from the main application config
 
-- Refine song constraint warnings to give specific details
+DONE Refine song constraint warnings to give specific details
 
-- Disable button grid panel when showing albums from artist view, show all albums
+DONE Disable button grid panel when showing albums from artist view, show all albums
 
-- Verify that random songs are added with priority 0 and that normal songs by user are priority 1.  Verify that priority sorting works
+DONE Verify that random songs are added with priority 0 and that normal songs by user are priority 1.  Verify that priority sorting works
   
 - When the user clicks on the now playing song in the upper right hand corner, display the album for that song instead of the song queue  
 

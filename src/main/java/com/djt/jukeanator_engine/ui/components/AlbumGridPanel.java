@@ -52,6 +52,7 @@ public class AlbumGridPanel extends JPanel {
   private final int artW;
   private final int artH;
   private final AlbumClickListener listener;
+  private final boolean showLetterNav; // true only for the full "All Albums" grid in HomePanel
 
   private int startIndex = 0; // index of the album in the upper-left corner of the grid
   private String selectedLetter = null; // which letter button is highlighted
@@ -69,8 +70,8 @@ public class AlbumGridPanel extends JPanel {
   // CONSTRUCTOR
   // ─────────────────────────────────────────────────────────────────────────
   public AlbumGridPanel(List<AlbumDto> albums, Map<String, List<AlbumDto>> letterMap,
-      ImageLoader imageLoader, int cols, int rows, int artW, int artH,
-      AlbumClickListener listener) {
+      ImageLoader imageLoader, int cols, int rows, int artW, int artH, AlbumClickListener listener,
+      boolean showLetterNav) {
 
     this.albums = albums != null ? albums : List.of();
     this.letterMap = letterMap != null ? letterMap : Map.of();
@@ -80,9 +81,10 @@ public class AlbumGridPanel extends JPanel {
     this.artW = artW;
     this.artH = artH;
     this.listener = listener;
+    this.showLetterNav = showLetterNav;
 
-    // Pick a random letter from the available buckets at startup
-    if (!this.letterMap.isEmpty()) {
+    // Pick a random letter from the available buckets at startup (only when letter nav is shown)
+    if (showLetterNav && !this.letterMap.isEmpty()) {
       List<String> keys = new java.util.ArrayList<>(this.letterMap.keySet());
       selectedLetter = keys.get(new java.util.Random().nextInt(keys.size()));
       startIndex = letterStartIndex(selectedLetter);
@@ -172,7 +174,9 @@ public class AlbumGridPanel extends JPanel {
     });
 
     // ── Letter button strip ───────────────────────────────────────────────
-    JPanel letterStrip = buildLetterStrip();
+    JPanel letterStrip = showLetterNav ? buildLetterStrip() : new JPanel();
+    if (!showLetterNav)
+      letterStrip.setOpaque(false);
 
     // Prev/next wrappers keep the strip centred even when one arrow is hidden
     JPanel prevWrapper = new JPanel(new BorderLayout());
@@ -191,7 +195,7 @@ public class AlbumGridPanel extends JPanel {
 
     // Show nav bar whenever there are letter buttons to display, regardless of
     // whether pagination is needed. Hide only when there is nothing to navigate.
-    navPanel.setVisible(!letterMap.isEmpty() || hasPrev || hasNext);
+    navPanel.setVisible((showLetterNav && !letterMap.isEmpty()) || hasPrev || hasNext);
 
     gridPanel.revalidate();
     gridPanel.repaint();

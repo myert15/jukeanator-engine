@@ -226,7 +226,7 @@ public class HomePanel extends JPanel implements TabNavigator {
     }
 
     AlbumGridPanel grid = new AlbumGridPanel(allAlbums, letterMap, imageLoader, gridCols, gridRows,
-        artW, artH, album -> pushAlbumDetail(album)); // TabNavigator path
+        artW, artH, album -> pushAlbumDetail(album), true); // TabNavigator path
 
     card.add(header, BorderLayout.NORTH);
     card.add(grid, BorderLayout.CENTER);

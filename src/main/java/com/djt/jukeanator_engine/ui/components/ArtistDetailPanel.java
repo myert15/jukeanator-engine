@@ -74,7 +74,7 @@ public class ArtistDetailPanel extends JPanel {
     add(new DetailHeaderPanel(backLabel, onBack, artistImage, "♪", artist.getArtistName(),
         subtitle), BorderLayout.NORTH);
 
-    add(new AlbumGridPanel(albums, letterMap, imageLoader, gridCols, gridRows, artW, artH,
-        onAlbumClicked), BorderLayout.CENTER);
+    add(new AlbumGridPanel(albums, null, imageLoader, gridCols, gridRows, artW, artH,
+        onAlbumClicked, false), BorderLayout.CENTER);
   }
 }
